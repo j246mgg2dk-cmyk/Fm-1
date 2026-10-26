@@ -651,12 +651,30 @@ static __attribute__((noinline)) void gl_next(void)
         pf.gdv = 65536u / pf.gseg;
     }
 }
-/* a pass of len samples at place p windowed at both ends: SL_RAMP, less on a short pass (a quarter of it at most) */
-static inline void gl_win(int32_t *l, int32_t *r, uint32_t p, uint32_t len)
+/* GLITCH: sample s of the source (gnf frames from gsb, anywhere in the loop: both frames read wrap round it), as
+ * pb_at: between two frames on an odd sample, the source's last frame past its end */
+static inline void gl_at(uint32_t s, int32_t *l, int32_t *r)
+{
+    uint32_t f = s >> 1 < pf.gnf ? s >> 1 : pf.gnf - 1u, g;
+    const int16_t *p, *q;
+    if (s & 1u)
+        g = f + 1u < pf.gnf ? f + 1u : f;
+    else
+        g = f ? f - 1u : f;
+    p = &sl_buf[0][0] + 2u * ((pf.gsb + f) & (PB_FRAMES - 1u));
+    q = &sl_buf[0][0] + 2u * ((pf.gsb + g) & (PB_FRAMES - 1u));
+    *l = (3 * p[0] + q[0]) >> 1;
+    *r = (3 * p[1] + q[1]) >> 1;
+}
+/* a pass of len samples at place p windowed at both ends: SL_RAMP, less on a short pass (a quarter of it at most);
+ * and the slice's end (rest: its samples left after this one), where a pass that does not fit is cut */
+static inline void gl_win(int32_t *l, int32_t *r, uint32_t p, uint32_t len, uint32_t rest)
 {
     uint32_t e = len - 1u - p, sh = SL_RAMP_LOG2;
     if (p < e)
         e = p;
+    if (rest < e)
+        e = rest;
     while (sh > 2u && (4u << sh) > len)
         sh--;
     if (e < (1u << sh)) {
@@ -724,9 +742,8 @@ static __attribute__((noinline)) void perf_glitch(int32_t l, int32_t r, int32_t 
         break;
     }
     if (pf.gmv != GM_LIVE && pf.gmv != GM_GATE && !mute && p < len) {
-        uint32_t f = s >> 1 < pf.gnf ? s >> 1 : pf.gnf - 1u;
-        pb_at(2u * (pf.gsb + f) + (s & 1u), pf.gsb + pf.gnf, &gl, &gr);
-        gl_win(&gl, &gr, p, len);
+        gl_at(s, &gl, &gr);
+        gl_win(&gl, &gr, p, len, pf.gmv == GM_ROLL ? ~0u : pf.gseg - 1u - t);   /* (ROLL: its passes run on) */
     }
     pf.gw += clamp((pf.gmv == GM_LIVE ? 0 : 32768) - pf.gw, -SL_SLOPE, SL_SLOPE);
     *yl = pf_mix(l, gl, pf.gw);

@@ -424,8 +424,8 @@ static int test_keys(void)
             ok &= !kb_layer && !perf_held && mo_w == mo0;
         }
         fm1_in.buttons = 0;
-        bad += check("the keys without an effect (F5 G5, 8 black from D#4): silent, nothing held",
-                     ok && assigned == 0xAD5BFFu);  /* F3 .. C5 but D#4 F#4 G#4 A#4, D5, E5 (1.5.1's throws) */
+        bad += check("the keys without an effect (D#5 F#5): silent, nothing held",
+                     ok && assigned == 0x5BFFFFFu);  /* all but D#5 F#5 (F5 G5 GLITCH BEND, D#4 .. C#5 8-BIT .. MELTDOWN) */
         kb_mask = perf_mask = 0;
     }
     usb.config = 0;
@@ -914,9 +914,9 @@ static int test_map(void)
     memset(b, 0, sizeof b);
     for (p = 0; p < PF_KEYS; p++)                       /* all 0 (every setting before 1.2): the default */
         ok &= perf_map_of(b, p) == PF_DEF[p];
-    bad += check("map: settings of 0 (before 1.2) read as the default (1.1.5's ten, FLANGER, PHASER, the throws, 2 none)",
+    bad += check("map: settings of 0 (before 1.2) read as the default (1.1.5's ten, FLANGER, PHASER, the throws, GLITCH, BEND)",
                  ok && PF_DEF[10] == PF_FLG && PF_DEF[11] == PF_PHS && PF_DEF[12] == PF_RTHR && PF_DEF[13] == PF_ETHR &&
-                 PF_DEF[14] == PF_N && PF_DEF[0] == PF_R8);
+                 PF_DEF[14] == PF_GLT && PF_DEF[15] == PF_BND && PF_DEF[0] == PF_R8);
     ok = 1;
     for (p = 0; p < PF_KEYS; p++)                       /* any effect (or none) on any key, the others untouched */
         for (e = 0; e <= PF_NFX; e++) {
