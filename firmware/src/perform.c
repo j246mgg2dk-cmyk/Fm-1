@@ -40,32 +40,45 @@
  * MENU > FX LATCH ON (#40, a hand that cannot hold FX, a key and a knob together): a key pressed with FX turns its
  * effect on, the next press turns it off (perf_latched; letting the key or FX go does nothing), the macros keep
  * their values when FX is let go, FX + OCT- turns everything off (ui_layer.c), so does the menu or a dialog.
- * Chain: [REPEAT / REVERSE / TAPE / FREEZE / GLITCH] -> LPF -> HPF -> CRUSH -> BEND -> FLANGER -> PHASER, after the master level and
+ * Chain: [REPEAT / REVERSE / TAPE / FREEZE / GLITCH / ROLL] -> LPF -> HPF -> CRUSH -> BEND -> 8-BIT -> RING MOD -> CHOP
+ * -> FLANGER -> PHASER, after the master level and
  * before master_out (the limiter); THROW and the mutes act before the buses (fx.c mix_block / mix_part).
  * Idle (no key, no knob, no ramp left) every stage is skipped: the output is bit-identical.
  * GLITCH (F5 by default): a buffer effect that mangles the beat on its own. It records the mix into the loop and, at
  * every 1/16 (halved until one fits in 186 ms), draws a move for the next one from the 1/16 just played: LIVE, REPEAT
- * it, ROLL it at 1/2, 1/4 or 1/8 of its length, REVERSE it, play it an octave DOWN (its first half at half speed) or
- * UP (twice at double speed), or GATE it (silence). A repeat after a repeat may keep the same slice, so stutters
- * build over several 1/16s. Each slice is windowed (SL_RAMP at both ends), the move's share glides (SL_SLOPE): no
- * clicks. Starts on the 1/16 (as REPEAT); KNOB 4 DEPTH its level as the other buffer effects'. Its own generator:
- * the LFOs' S&H draws are not disturbed.
+ * it, ROLL it at 1/2, 1/4, 1/8 or 1/16 of its length, CHOP it (a 1/8 roll, every other pass silent), ACCEL (a roll
+ * that halves as it goes), REVERSE it, play it an octave DOWN (its first half at half speed) or UP (twice at double
+ * speed), TAPE it (slowing to a stop), or GATE it (silence). A repeat after a repeat may keep the same slice, so
+ * stutters build over several 1/16s. While GLITCH plays KNOB 4 is its CHAOS (its level full, as OCT UP's shimmer):
+ * untouched GL_CHAOS; low, mostly live and the milder moves; high, never live and mostly the short rolls, chops and
+ * gates. Each pass is windowed (SL_RAMP at both ends, less on a short one), the move's share glides (SL_SLOPE): no
+ * clicks. Starts on the 1/16 (as REPEAT). Its own generator: the LFOs' S&H draws are not disturbed.
+ * ROLL (A#4, a black key): a drum roll building up from what was playing: the first 1/16 caught, then repeated at
+ * 1/16 for a beat, 1/32 for the next, 1/64, 1/128 .. down to 64 samples (a buzz). Starts on the 1/16; KNOB 4 DEPTH.
  * BEND (G5 by default): a circuit-bent stage after CRUSH. Each sample is multiplied by a gain and wrapped as a 16-bit
  * integer overflows (silence stays silent, loud parts fold into hard digital edges), then held for 1 .. 10 samples;
- * the gain and the hold are drawn again every 1/32. Out at 0.6 (the wrap is full scale); KNOB 4 DEPTH its level. */
+ * the gain and the hold are drawn again every 1/32. Out at 0.6 (the wrap is full scale); KNOB 4 DEPTH its level.
+ * The black keys past the mutes (fixed, PF_BLK): D#4 8-BIT (8 bits, held 4 samples: 11 kHz), F#4 CHOP (dropouts: every
+ * 1/32 open or shut at random, 2.9 ms ramps), G#4 RING MOD (times a sine drawn from 30 Hz .. 7 kHz every 1/16), A#4
+ * ROLL, C#5 MELTDOWN (GLITCH, BEND, 8-BIT, CHOP and RING MOD at once). 8-BIT, CHOP, RING MOD: one stage after BEND
+ * (perf_dirt); KNOB 4 DEPTH their level (full while GLITCH or OCT UP / DN plays). Any of them on a white key too. */
 /* the effects (their numbers are stored: the key map in the settings, ui_layer.c perf_map_put; append-only, before
  * PF_M1), then the mutes of the black keys */
 enum { PF_R8, PF_R16, PF_R32, PF_REV, PF_LPF, PF_HPF, PF_TAPE, PF_FRZ, PF_OUP, PF_ODN, PF_FLG, PF_PHS,
        PF_RTHR, PF_ETHR,                      /* 1.5.1: REV THROW, ECHO THROW */
        PF_GLT, PF_BND,                        /* GLITCH, BEND */
+       PF_8BT, PF_CHP, PF_RNG, PF_ROL, PF_MLT,   /* 8-BIT, CHOP, RING MOD, ROLL, MELTDOWN */
        PF_M1, PF_N = PF_M1 + NTRK };
 #define PF_NFX PF_M1                          /* the effects a white key can hold */
 #define PF_KEYS 16u                           /* the white keys F3 .. G5 */
 #define PF_BIT(e) (1u << (e))
 #define PF_REPEAT 0x7u                                         /* the three REPEAT rates */
-#define PF_Q (PF_REPEAT | PF_BIT(PF_REV) | PF_BIT(PF_GLT))     /* start on the 1/16 */
+#define PF_Q (PF_REPEAT | PF_BIT(PF_REV) | PF_BIT(PF_GLT) | PF_BIT(PF_ROL))   /* start on the 1/16 */
 #define PF_HARM (PF_BIT(PF_OUP) | PF_BIT(PF_ODN))
-#define PF_BUF (PF_REPEAT | PF_BIT(PF_REV) | PF_BIT(PF_TAPE) | PF_BIT(PF_FRZ) | PF_HARM | PF_BIT(PF_GLT))
+#define PF_BUF (PF_REPEAT | PF_BIT(PF_REV) | PF_BIT(PF_TAPE) | PF_BIT(PF_FRZ) | PF_HARM | PF_BIT(PF_GLT) | PF_BIT(PF_ROL))
+#define PF_DIRT (PF_BIT(PF_8BT) | PF_BIT(PF_CHP) | PF_BIT(PF_RNG))   /* perf_dirt's */
+#define PF_MELT (PF_BIT(PF_GLT) | PF_BIT(PF_BND) | PF_DIRT)          /* MELTDOWN holds these */
+#define PF_NBLK 5u                            /* the black keys past the mutes with an effect (PF_BLK) */
 #define PF_MUTE (((1u << NTRK) - 1u) << PF_M1)
 #define PF_MOD (PF_BIT(PF_FLG) | PF_BIT(PF_PHS))   /* FLANGER, PHASER: their own stages after CRUSH */
 #define PB_FRAMES (NTRK * SL_LEN / 2u)        /* stereo frames in sl_buf: 8192, 371 ms at 22.05 kHz */
@@ -88,8 +101,11 @@ enum { BM_NONE, BM_LOOP, BM_TAPE, BM_FRZ, BM_HARM, BM_GLT };
 #define THR_SLOPE 64                          /* REV / ECHO THROW: the sends' glide a sample, Q15 (11.6 ms end to end) */
 #define THR_FB 22938                          /* ECHO THROW: the delay's feedback while held at least this, Q15 (0.7) */
 #define GL_SEG_MAX 8192u                      /* GLITCH: its slice at most, samples (186 ms): two fit in the loop */
-enum { GM_LIVE, GM_REP, GM_R2, GM_R4, GM_R8, GM_REV, GM_DOWN, GM_UP, GM_GATE };
-#define GM_KEEPS ((1u << GM_REP) | (1u << GM_R2) | (1u << GM_R4) | (1u << GM_R8))   /* .. the repeats: may keep a slice */
+#define GL_CHAOS 60                           /* .. its CHAOS while KNOB 4 is untouched */
+enum { GM_LIVE, GM_REP, GM_R2, GM_R4, GM_R8, GM_R16, GM_REV, GM_DOWN, GM_UP, GM_GATE, GM_CHOP, GM_ACCEL, GM_TAPE,
+       GM_ROLL, GM_N };
+#define GM_KEEPS ((1u << GM_REP) | (1u << GM_R2) | (1u << GM_R4) | (1u << GM_R8) | (1u << GM_R16) | (1u << GM_CHOP) | \
+                  (1u << GM_ACCEL))           /* .. the repeats: may keep a slice */
 
 /* the white keys' effects by default (1.1.5's ten, then FLANGER and PHASER, 1.5.1's REV THROW and ECHO THROW on D5
  * and E5, GLITCH and BEND on F5 and G5) */
@@ -97,6 +113,8 @@ static const uint8_t PF_DEF[PF_KEYS] = {PF_R8, PF_R16, PF_R32, PF_REV, PF_LPF, P
                                         PF_FLG, PF_PHS, PF_RTHR, PF_ETHR, PF_GLT, PF_BND};
 static volatile uint8_t perf_map[PF_KEYS] = {PF_R8, PF_R16, PF_R32, PF_REV, PF_LPF, PF_HPF, PF_TAPE, PF_FRZ, PF_OUP,
                                              PF_ODN, PF_FLG, PF_PHS, PF_RTHR, PF_ETHR, PF_GLT, PF_BND};
+/* the black keys past the four mutes (D#4 F#4 G#4 A#4 C#5; fixed) */
+static const uint8_t PF_BLK[PF_NBLK] = {PF_8BT, PF_CHP, PF_RNG, PF_ROL, PF_MLT};
                                       /* main: white key p's effect (PF_N none), from the settings (ui_layer.c) */
 static volatile uint8_t perf_remap;   /* main: perf_map changed (seq.c: a key held takes its new effect) */
 
@@ -163,11 +181,17 @@ static struct {
     /* GLITCH, BEND */
     uint32_t gt, gseg;                 /* GLITCH: samples into this slice, its length */
     uint32_t gcur, gsb, gnf;           /* .. the frame this slice's recording began at; the source's first frame, frames */
-    uint8_t gmv;                       /* .. this slice's move (GM_*) */
+    uint8_t gmv, groll;                /* .. this slice's move (GM_*); ROLL (not GLITCH) plays */
+    uint32_t gpp, gpl, gpt;            /* .. ACCEL / ROLL: place in the pass, the pass's length, samples at that length */
+    uint32_t gpos, gsp, gdv;           /* .. TAPE: read place Q16, speed Q16, its step a sample */
     int32_t gw;                        /* .. the move's share, Q15 (0: live) */
     uint32_t grng;                     /* GLITCH and BEND's generator (their own: rng() stays the LFOs') */
     int32_t bw, bg, bhl, bhr;          /* BEND: its share (Q15), the gain, the held samples */
     uint32_t bt, bn, bhold;            /* .. samples into the 1/32, since the last hold, the hold */
+    int32_t d8w, drw, dcw, dcg;        /* 8-BIT, RING MOD, CHOP: their shares (Q15); CHOP's gate gain */
+    int32_t d8l, d8r;                  /* 8-BIT: the held samples */
+    uint32_t d8n, rph, rinc, drt, dct; /* .. since its hold; RING's phase, step (0: draw), 1/16 count; CHOP's 1/32 count */
+    uint8_t dco, dcs;                  /* CHOP: the gate open; drawn once since it started */
 } pf = {.src = PF_N, .next = PF_N, .lc = PF_TOP, .mg = {32768, 32768, 32768, 32768}};
 
 static int16_t fl_buf[FL_LEN][2];      /* FLANGER's line: L R, at half the level (headroom) */
@@ -290,8 +314,10 @@ static void perf_buf_start(uint32_t e)
         pf.hph = 0;
         pf.hinc = e == PF_OUP ? 0u - (1u << 21) : 1u << 20;   /* the delay: -1 / +0.5 sample a sample */
         pf.hfb = 0;
-    } else if (e == PF_GLT) {                   /* (wr: frames written) */
+    } else if (e == PF_GLT || e == PF_ROL) {    /* (wr: frames written) */
         pf.mode = BM_GLT;
+        pf.groll = e == PF_ROL;
+        pf.gpl = pf.gpp = pf.gpt = 0;
         pf.gt = 0;
         pf.gseg = gl_seg();
         pf.gcur = pf.gsb = pf.gnf = 0;
@@ -349,6 +375,8 @@ static __attribute__((noinline)) int perf_begin(uint32_t n)
     uint32_t held = perf_kill ? 0u : (perf_held | perf_latched | (perf_solo ? (~(uint32_t)perf_solo & 15u) << PF_M1 : 0u)) & perf_avail();
     uint32_t q, k, ph0, bnd;
     int32_t m;
+    if (held & PF_BIT(PF_MLT))                      /* MELTDOWN: all of it */
+        held |= PF_MELT;
     if (!held && !pf.busy && !(perf_k[0] | perf_k[1] | perf_k[2])) {   /* idle: the clock only */
         pf.ph += n;
         pf.sync = 0;
@@ -590,15 +618,22 @@ static __attribute__((noinline)) void perf_harm(int32_t l, int32_t r, int32_t *y
 }
 
 /* GLITCH: a new slice. The one just recorded becomes the source (or a repeat keeps the one it repeats, while the
- * loop still holds it), and the next move is drawn: LIVE 3 / 16, REPEAT 2, ROLL 1/2 2, 1/4 2, 1/8 2, REVERSE 2,
- * DOWN 1, UP 1, GATE 1 */
-static const uint8_t GL_MOVES[16] = {GM_LIVE, GM_LIVE, GM_LIVE, GM_REP, GM_REP, GM_R2, GM_R2, GM_R4,
-                                     GM_R4, GM_R8, GM_R8, GM_REV, GM_REV, GM_DOWN, GM_UP, GM_GATE};
+ * loop still holds it), and the next move is drawn by CHAOS c (0 .. 100): LIVE (100 - c) * 0.6 %, else a WILD move
+ * c % of the time, a MILD one the rest (GATE in both: the dropouts). ROLL: the first slice, kept, rolling on */
+static const uint8_t GL_MILD[8] = {GM_REP, GM_R2, GM_R4, GM_REV, GM_DOWN, GM_TAPE, GM_R8, GM_GATE};
+static const uint8_t GL_WILD[8] = {GM_R8, GM_R16, GM_GATE, GM_CHOP, GM_ACCEL, GM_UP, GM_GATE, GM_R16};
 static __attribute__((noinline)) void gl_next(void)
 {
-    uint32_t r = gl_rand(), mv = GL_MOVES[r & 15u], prev = pf.gcur, nf = pf.wr - pf.gcur;
-    uint32_t keep = ((GM_KEEPS >> pf.gmv) & 1u) && ((GM_KEEPS >> mv) & 1u) && ((r >> 4) & 1u) && pf.gnf &&
-                    pf.wr + (GL_SEG_MAX >> 1) + 1u - pf.gsb <= PB_FRAMES;   /* (the next slice cannot overwrite it) */
+    uint32_t r = gl_rand(), r2 = gl_rand(), c = perf_k[3] ? (uint32_t)perf_k[3] : GL_CHAOS, mv;
+    uint32_t prev = pf.gcur, nf = pf.wr - pf.gcur, keep;
+    if (pf.groll)
+        mv = GM_ROLL;
+    else if (((r & 0xFFFFu) * 100u) >> 16 < (100u - c) * 3u / 5u)
+        mv = GM_LIVE;
+    else
+        mv = (((r >> 16) * 100u) >> 16) < c ? GL_WILD[r2 & 7u] : GL_MILD[(r2 >> 3) & 7u];
+    keep = pf.gnf && (pf.groll || (((GM_KEEPS >> pf.gmv) & 1u) && ((GM_KEEPS >> mv) & 1u) && ((r2 >> 6) & 1u) &&
+                                   pf.wr + (GL_SEG_MAX >> 1) + 1u - pf.gsb <= PB_FRAMES));   /* (the next slice cannot overwrite it) */
     pf.gcur = pf.wr;
     pf.gseg = gl_seg();
     pf.gt = 0;
@@ -607,20 +642,63 @@ static __attribute__((noinline)) void gl_next(void)
         pf.gnf = nf;
     }
     pf.gmv = (uint8_t)(pf.gnf ? mv : GM_LIVE);      /* (nothing recorded yet: live) */
+    if (pf.gmv == GM_ACCEL || (pf.gmv == GM_ROLL && !pf.gpl)) {   /* a roll from a 1/2 (ACCEL) / the 1/16 (ROLL) */
+        pf.gpl = pf.gmv == GM_ROLL ? pf.gseg : pf.gseg >> 1;
+        pf.gpp = pf.gpt = 0;
+    } else if (pf.gmv == GM_TAPE) {
+        pf.gpos = 0;
+        pf.gsp = 65536u;
+        pf.gdv = 65536u / pf.gseg;
+    }
 }
-/* GLITCH on one sample: records l / r, plays this slice's move (see the top) into yl / yr */
+/* a pass of len samples at place p windowed at both ends: SL_RAMP, less on a short pass (a quarter of it at most) */
+static inline void gl_win(int32_t *l, int32_t *r, uint32_t p, uint32_t len)
+{
+    uint32_t e = len - 1u - p, sh = SL_RAMP_LOG2;
+    if (p < e)
+        e = p;
+    while (sh > 2u && (4u << sh) > len)
+        sh--;
+    if (e < (1u << sh)) {
+        *l = (*l * (int32_t)e) >> sh;
+        *r = (*r * (int32_t)e) >> sh;
+    }
+}
+/* GLITCH / ROLL on one sample: records l / r (ROLL: until its slice is caught), plays this slice's move (see the
+ * top) into yl / yr */
 static __attribute__((noinline)) void perf_glitch(int32_t l, int32_t r, int32_t *yl, int32_t *yr)
 {
-    uint32_t t, len = pf.gseg, s, p;
+    uint32_t t, len = pf.gseg, s, p, mute = 0;
     int32_t gl = 0, gr = 0;
     if (pf.gt >= pf.gseg)
         gl_next();
     t = pf.gt++;
-    pf.wr = pb_rec(pf.wr, l, r);
+    if (!pf.groll || !pf.gnf)
+        pf.wr = pb_rec(pf.wr, l, r);
     switch (pf.gmv) {
-    case GM_R2: case GM_R4: case GM_R8:
+    case GM_R2: case GM_R4: case GM_R8: case GM_R16:
         len >>= pf.gmv - GM_REP;
         s = p = t % len;
+        break;
+    case GM_CHOP: {                                 /* a 1/8 roll, every other pass silent */
+        uint32_t q;
+        len >>= 3;
+        q = t / len;
+        s = p = t - q * len;
+        mute = q & 1u;
+        break;
+    }
+    case GM_ACCEL: case GM_ROLL:                    /* passes of gpl, halving: ACCEL each pass (to 128), ROLL each beat (to 64) */
+        len = pf.gpl;
+        s = p = pf.gpp;
+        pf.gpt++;
+        if (++pf.gpp >= pf.gpl) {
+            pf.gpp = 0;
+            if (pf.gmv == GM_ACCEL ? pf.gpl > 256u : pf.gpt >= 4u * pf.gseg && pf.gpl > 127u) {
+                pf.gpl >>= 1;
+                pf.gpt = 0;
+            }
+        }
         break;
     case GM_REV:
         p = t;
@@ -635,19 +713,20 @@ static __attribute__((noinline)) void perf_glitch(int32_t l, int32_t r, int32_t 
         p = t % len;
         s = 2u * p;
         break;
+    case GM_TAPE:                                   /* slowing down to a stop over the slice */
+        p = t;
+        s = pf.gpos >> 16;
+        pf.gpos += pf.gsp;
+        pf.gsp = pf.gsp > pf.gdv ? pf.gsp - pf.gdv : 0u;
+        break;
     default:                                        /* REPEAT (LIVE, GATE: nothing read) */
         s = p = t;
         break;
     }
-    if (pf.gmv != GM_LIVE && pf.gmv != GM_GATE && p < len) {
-        uint32_t f = s >> 1 < pf.gnf ? s >> 1 : pf.gnf - 1u, e = len - 1u - p;
+    if (pf.gmv != GM_LIVE && pf.gmv != GM_GATE && !mute && p < len) {
+        uint32_t f = s >> 1 < pf.gnf ? s >> 1 : pf.gnf - 1u;
         pb_at(2u * (pf.gsb + f) + (s & 1u), pf.gsb + pf.gnf, &gl, &gr);
-        if (p < e)
-            e = p;
-        if (e < (uint32_t)SL_RAMP) {                /* windowed at both ends of each pass */
-            gl = (gl * (int32_t)e) >> SL_RAMP_LOG2;
-            gr = (gr * (int32_t)e) >> SL_RAMP_LOG2;
-        }
+        gl_win(&gl, &gr, p, len);
     }
     pf.gw += clamp((pf.gmv == GM_LIVE ? 0 : 32768) - pf.gw, -SL_SLOPE, SL_SLOPE);
     *yl = pf_mix(l, gl, pf.gw);
@@ -730,7 +809,7 @@ static inline void perf_buf(int32_t *pl, int32_t *pr)
         on = 2;                                     /* (KNOB 4 is the shimmer: the level stays full) */
     } else if (pf.mode == BM_GLT) {
         perf_glitch(l, r, &yl, &yr);
-        on = 1;
+        on = pf.groll ? 1 : 2;                      /* (GLITCH: KNOB 4 is its chaos, the level stays full) */
     }
     pf.tw = on && pf.src != PF_N ? on == 2 ? 32768 : 32768 - perf_k[3] * 327 : 0;
     pf.w += clamp(pf.tw - pf.w, -SL_SLOPE, SL_SLOPE);
@@ -755,6 +834,8 @@ static __attribute__((noinline)) void perf_switch(uint32_t a) { perf_buf_select(
 
 /* the UI: OCT UP / DN is the buffer effect playing (KNOB 4 is its shimmer, the card says so) */
 static int perf_harm_on(void) { return (PF_HARM >> perf_pick(perf_act)) & 1u; }
+/* the UI: GLITCH is the buffer effect playing (KNOB 4 is its CHAOS) */
+static int perf_chaos_on(void) { return perf_pick(perf_act) == PF_GLT; }
 
 /* FLANGER / PHASER: the sweep's place at this block's first sample, a cycle every `s` 1/16s of the transport's clock
  * (pf.ph: in time with the bars while playing), and its step a sample (*inc) */
@@ -770,8 +851,13 @@ static inline uint32_t pf_tri(uint32_t q)
     uint32_t t = q >> 16;
     return t < 32768u ? t << 1 : (65535u - t) << 1;
 }
-/* the share a FLANGER / PHASER fades to: KNOB 4 DEPTH (its shimmer while OCT UP / DN plays: full) */
-static int32_t perf_mod_depth(void) { return (PF_HARM >> perf_pick(perf_act)) & 1u ? 32768 : 32768 - perf_k[3] * 327; }
+/* the share a FLANGER / PHASER / BEND / 8-BIT / CHOP / RING MOD fades to: KNOB 4 DEPTH (its shimmer while OCT UP / DN
+ * plays, GLITCH's chaos: full) */
+static int32_t perf_mod_depth(void)
+{
+    uint32_t b = perf_pick(perf_act);
+    return ((PF_HARM >> b) & 1u) || b == PF_GLT ? 32768 : 32768 - perf_k[3] * 327;
+}
 
 /* FLANGER on one side c: x in, the line read at the sweep's place q (see the top) */
 static inline int32_t fl_side(uint32_t c, int32_t x, uint32_t q)
@@ -867,7 +953,7 @@ static const uint8_t BD_HOLD[8] = {1, 1, 2, 2, 3, 4, 6, 10};
 static __attribute__((noinline)) void perf_bend(int32_t *bl, int32_t *br, uint32_t n)
 {
     uint32_t i, step = pf.P >> 1;
-    int32_t tw = pf.act & PF_BIT(PF_BND) ? 32768 - perf_k[3] * 327 : 0;
+    int32_t tw = pf.act & PF_BIT(PF_BND) ? perf_mod_depth() : 0;
     if (!pf.bw && !(pf.act & PF_BIT(PF_BND))) {     /* let go and faded: a fresh draw next time */
         pf.bg = 0;
         return;
@@ -888,6 +974,60 @@ static __attribute__((noinline)) void perf_bend(int32_t *bl, int32_t *br, uint32
         bl[i] = pf_mix(bl[i], pf.bhl, pf.bw);
         br[i] = pf_mix(br[i], pf.bhr, pf.bw);
     }
+}
+
+/* RING MOD's frequencies: 30 55 80 110 165 220 330 440 660 880 1320 1760 2640 3520 5000 7040 Hz, as phase steps */
+static const uint32_t RG_INC[16] = {2921746u, 5356535u, 7791324u, 10713070u, 16069606u, 21426141u, 32139211u, 42852281u,
+                                    64278422u, 85704563u, 128556844u, 171409126u, 257113688u, 342818251u, 486957743u,
+                                    685636503u};
+/* after BEND, while held or fading: 8-BIT, RING MOD, CHOP (noinline, its own loop, as FLANGER) */
+static __attribute__((noinline)) void perf_dirt(int32_t *bl, int32_t *br, uint32_t n)
+{
+    uint32_t i, a = pf.act, step = pf.P >> 1;
+    int32_t dp = perf_mod_depth(), t8 = a & PF_BIT(PF_8BT) ? dp : 0, tr = a & PF_BIT(PF_RNG) ? dp : 0;
+    int32_t tc = a & PF_BIT(PF_CHP) ? dp : 0;
+    for (i = 0; i < n; i++) {
+        int32_t l = bl[i], r = br[i];
+        pf.d8w += clamp(t8 - pf.d8w, -SL_SLOPE, SL_SLOPE);
+        if (pf.d8w) {                               /* 8 bits, a sample held 4 (11 kHz) */
+            if (++pf.d8n >= 4u) {
+                pf.d8n = 0;
+                pf.d8l = (int32_t)((uint32_t)clamp(l, -32768, 32767) & ~255u);
+                pf.d8r = (int32_t)((uint32_t)clamp(r, -32768, 32767) & ~255u);
+            }
+            l = pf_mix(l, pf.d8l, pf.d8w);
+            r = pf_mix(r, pf.d8r, pf.d8w);
+        }
+        pf.drw += clamp(tr - pf.drw, -SL_SLOPE, SL_SLOPE);
+        if (pf.drw) {                               /* times a sine, a new frequency every 1/16 */
+            int32_t sn;
+            if (!pf.rinc || ++pf.drt >= pf.P) {
+                pf.drt = 0;
+                pf.rinc = RG_INC[gl_rand() & 15u];
+            }
+            sn = osc_sine(pf.rph);
+            pf.rph += pf.rinc;
+            l = pf_mix(l, mulq15(l, sn), pf.drw);
+            r = pf_mix(r, mulq15(r, sn), pf.drw);
+        }
+        pf.dcw += clamp(tc - pf.dcw, -SL_SLOPE, SL_SLOPE);
+        if (pf.dcw) {                               /* each 1/32 open (45 %) or shut */
+            if (!pf.dcs || ++pf.dct >= step) {
+                pf.dcs = 1;
+                pf.dct = 0;
+                pf.dco = (gl_rand() & 255u) < 115u;
+            }
+            pf.dcg += clamp((pf.dco ? 32768 : 0) - pf.dcg, -SL_SLOPE, SL_SLOPE);
+            l = pf_mix(l, mulq16(l, (uint32_t)pf.dcg << 1), pf.dcw);
+            r = pf_mix(r, mulq16(r, (uint32_t)pf.dcg << 1), pf.dcw);
+        }
+        bl[i] = l;
+        br[i] = r;
+    }
+    if (!pf.drw && !(a & PF_BIT(PF_RNG)))           /* let go and faded: a fresh draw next time */
+        pf.rinc = 0;
+    if (!pf.dcw && !(a & PF_BIT(PF_CHP)))
+        pf.dcs = 0;
 }
 
 /* after the master level: the buffer effect, LPF, HPF, CRUSH on l / r (stereo, Q15) */
@@ -948,10 +1088,12 @@ static __attribute__((noinline)) void perf_block(int32_t *bl, int32_t *br, uint3
     }
     if ((pf.act & PF_BIT(PF_BND)) || pf.bw || pf.bg)
         perf_bend(bl, br, n);
+    if ((pf.act & PF_DIRT) || pf.d8w || pf.drw || pf.dcw)
+        perf_dirt(bl, br, n);
     if ((pf.act & PF_BIT(PF_FLG)) || pf.fw || pf.fn)
         perf_flanger(bl, br, n);
     if ((pf.act & PF_BIT(PF_PHS)) || pf.pw)
         perf_phaser(bl, br, n);
     pf.busy = pf.act || pf.mode != BM_NONE || pf.w || pf.la || pf.ha || pf.cw || pf.td || pf.mute || pf.fw || pf.pw || pf.thr ||
-              pf.fn || pf.bw || pf.bg || perf_k[0] || perf_k[1] || perf_k[2];
+              pf.fn || pf.bw || pf.bg || pf.d8w || pf.drw || pf.dcw || perf_k[0] || perf_k[1] || perf_k[2];
 }

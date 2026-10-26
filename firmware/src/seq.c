@@ -698,11 +698,12 @@ static void input_off(track_t *t, uint32_t note)
 }
 
 /* the effect of key k in the FX layer (PF_N none): the white keys F3 .. G5 the map's (perf_map: the settings,
- * ui_layer.c; by default 1.1.5's ten, FLANGER, PHASER, REV / ECHO THROW, GLITCH, BEND), black keys 1..4 the track mutes */
+ * ui_layer.c; by default 1.1.5's ten, FLANGER, PHASER, REV / ECHO THROW, GLITCH, BEND), black keys 1..4 the track mutes,
+ * 5..9 8-BIT CHOP RING MOD ROLL MELTDOWN (perform.c PF_BLK) */
 static uint32_t perf_key(uint32_t k)
 {
     uint32_t p = key_place(k);
-    return !key_black(k) ? (p < PF_KEYS ? perf_map[p] : PF_N) : p < NTRK ? PF_M1 + p : PF_N;
+    return !key_black(k) ? (p < PF_KEYS ? perf_map[p] : PF_N) : p < NTRK ? PF_M1 + p : p < NTRK + PF_NBLK ? PF_BLK[p - NTRK] : PF_N;
 }
 
 /* a key of the FX layer down (FX held) / up: the effect it holds. kb_fx: the one it took (+ 1, 0 none), so a key

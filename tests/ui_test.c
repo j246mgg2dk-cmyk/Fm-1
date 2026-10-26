@@ -7466,15 +7466,29 @@ static int test_fx_map(void)
     ok &= perf_map[10] == PF_GLT && perf_held == PF_BIT(PF_GLT) && msg_is("B4 GLITCH");
     turn(EN_PRESET, 1); keyboard_block();
     ok &= perf_map[10] == PF_BND && perf_held == PF_BIT(PF_BND) && msg_is("B4 BEND");
+    turn(EN_PRESET, 1); keyboard_block();               /* 8-BIT .. MELTDOWN (the black keys' too) */
+    ok &= perf_map[10] == PF_8BT && msg_is("B4 8-BIT");
+    turn(EN_PRESET, 1); keyboard_block();
+    ok &= perf_map[10] == PF_CHP && msg_is("B4 CHOP");
+    turn(EN_PRESET, 1); keyboard_block();
+    ok &= perf_map[10] == PF_RNG && msg_is("B4 RING MOD");
+    turn(EN_PRESET, 1); keyboard_block();
+    ok &= perf_map[10] == PF_ROL && msg_is("B4 ROLL");
+    turn(EN_PRESET, 1); keyboard_block();
+    ok &= perf_map[10] == PF_MLT && perf_held == PF_BIT(PF_MLT) && msg_is("B4 MELTDOWN");
     turn(EN_PRESET, 1); keyboard_block();               /* past the last: NONE */
     ok &= perf_map[10] == PF_N && !perf_held && msg_is("B4 NONE") && (kb_layer >> b4) & 1u;
     turn(EN_PRESET, 1); keyboard_block();               /* round: the first */
     ok &= perf_map[10] == PF_R8 && perf_held == PF_BIT(PF_R8);
-    turn(EN_PRESET, -1); turn(EN_PRESET, -1); turn(EN_PRESET, -1); turn(EN_PRESET, -1); turn(EN_PRESET, -1);
-    turn(EN_PRESET, -1); keyboard_block();
+    {
+        uint32_t j;
+        for (j = 0; j < 11u; j++)                       /* back: NONE, MELTDOWN .. GLITCH, the throws, PHASER */
+            turn(EN_PRESET, -1);
+    }
+    keyboard_block();
     ok &= perf_map[10] == PF_PHS && perf_held == PF_BIT(PF_PHS) && lys.rp_dirty;
     ok &= (TSEL->preset | (uint32_t)TSEL->eng_req << 8) == snd && !gates();
-    bad += check("  FX + B4 held + PRESETS: PHASER, REV THROW, ECHO THROW, GLITCH, BEND, NONE, round to REPEAT 1/8 and back, each held at once; no sound load", ok);
+    bad += check("  FX + B4 held + PRESETS: PHASER, REV THROW, ECHO THROW, GLITCH .. MELTDOWN, NONE, round to REPEAT 1/8 and back, each held at once; no sound load", ok);
     btn_down(B_EDIT); frame(); btn_up(B_EDIT); frame(); keyboard_block();
     ok = perf_map[10] == PF_FLG && perf_held == PF_BIT(PF_FLG) && msg_is("B4 FLANGER (DEF)") && ui.layer == LAYER_FX;
     bad += check("  EDIT with the key held: its default (FLANGER) back, the layer open", ok);

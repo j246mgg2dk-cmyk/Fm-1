@@ -6,18 +6,25 @@ Felucca's authors don't endorse or support it, so please don't send them reports
 
 ## The new effects
 
-Hold **FX** and press a white key. The effect lasts while you hold the key (or toggles, with MENU > FX LATCH ON).
+Hold **FX** and press a key. The effect lasts while you hold the key (or toggles, with MENU > FX LATCH ON). Everything
+stacks: hold as many as you have fingers for.
 
 | Key | Effect | What it does |
 |---|---|---|
-| **F5** | **GLITCH** | An automatic beat-mangler. On every 1/16 it records what's playing and picks a random move for the next 1/16: play live, repeat it, roll it at 1/2, 1/4 or 1/8 length, reverse it, play it an octave down or up, or gate it to silence. Repeats can chain on the same slice, so stutters build up. It starts on the 1/16, in time with the sequencer. |
-| **G5** | **BEND** | Circuit-bent digital wreckage. It boosts each sample and lets it wrap like a 16-bit integer overflow, so loud parts fold into hard digital edges while silence stays silent. It also holds samples for 1 to 10 steps for aliasing grit. The gain and hold re-roll every 1/32. |
+| **F5** | **GLITCH** | An automatic beat-mangler. On every 1/16 it grabs what just played and picks a random move: repeat it, roll it at 1/2, 1/4, 1/8 or 1/16 length, CHOP it (a stutter with every other hit dropped), ACCEL (a roll that speeds up), reverse it, an octave down or up, tape-stop it, or drop it to silence. Repeats chain on the same slice, so stutters build. It stays in time with the sequencer. **While GLITCH plays, KNOB 4 is CHAOS**: low means the odd repeat, 60 % (untouched) is plenty, 100 % never plays clean and lives on short rolls, chops and dropouts. |
+| **G5** | **BEND** | Circuit-bent wreckage. It boosts each sample until it wraps like a 16-bit integer overflow, so loud parts fold into hard digital edges and silence stays silent. It adds random sample-hold grit, and the settings re-roll every 1/32. |
+| **D#4** | **8-BIT** | An 8-bit crush at 11 kHz: an old sampler. |
+| **F#4** | **CHOP** | Random dropouts. Every 1/32 the sound is cut or let through at random, with quick fades so it doesn't click. |
+| **G#4** | **RING MOD** | A ring modulator that jumps to a random pitch (30 Hz to 7 kHz) every 1/16: from metallic clang to robot gargle. |
+| **A#4** | **ROLL** | A drum-roll build-up. It catches a 1/16 and rolls it at 1/16 for a beat, then 1/32, 1/64, 1/128, until it's a buzz. |
+| **C#5** | **MELTDOWN** | GLITCH + BEND + 8-BIT + CHOP + RING MOD all at once. Experimental chaotic anomaly button. |
 
-They stack with everything else in the layer. For example, GLITCH + BEND + KNOB 2 (CRUSH) + LPF all held is pure chaos.
-**KNOB 4 (DEPTH)** sets how much of GLITCH or BEND you hear. Any effect can go on any white key: hold FX, hold the key,
-turn PRESETS. GLITCH and BEND sit at the end of the list, after ECHO THROW.
+The other FX-layer tools still work on top: KNOB 1 FILTER, KNOB 2 CRUSH, KNOB 3 THROW (into delay and reverb), plus
+REPEAT, REVERSE, TAPE STOP, FREEZE, OCT UP/DN, FLANGER, PHASER and the throws on the other white keys. **KNOB 4 (DEPTH)**
+sets how much you hear of BEND, 8-BIT, CHOP, RING MOD and ROLL. While GLITCH plays, those run at full and KNOB 4 is CHAOS.
 
-All of Felucca's original FX keys are where they were (F3 REPEAT 1/8 through E5 ECHO THROW). F5 and G5 used to be empty.
+Any effect can go on any white key: hold FX, hold the key, turn PRESETS. The black keys F#3 to C#4 are still the
+track mutes. D#5 and F#5 do nothing.
 
 ## Install
 

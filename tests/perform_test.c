@@ -1357,8 +1357,8 @@ static int test_throw(void)
         perf_map_put(m, 0, PF_RTHR);
         perf_map_put(m, 1, PF_ETHR);
         ok = (m[0] & 31u) == 14u && ((m[0] >> 5 | m[1] << 3) & 31u) == 15u && perf_map_of(m, 0) == PF_RTHR &&
-             perf_map_of(m, 1) == PF_ETHR && PF_NFX == 16 && PF_DEF[12] == PF_RTHR && PF_DEF[13] == PF_ETHR;
-        m[0] = (uint8_t)((m[0] & ~31u) | 18u);         /* code 18: a later firmware's effect -> the key's default */
+             perf_map_of(m, 1) == PF_ETHR && PF_NFX == 21 && PF_DEF[12] == PF_RTHR && PF_DEF[13] == PF_ETHR;
+        m[0] = (uint8_t)((m[0] & ~31u) | 23u);         /* code 23: a later firmware's effect -> the key's default */
         ok &= perf_map_of(m, 0) == PF_DEF[0];
         perf_map_put(m, 12, PF_RTHR);                   /* D5's default: code 0 */
         ok &= perf_map_of(m, 12) == PF_RTHR && !(m[7] & 0xF0u) && !(m[8] & 1u);
@@ -1401,7 +1401,20 @@ static int test_glitch(void)
             gl_next();
             moves |= 1u << pf.gmv;
         }
-        bad += check("GLITCH: every move drawn (LIVE REPEAT ROLL 1/2 1/4 1/8 REVERSE DOWN UP GATE)", moves == 0x1FFu);
+        bad += check("GLITCH: every move drawn (LIVE REPEAT ROLL 1/2 .. 1/16 REVERSE DOWN UP GATE CHOP ACCEL TAPE)",
+                     moves == (1u << GM_N) - 1u - (1u << GM_ROLL));
+        for (k = 0; k < 2u; k++) {                  /* CHAOS 1: mostly live; 100: never live */
+            uint32_t live = 0;
+            perf_k[3] = k ? 100 : 1;
+            for (t = 0; t < 400u; t++) {
+                pf.wr += 500u;
+                gl_next();
+                live += pf.gmv == GM_LIVE;
+            }
+            snprintf(what, sizeof what, "  CHAOS %d: %u of 400 slices live", perf_k[3], (unsigned)live);
+            bad += check(what, k ? live == 0u : live > 160u);
+        }
+        perf_k[3] = 0;
     }
     {   /* BEND: silence stays silent; a sine folded, bounded; back bit for bit; codes 16 / 17, F5 / G5 by default */
         ev_t ev[] = {{992, PF_BND + 1}, {off, -(PF_BND + 1)}};
@@ -1425,6 +1438,64 @@ static int test_glitch(void)
         ok = (m[0] & 31u) == 16u && ((m[0] >> 5 | m[1] << 3) & 31u) == 17u && perf_map_of(m, 0) == PF_GLT &&
              perf_map_of(m, 1) == PF_BND && PF_DEF[14] == PF_GLT && PF_DEF[15] == PF_BND;
         bad += check("assignable: GLITCH / BEND are codes 16 / 17 on any key, F5 / G5 by default", ok);
+    }
+    {   /* GLITCH at CHAOS 100 and ROLL: no clicks, bounded, back bit for bit */
+        static const struct { const char *name; int e; int8_t k4; } G[] = {{"GLITCH at CHAOS 100", PF_GLT, 100},
+                                                                         {"ROLL", PF_ROL, 0}};
+        for (k = 0; k < 2u; k++) {
+            ev_t ev[] = {{992, G[k].e + 1}, {off, -(G[k].e + 1)}};
+            run_k4 = G[k].k4;
+            run(120, 1, ev, 2, off + 9000);
+            run_k4 = 0;
+            for (mx = 0, t = 1; t < off + 9000; t++) {
+                int32_t d = abs(out_l[t] - out_l[t - 1]);
+                mx = d > mx ? d : mx;
+            }
+            for (diff = 0, t = P16; t < off; t++)
+                diff += out_l[t] != in_l[t];
+            pk = peak(out_l, 0, off + 9000);
+            snprintf(what, sizeof what, "%s: mangled %u%%, largest step %d (sine %d), peak %d", G[k].name,
+                     (unsigned)(100u * diff / (off - P16)), mx, own, pk);
+            bad += check(what, diff > (off - P16) / 2u && mx <= (k ? 8 : 4) * own && pk <= 16800);   /* (ROLL ends in a buzz) */
+            bad += check("  back to the live signal, bit for bit; idle after", same(off + 3000, off + 9000) && !pf.busy);
+        }
+    }
+    {   /* 8-BIT: 8-bit steps; CHOP: dropouts; RING MOD: silence silent; MELTDOWN: bounded; each back bit for bit */
+        static const int E[4] = {PF_8BT, PF_CHP, PF_RNG, PF_MLT};
+        for (k = 0; k < 4u; k++) {
+            ev_t ev[] = {{992, E[k] + 1}, {off, -(E[k] + 1)}};
+            uint32_t steps = 0, shut = 0;
+            test_signal(110, k == 2u ? 0 : 16000, 110, k == 2u ? 0 : 16000);
+            run(120, 1, ev, 2, off + 9000);
+            for (t = 44100u; t < off; t++) {
+                steps += (out_l[t] & 255) == 0;
+                shut += abs(out_l[t]) < 64 && abs(in_l[t]) > 4000;
+            }
+            pk = peak(out_l, 0, off + 9000);
+            if (k == 0u)
+                snprintf(what, sizeof what, "8-BIT: %u%% of the held samples on 8-bit steps, peak %d",
+                         (unsigned)(100u * steps / (off - 44100u)), pk), ok = steps == off - 44100u && pk <= 16400;
+            else if (k == 1u)
+                snprintf(what, sizeof what, "CHOP: %u%% of the loud held samples shut, peak %d",
+                         (unsigned)(100u * shut / (off - 44100u)), pk), ok = shut > (off - 44100u) / 5u && pk <= 16100;
+            else if (k == 2u)
+                snprintf(what, sizeof what, "RING MOD: silence stays silent (peak %d)", pk), ok = pk == 0;
+            else
+                snprintf(what, sizeof what, "MELTDOWN: everything at once, peak %d (bounded)", pk), ok = pk <= 20000;
+            bad += check(what, ok);
+            bad += check("  back to the live signal, bit for bit; idle after", same(off + 3000, off + 9000) && !pf.busy);
+        }
+        test_signal(110, 16000, 110, 16000);
+    }
+    {   /* the black keys past the mutes: D#4 8-BIT, F#4 CHOP, G#4 RING MOD, A#4 ROLL, C#5 MELTDOWN */
+        uint32_t q, b = 0;
+        ok = 1;
+        for (q = 0; q < 27u; q++)
+            if (key_black(q) && key_place(q) >= NTRK) {
+                ok &= perf_key(q) == (b < PF_NBLK ? PF_BLK[b] : PF_N);
+                b++;
+            }
+        bad += check("black keys: 5..9 8-BIT CHOP RING MOD ROLL MELTDOWN, 10 11 nothing", ok && b == 7u);
     }
     return bad;
 }
