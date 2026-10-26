@@ -1,0 +1,110 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# Build the FM-1 firmware, run the host test suite, and hand out the package:
+#   every push        -> a workflow artifact (the .fwsc and a ready-to-host web installer)
+#   a tag v1.6.1-...  -> a GitHub release with the .fwsc, SHA256SUMS and the installer site zipped
+#   GitHub Pages      -> the web installer, when Pages is enabled with source "GitHub Actions"
+# The JieLi toolchain (pkgman.jieliapp.com) and AC79 SDK (gitee) are fetched as BUILDING.md describes.
+name: firmware
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  DEV_VERSION: 1.6.1-glitchdev
+  SDK_TAG: AC79NN_SDK_V1.2.1_2023-12-13
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Python packages
+        run: pip install Pillow fonttools mido
+
+      - name: JieLi toolchain
+        run: |
+          sh tools/get_toolchain.sh "$HOME/.jieli"
+          echo "JIELI_TOOLCHAIN=$HOME/.jieli/toolchain" >> "$GITHUB_ENV"
+
+      - name: JieLi AC79 SDK
+        run: |
+          for i in 1 2 3; do
+            git clone --depth 1 --branch "$SDK_TAG" https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git \
+              "$HOME/fw-AC79_AIoT_SDK" && break
+            rm -rf "$HOME/fw-AC79_AIoT_SDK"; sleep 15
+          done
+          test -f "$HOME/fw-AC79_AIoT_SDK/cpu/wl82/tools/uboot.boot"
+          echo "AC79_SDK=$HOME/fw-AC79_AIoT_SDK" >> "$GITHUB_ENV"
+
+      - name: Version
+        id: ver
+        run: |
+          case "$GITHUB_REF" in
+            refs/tags/v*) v="${GITHUB_REF_NAME#v}" ;;
+            *) v="$DEV_VERSION" ;;
+          esac
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      - name: Build (development package, for the tests)
+        run: ./build.sh
+
+      - name: Tests
+        run: sh tests/run_tests.sh
+
+      - name: Build (release package)
+        run: ./build.sh --release "${{ steps.ver.outputs.version }}"
+
+      - name: Web installer site
+        run: |
+          v="${{ steps.ver.outputs.version }}"
+          python3 web/make_site.py "build/felucca-$v.fwsc" "$v" build/site
+          (cd build/site && zip -qr "../installer-site-$v.zip" .)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ steps.ver.outputs.version }}
+          path: |
+            build/release-${{ steps.ver.outputs.version }}/
+            build/installer-site-${{ steps.ver.outputs.version }}.zip
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/site
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/release-${{ steps.ver.outputs.version }}/*.fwsc
+            build/release-${{ steps.ver.outputs.version }}/SHA256SUMS
+            build/installer-site-${{ steps.ver.outputs.version }}.zip
+
+  pages:
+    needs: build
+    runs-on: ubuntu-latest
+    continue-on-error: true            # Pages not enabled yet: the build stays green
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

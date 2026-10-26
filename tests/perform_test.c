@@ -1014,7 +1014,7 @@ static int test_map(void)
         fm1_in.buttons = 0;
         kb_mask = perf_mask = 0;
     }
-    snprintf(what, sizeof what, "map: the default map on the keys: F3 .. A4 as 1.1.5, B4 FLANGER, C5 PHASER, D5 E5 REV / ECHO THROW");
+    snprintf(what, sizeof what, "map: the default map on the keys: F3 .. A4 as 1.1.5, B4 FLANGER, C5 PHASER, D5 E5 REV / ECHO THROW, F5 G5 GLITCH / BEND");
     {
         uint32_t k;
         ok = 1;
@@ -1022,7 +1022,7 @@ static int test_map(void)
             if (!key_black(k))
                 ok &= perf_key(k) == (key_place(k) < PF_KEYS ? PF_DEF[key_place(k)] : PF_N);
         ok &= perf_key(18) == PF_FLG && perf_key(19) == PF_PHS && perf_key(16) == PF_ODN && perf_key(21) == PF_RTHR &&
-              perf_key(23) == PF_ETHR && perf_key(24) == PF_N;
+              perf_key(23) == PF_ETHR && perf_key(24) == PF_GLT && perf_key(26) == PF_BND;
     }
     bad += check(what, ok);
     return bad;
@@ -1357,12 +1357,74 @@ static int test_throw(void)
         perf_map_put(m, 0, PF_RTHR);
         perf_map_put(m, 1, PF_ETHR);
         ok = (m[0] & 31u) == 14u && ((m[0] >> 5 | m[1] << 3) & 31u) == 15u && perf_map_of(m, 0) == PF_RTHR &&
-             perf_map_of(m, 1) == PF_ETHR && PF_NFX == 14 && PF_DEF[12] == PF_RTHR && PF_DEF[13] == PF_ETHR;
-        m[0] = (uint8_t)((m[0] & ~31u) | 16u);         /* code 16: a later firmware's effect -> the key's default */
+             perf_map_of(m, 1) == PF_ETHR && PF_NFX == 16 && PF_DEF[12] == PF_RTHR && PF_DEF[13] == PF_ETHR;
+        m[0] = (uint8_t)((m[0] & ~31u) | 18u);         /* code 18: a later firmware's effect -> the key's default */
         ok &= perf_map_of(m, 0) == PF_DEF[0];
         perf_map_put(m, 12, PF_RTHR);                   /* D5's default: code 0 */
         ok &= perf_map_of(m, 12) == PF_RTHR && !(m[7] & 0xF0u) && !(m[8] & 1u);
         bad += check("assignable: REV / ECHO THROW are codes 14 / 15 on any key, D5 / E5 by default; older codes as before", ok);
+    }
+    return bad;
+}
+
+/* -------------------------------------------------- GLITCH, BEND --- */
+static int test_glitch(void)
+{
+    int bad = 0, ok;
+    char what[200];
+    uint32_t t, off = 4u * 44100u, diff, moves = 0, k;
+    int32_t own, mx, pk;
+    test_signal(110, 16000, 110, 16000);
+    for (own = 0, t = 1; t < NT; t++)
+        own = abs(in_l[t] - in_l[t - 1]) > own ? abs(in_l[t] - in_l[t - 1]) : own;
+    for (k = 0; k < 2u; k++) {                      /* 120 BPM; 50 BPM (the slice halved to fit) */
+        ev_t ev[] = {{992, PF_GLT + 1}, {off, -(PF_GLT + 1)}};
+        run(k ? 50 : 120, 1, ev, 2, off + 9000);
+        for (mx = 0, t = 1; t < off + 9000; t++) {
+            int32_t d = abs(out_l[t] - out_l[t - 1]);
+            mx = d > mx ? d : mx;
+        }
+        for (diff = 0, t = P16; t < off; t++)
+            diff += out_l[t] != in_l[t] || out_r[t] != in_r[t];
+        pk = peak(out_l, 0, off + 9000);
+        snprintf(what, sizeof what, "GLITCH at %u BPM: mangled %u%% of the held time, largest step %d (sine %d), peak %d, slice %u",
+                 k ? 50u : 120u, (unsigned)(100u * diff / (off - P16)), mx, own, pk, (unsigned)pf.gseg);
+        bad += check(what, diff > (off - P16) / 4u && mx <= 4 * own && pk <= 16800 && pf.gseg <= GL_SEG_MAX);
+        bad += check("  back to the live signal, bit for bit; idle after", same(off + 3000, off + 9000) && !pf.busy);
+    }
+    {   /* every move drawn, sooner or later; a repeat may keep its slice */
+        perf_reset();
+        pf.gseg = 1000;
+        pf.gt = 1000;
+        for (t = 0; t < 400u; t++) {
+            pf.wr += 500u;
+            gl_next();
+            moves |= 1u << pf.gmv;
+        }
+        bad += check("GLITCH: every move drawn (LIVE REPEAT ROLL 1/2 1/4 1/8 REVERSE DOWN UP GATE)", moves == 0x1FFu);
+    }
+    {   /* BEND: silence stays silent; a sine folded, bounded; back bit for bit; codes 16 / 17, F5 / G5 by default */
+        ev_t ev[] = {{992, PF_BND + 1}, {off, -(PF_BND + 1)}};
+        uint8_t m[16];
+        test_signal(110, 0, 110, 0);
+        run(120, 1, ev, 2, off + 9000);
+        ok = peak(out_l, 0, off + 9000) == 0 && peak(out_r, 0, off + 9000) == 0;
+        bad += check("BEND: silence stays silent", ok);
+        test_signal(110, 16000, 110, 16000);
+        run(120, 1, ev, 2, off + 9000);
+        for (diff = 0, t = P16; t < off; t++)
+            diff += out_l[t] != in_l[t];
+        pk = peak(out_l, 0, off + 9000);
+        snprintf(what, sizeof what, "BEND on a 110 Hz sine: %u%% of the held time bent, peak %d (at most 0.6 full scale)",
+                 (unsigned)(100u * diff / (off - P16)), pk);
+        bad += check(what, diff > (off - P16) / 2u && pk <= 19700);
+        bad += check("  back to the live signal, bit for bit; idle after", same(off + 3000, off + 9000) && !pf.busy);
+        memset(m, 0, sizeof m);
+        perf_map_put(m, 0, PF_GLT);
+        perf_map_put(m, 1, PF_BND);
+        ok = (m[0] & 31u) == 16u && ((m[0] >> 5 | m[1] << 3) & 31u) == 17u && perf_map_of(m, 0) == PF_GLT &&
+             perf_map_of(m, 1) == PF_BND && PF_DEF[14] == PF_GLT && PF_DEF[15] == PF_BND;
+        bad += check("assignable: GLITCH / BEND are codes 16 / 17 on any key, F5 / G5 by default", ok);
     }
     return bad;
 }
@@ -1612,6 +1674,7 @@ int main(int argc, char **argv)
     bad += test_mod();
     bad += test_map();
     bad += test_throw();
+    bad += test_glitch();
     bad += test_cost();
     if (argc > 1)
         demos(argv[1]);

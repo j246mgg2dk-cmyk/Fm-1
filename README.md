@@ -1,3 +1,46 @@
+# FM-1 GLITCH (a Felucca fork)
+
+Custom firmware for the M-VAVE FM-1, built on [Felucca](https://github.com/hugelton/Felucca) 1.6.1 by Leo Kuroshita /
+Hügelton Instruments (GPL-3.0-only). It keeps everything Felucca does and adds two glitch effects to the **FX layer**.
+Felucca's authors don't endorse or support it, so please don't send them reports about this fork.
+
+## The new effects
+
+Hold **FX** and press a white key. The effect lasts while you hold the key (or toggles, with MENU > FX LATCH ON).
+
+| Key | Effect | What it does |
+|---|---|---|
+| **F5** | **GLITCH** | An automatic beat-mangler. On every 1/16 it records what's playing and picks a random move for the next 1/16: play live, repeat it, roll it at 1/2, 1/4 or 1/8 length, reverse it, play it an octave down or up, or gate it to silence. Repeats can chain on the same slice, so stutters build up. It starts on the 1/16, in time with the sequencer. |
+| **G5** | **BEND** | Circuit-bent digital wreckage. It boosts each sample and lets it wrap like a 16-bit integer overflow, so loud parts fold into hard digital edges while silence stays silent. It also holds samples for 1 to 10 steps for aliasing grit. The gain and hold re-roll every 1/32. |
+
+They stack with everything else in the layer. For example, GLITCH + BEND + KNOB 2 (CRUSH) + LPF all held is pure chaos.
+**KNOB 4 (DEPTH)** sets how much of GLITCH or BEND you hear. Any effect can go on any white key: hold FX, hold the key,
+turn PRESETS. GLITCH and BEND sit at the end of the list, after ECHO THROW.
+
+All of Felucca's original FX keys are where they were (F3 REPEAT 1/8 through E5 ECHO THROW). F5 and G5 used to be empty.
+
+## Install
+
+Every push builds the firmware on GitHub Actions (`.github/workflows/firmware.yml`) and runs Felucca's full host test
+suite against it.
+
+1. **Get the package.** Go to the repository's **Actions** tab, open the latest green **firmware** run and download the
+   `firmware-…` artifact. It contains `felucca-<version>.fwsc` and `installer-site-<version>.zip`. A tagged release
+   (`v1.6.1-glitch1`, etc.) puts the same files on the **Releases** page.
+2. **Flash it.** Pick one of these:
+   - **Browser (easiest):** enable GitHub Pages for this repository (Settings > Pages > Source: **GitHub Actions**). The
+     next push publishes the installer at `https://<your-user>.github.io/<repo>/`. Open it in Chrome or Edge with the
+     FM-1 connected by USB and press Install. It offers to back up first.
+   - **Command line:** `pip3 install mido python-rtmidi`, then `python3 tools/fm1_install.py felucca-<version>.fwsc`.
+3. **Going back.** The installer's *Return to official V15* (with M-VAVE's `FM-1.fwsc`) or M-VAVE's own updater restores
+   the stock firmware. If an install is cut off, hold **OCT−** while switching on to get USB update mode, then install
+   again.
+
+Installing custom firmware is at your own risk. Keep the USB cable connected and close other MIDI apps (DAWs, the M-VAVE
+app, editor tabs) while it writes. If you are on another custom firmware, return to official V15 first.
+
+---
+
 # Felucca
 
 [![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-blue.svg)](LICENSE)

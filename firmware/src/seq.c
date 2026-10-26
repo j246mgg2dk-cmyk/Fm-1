@@ -698,7 +698,7 @@ static void input_off(track_t *t, uint32_t note)
 }
 
 /* the effect of key k in the FX layer (PF_N none): the white keys F3 .. G5 the map's (perf_map: the settings,
- * ui_layer.c; by default 1.1.5's ten, FLANGER, PHASER, REV / ECHO THROW), black keys 1..4 the track mutes */
+ * ui_layer.c; by default 1.1.5's ten, FLANGER, PHASER, REV / ECHO THROW, GLITCH, BEND), black keys 1..4 the track mutes */
 static uint32_t perf_key(uint32_t k)
 {
     uint32_t p = key_place(k);
