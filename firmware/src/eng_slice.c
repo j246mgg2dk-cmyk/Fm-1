@@ -227,14 +227,14 @@ static void slc_bounds_v(const slc_src_t *s, const voice_t *v, uint32_t *a, uint
 static uint32_t beat_samples(void);                   /* (fx.c) */
 static uint32_t slc_sb[SMP_USER_SLOTS][SLC_SEGS];     /* a user zone's beat in source samples, 0 = no tempo */
 /* the beat of n source samples at rate (Q16): n over the power of two beats that makes it 1/4 .. 1/2 s at 44.1 kHz
- * (120 .. 240 BPM); 0 when the whole is shorter than 1/4 s */
+ * (120 .. 240 BPM); 0 when the whole is shorter than 1/4 s. 32-bit only (the target has no 64-bit divide) */
 static uint32_t slc_beat_of(uint32_t n, uint32_t rate)
 {
-    uint64_t out = rate ? ((uint64_t)n << 16) / rate : 0u;   /* its length in output samples */
+    uint32_t out = rate >> 8 ? (n << 8) / (rate >> 8) : 0u;   /* its length in output samples (n < 2^24) */
     uint32_t beats = 1;
     if (out < FS / 4u)
         return 0;
-    while (beats < 256u && out > (uint64_t)FS / 2u * beats)
+    while (beats < 256u && out > FS / 2u * beats)
         beats <<= 1;
     return n / beats;
 }
@@ -274,8 +274,7 @@ static void slc_classify(const slc_src_t *s, uint32_t div, uint8_t *out)
     memset(out, 0, SLC_AUTO / 4u);
     n = n < SLC_AUTO ? n : SLC_AUTO;
     for (j = 0; j < n; j++) {
-        uint32_t a, b, st, i, w;
-        uint64_t sa = 1, sd = 0, sl = 0;
+        uint32_t a, b, st, i, w, sa = 1, sd = 0, sl = 0;   /* (1536 samples: no sum past 2^28) */
         int32_t prev = 0, y = 0, m = 0;
         slc_dec_t d;
         slc_bounds(s, div, j, &a, &b, &st);
@@ -292,8 +291,9 @@ static void slc_classify(const slc_src_t *s, uint32_t div, uint8_t *out)
             m = (x < 0 ? -x : x) > m ? (x < 0 ? -x : x) : m;
         }
         pk[j] = (uint16_t)(m > 65535 ? 65535 : m);
-        br[j] = (uint8_t)(sd * 64u / sa > 255u ? 255u : sd * 64u / sa);
-        lo[j] = (uint8_t)(sl * 64u / sa > 255u ? 255u : sl * 64u / sa);
+        sa = (sa >> 6) + 1u;                           /* (shares of 64: 32-bit, no 64-bit divide on the target) */
+        br[j] = (uint8_t)(sd / sa > 255u ? 255u : sd / sa);
+        lo[j] = (uint8_t)(sl / sa > 255u ? 255u : sl / sa);
         maxpk = pk[j] > maxpk ? pk[j] : maxpk;
     }
     for (j = 0; j < n; j++) {
@@ -758,10 +758,9 @@ static void slice_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const
         uint32_t sb = p[P_BSYNC] > 0 ? slc_sb_of(s, (pk >> 3) & 15u) : 0u;
         if (sb) {                                       /* BREAK SYNC: a source beat per song beat (HALF, DBL) */
             uint32_t base = (sb << 13) / ((beat_samples() >> 3) | 1u);   /* Q16 (sb < 2^19) */
-            uint64_t q;
             base = p[P_BSYNC] == 1 ? base >> 1 : p[P_BSYNC] >= 3 ? base << 1 : base;
-            q = ((uint64_t)pow2_q16(x) * base) >> 16;
-            stepq = q < (32u << 16) ? (uint32_t)q : 32u << 16;
+            base = base < (16u << 16) ? base : (16u << 16) - 1u;
+            stepq = ((pow2_q16(x) >> 4) * (base >> 4)) >> 8;   /* Q12 x Q12 (< 2^15 x 2^16) */
         } else {
             stepq = (pow2_q16(x) >> 8) * (s->rate >> 8);
         }
