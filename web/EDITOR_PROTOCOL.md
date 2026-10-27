@@ -1235,3 +1235,18 @@ device gone at ~0.3 s, the MIDI port gone at ~0.57 s and back at ~1.15 s; ON -> 
 at ~0.6 s while the MIDI port was not seen to disappear at all (so do not wait for a disconnect event: after
 a real change, wait ~1.5 s and open again). What the editor sends in that window is lost, `WATCH` ends with the
 bus reset (send `INFO` and `WATCH` again after reconnecting), and a backup in progress answers rc 5 (stale).
+
+## JUNGLE (FM-1 GLITCH fork): three more track parameters, P_COUNT 114, P_E0 106
+
+No new command or INFO tag: `INFO` says P_COUNT 114 and P_E0 106, and `DESC` describes the new parameters. All three
+belong to the sound (user presets and library files store them) and can be recorded as motion or locks.
+
+| id | label | values |
+| --- | --- | --- |
+| 103 | `BSYNC` | enum OFF HALF SYNC DBL, default OFF. BREAK SYNC: SLICE plays each zone of its material at the song tempo, using the beat taken from the zone's length (120..240 BPM). Other engines ignore it. |
+| 104 | `BRAIN` | 0..127 (percent), default 0. AMEN BRAIN: SLICE re-cuts its slices at random as they play (same-kind swaps, wild swaps, reverse, pitch jumps, stutters, drops). Other engines ignore it. |
+| 105 | `DRILL` | enum OFF x2 x4 x8 UP x2UP x4UP x8UP DN x2DN x4DN x8DN, default OFF. Multiplies a step's RATCH by 1, 2, 4 or 8. UP / DN sweep the hits' pitch an octave from the first to the last. Works on every engine. |
+
+A FUN10 of 111 (stock 1.5 .. 1.6.1) loads by count, with the three set to OFF / 0. Stock firmware refuses a FUN10 of
+114, so its slot shows EMPTY there. The 4 spare bytes before the FM6 patches are MIDI IN TRACK's 3 plus 1, which leaves
+no room for another track parameter.

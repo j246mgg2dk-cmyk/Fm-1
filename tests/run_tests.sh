@@ -447,6 +447,11 @@ if [ -f build/gen/felucca_tables.h ]; then
         $CC -O2 -w -Ibuild/gen -Ifirmware/src -o "$OUT/slice_test" tests/slice_test.c -lm
         run "SLICE: tables, onsets, reverse, keys, modes, MAN slices and their store, demos" "$OUT/slice_test" \
             build/slice_demo/loop build/slice_demo
+        # JUNGLE (this fork): BREAK SYNC, AMEN BRAIN, DRILL (tests/jungle_test.c) on BREAK and the same user loop
+        $CC -O2 -w -Ibuild/gen -Ifirmware/src -o "$OUT/jungle_test" tests/jungle_test.c -lm
+        mkdir -p build/jungle_demo
+        run "JUNGLE: BREAK SYNC tempos, AMEN BRAIN kinds and moves, DRILL rolls, demos" "$OUT/jungle_test" \
+            build/slice_demo/loop build/jungle_demo
     else
         echo "== SLICE: build/ was made with FELUCCA_SLICE=0 (no BREAK); run ./build.sh without it first"
         fail=1

@@ -1,7 +1,7 @@
 # FM-1 GLITCH (a Felucca fork)
 
 Custom firmware for the M-VAVE FM-1, built on [Felucca](https://github.com/hugelton/Felucca) 1.6.1 by Leo Kuroshita /
-Hügelton Instruments (GPL-3.0-only). It keeps everything Felucca does and adds two glitch effects to the **FX layer**.
+Hügelton Instruments (GPL-3.0-only). It keeps everything Felucca does and adds glitch effects to the **FX layer** and JUNGLE breakbeat tools to SLICE.
 Felucca's authors don't endorse or support it, so please don't send them reports about this fork.
 
 ## The new effects
@@ -25,6 +25,27 @@ sets how much you hear of BEND, 8-BIT, CHOP, RING MOD and ROLL. While GLITCH pla
 
 Any effect can go on any white key: hold FX, hold the key, turn PRESETS. The black keys F#3 to C#4 are still the
 track mutes. D#5 and F#5 do nothing.
+
+## JUNGLE: breakbeat tools
+
+Three track parameters for chopping breaks. Everything is OFF or 0 by default, so old projects and sounds play exactly
+as before. All three can be **p-locked** per step like any other sound parameter: open the JUNGLE page, then on SEQ > STEP hold a
+step and turn the knob.
+
+On a **SLICE** track they're on **EDIT > JUNGLE** (KNOB 1 to 3). DRILL works on every engine and is also on
+**EDIT > VOICE 3**, KNOB 2.
+
+| Parameter | Values | What it does |
+|---|---|---|
+| **BSYNC** (BREAK SYNC) | OFF, HALF, SYNC, DBL | Plays a loop at the song tempo, from BPM or the external MIDI clock. Each loop's tempo is worked out from its length: it assumes the loop is a whole number of beats and picks the tempo between 120 and 240 BPM. A 2-bar 180 loop reads as 180, a 1-bar 174 as 174, and half a bar of 86 as 172 (use HALF for 86). Each zone of a user slot gets its own tempo, and the built-in BREAK is 120. HALF plays at half the song tempo and DBL at double. PTCH, BRAIN's jumps and DRILL's pitch still change the speed on top, like an old sampler. Zones shorter than 1/4 s, such as one-shots, play at their own rate. |
+| **BRAIN** (AMEN BRAIN) | 0–100 % | Re-cuts the break as it plays. When a sample is scanned, every slice is sorted as KICK, SNARE, HAT or GHOST by its sound. Then each note has a chance of a random move: swap for another slice of the same kind, swap for any slice (above 60 %), reverse, jump pitch (−12, −5, +7 or +12), stutter (replay the slice before), or drop (never a kick). Below 50 %, kicks, snares and the quarter-note steps rarely move, so the groove holds while the ghosts and hats get mangled. At 100 % nothing is safe. |
+| **DRILL** | OFF, x2, x4, x8, UP, x2UP … x8DN | Multiplies a step's RATCH by 2, 4 or 8, so an x8 drill on a RATCH x4 step gives 32 hits in a 1/16: a buzz roll. UP and DN slide the roll's pitch up or down an octave from the first hit to the last. Lock x8UP on the last step of a bar for an instant snare roll. |
+
+Load your breaks into USR1..3 (`tools/fm1_sample_upload.py`), put a SLICE track on that slot with DIV 16 or AUTO, set
+BSYNC to SYNC and play the slices from the keys or the sequencer at any tempo.
+
+Projects saved with JUNGLE parameters need this firmware: stock Felucca 1.6.1 shows them as EMPTY. Projects from stock
+1.6.1 load fine here, with the three parameters OFF.
 
 ## Install
 

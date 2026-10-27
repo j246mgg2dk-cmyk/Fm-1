@@ -961,6 +961,22 @@ static int seq_miss(const track_t *t, const step_t *s, uint32_t idx)
         return seq_cond_miss(t, s, idx);
     return step_chance(s) < 100u && rng() % 100u >= step_chance(s);
 }
+/* JUNGLE DRILL (P_DRILL, params.c N_DRILL): a NOTE step's RATCH times 1 / 2 / 4 / 8 (x8 of a RATCH x4: 32 hits, a buzz
+ * roll), and UP / DN: its hits climb / fall an octave from the first to the last (t->roll16, voice.c voice_start; SLICE
+ * eng_slice.c varispeed). Read where the step plays (seq_step) and again for each repeat (seq_ratchet), so a lock on the
+ * step holds for it. OFF (every pattern before): the step's RATCH, as before */
+#define DRILL_OCT 192                           /* UP / DN: an octave in 1/16 semitones */
+static uint32_t seq_hits(const track_t *t, const step_t *s)
+{
+    return step_ratchet(s) << ((uint32_t)clamp(t->p[P_DRILL], 0, 11) & 3u);
+}
+static int32_t seq_roll(const track_t *t, uint32_t h, uint32_t hits)
+{
+    uint32_t dir = (uint32_t)clamp(t->p[P_DRILL], 0, 11) >> 2;
+    if (!dir || hits < 2u)
+        return 0;
+    return (dir == 1u ? DRILL_OCT : -DRILL_OCT) * (int32_t)h / (int32_t)(hits - 1u);
+}
 #define SEQ_REP (1u << 16)
 #define SEQ_ROLLED (1u << 17)   /* seq_tick rolled the chance already (before the step's parameter locks): it passed */
 #define SEQ_MISS (1u << 18)     /* .. it failed: nothing plays */
@@ -971,7 +987,7 @@ static __attribute__((noinline)) void seq_step(track_t *t, const step_t *s, uint
     uint32_t slide_in = t->seq_hold && t->seq_n && !(skip & SEQ_REP);
     uint32_t len = t->p[P_SLEN] ? (uint32_t)t->p[P_SLEN] : 1u;
     uint32_t next_tie = seq_steps(t)[(idx + 1u) % len].time == ST_TIE;
-    uint32_t hits = step_ratchet(s);
+    uint32_t hits = seq_hits(t, s);
     uint8_t nn[4 + NLANE], vv[4 + NLANE];           /* the notes it plays: its notes, then its hits */
     uint32_t m = 0, sk = 0;
     /* QNT SEQ: the step's notes (not the lane hits) snap to the scale as they play; never on a drum kit, the slices
@@ -1027,9 +1043,12 @@ static __attribute__((noinline)) void seq_step(track_t *t, const step_t *s, uint
     t->slide_glide = (uint8_t)slide_in;
     if (!slide_in)
         seq_release(t);
+    if (hits > 1u)                                  /* DRILL UP / DN: this hit's pitch (h = 0 the first) */
+        t->roll16 = (int16_t)seq_roll(t, (skip & SEQ_REP) ? hits - 1u - t->rat_left : 0u, hits);
     for (i = 0; i < m; i++)
         if (!((sk >> i) & 1u))
             trk_note_on(t, nn[i], vv[i]);
+    t->roll16 = 0;
     if (slide_in)                                   /* release what is not held over */
         for (i = 0; i < t->seq_n; i++) {
             for (j = 0; j < m && nn[j] != t->seq_notes[i]; j++)
@@ -1073,15 +1092,19 @@ static __attribute__((noinline)) void seq_audition(void)
 static __attribute__((noinline)) void seq_ratchet(track_t *t, uint32_t period)
 {
     const step_t *s = &seq_steps(t)[t->seq_idx];
-    uint32_t hits = step_ratchet(s);
+    uint32_t hits = seq_hits(t, s), part, due = 0;
     if (t->rat_left >= hits) {
         t->rat_left = 0;
         return;
     }
-    if (t->seq_pos < (hits - t->rat_left) * (step_samples(t, period, t->seq_idx) / hits))
-        return;
-    t->rat_left--;
-    seq_step(t, s, t->seq_idx, period, SEQ_REP);
+    part = step_samples(t, period, t->seq_idx) / hits;
+    while (t->rat_left && t->seq_pos >= (hits - t->rat_left) * part) {   /* (DRILL: parts shorter than a block: the
+                                                                              * latest one due plays) */
+        t->rat_left--;
+        due = 1;
+    }
+    if (due)
+        seq_step(t, s, t->seq_idx, period, SEQ_REP);
 }
 
 /* the nudge of step s in 1/NUDGE_DIV of the step (NUDGE, core.h) when it plays off its start: the track's QUANTIZE OFF,

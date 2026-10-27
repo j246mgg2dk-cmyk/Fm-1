@@ -38,7 +38,19 @@
  * Voice state: ph[0] position (reverse: position + 1), ph[1] fraction Q16, ph[2] slice end (reverse:
  * its start), s[0] predictor (reverse: window start), s[1] step index, s[2] / s[3] previous / current
  * sample, s[4] source | segment << 3 | reverse << 7 | slice << 8 | DIV << 16 (source SLC_SINE: the sine, its
- * phase in ph[0]), s[5] DECAY level Q15, s[6] 0 to prime, 1 playing, 3 fading out, 2 ended, s[7] low-pass. */
+ * phase in ph[0]), s[5] DECAY level Q15, s[6] 0 to prime, 1 playing, 3 fading out, 2 ended, s[7] low-pass.
+ * JUNGLE: s[4] bits 20..31 a signed pitch offset in 1/16 semitones (AMEN BRAIN's jumps, DRILL UP / DN; 0 = none).
+ *
+ * JUNGLE (this fork): three track parameters on SLICE's JUNGLE page (params.c), all OFF / 0 = SLICE exactly as before.
+ * BREAK SYNC (P_BSYNC): a loop plays at the song's tempo (BPM, or the external clock's): its beat is the zone's
+ * length over a power of two beats, the one that puts it at 120..240 BPM (a bar of 174, two bars of 180, half a bar of
+ * 86 = 172), BREAK's its 120 BPM bar (slc_sb). SYNC plays it at the song tempo, HALF at half, DBL at double; PTCH, the
+ * brain's jumps and DRILL's pitch still varispeed it on top. Zones shorter than 1/4 s (one shots) keep their rate.
+ * AMEN BRAIN (P_BRAIN): the slices sorted by sound when the material is scanned (main loop: slc_classify) into KICK,
+ * SNARE, HAT and GHOST, and at each note-on a roll of the part's own random number (slc_brain): swap for another slice
+ * of the same kind, a wild swap for any (above 60 %), reverse, a pitch jump (-12 -5 +7 +12), a stutter (the slice it
+ * played before) or a drop (not a kick). How likely: BRAIN; below 50 % kicks and snares and the quarter beats move far
+ * less, so the groove holds while the rest mangles. */
 #define SLC_GRID 128u                /* grid points: decoder states at k * len / SLC_GRID */
 #define SLC_GRID_LOG2 7
 #define SLC_AUTO 32u                 /* AUTO slices at most */
@@ -46,6 +58,10 @@
 #define SLC_RB 64u                   /* reverse: samples decoded per window */
 #define SLC_BASE 60                  /* note of slice 0 (+ the track's ROOT) */
 #define SLC_HOP 32u                  /* AUTO detector: samples per hop */
+#define SLC_LOW_HAT 25u              /* AMEN BRAIN (slc_classify): a low share (64 = all) below which a hit is a HAT */
+#define SLC_LOW_KICK 50u             /* .. from which a loud and dark one is a KICK */
+#define SLC_BRIGHT_KICK 35u          /* .. a bright share (64 = all) below which */
+#define SLC_GHOST_PCT 35u            /* .. a peak below this % of the loudest: a GHOST (not a hat) */
 
 typedef struct {
     uint32_t off, at, n;             /* data (SMP_DATA index), material position of its first sample, samples */
@@ -62,7 +78,12 @@ static const slc_src_t SLC_BREAK = SLC_BREAK_INIT;
 static const slc_src_t SLC_PIANO = SLC_PIANO_INIT;
 static slc_src_t slc_usr[SMP_USER_SLOTS];
 typedef int16_t slc_rbuf_t[NVOICE][SLC_RB];           /* reverse windows, one per part voice (the part's eng_mem) */
-ENG_MEM_FITS("SLICE", sizeof(slc_rbuf_t));
+typedef struct {
+    slc_rbuf_t rb;                                    /* (first: slc_rb) */
+    uint32_t rng;                                     /* AMEN BRAIN: the part's xorshift (0: not seeded yet) */
+    uint8_t last;                                     /* .. the slice it played last + 1 (0: none), for a stutter */
+} slc_mem_t;
+ENG_MEM_FITS("SLICE", sizeof(slc_mem_t));
 /* append-only: stored sounds keep their SRC numbers (1.0.4 added PIANO) */
 static const char *const N_SLC_SRC[] = {"BREAK", "USR1", "USR2", "USR3", "PIANO"};
 #define SLC_SRC_PIANO 4u
@@ -202,6 +223,95 @@ static void slc_bounds_v(const slc_src_t *s, const voice_t *v, uint32_t *a, uint
     slc_bounds(s, (pk >> 16) & 7u, (pk >> 8) & 63u, a, b, st);
 }
 
+/* ---- JUNGLE: BREAK SYNC's beats, AMEN BRAIN's kinds (see the top) */
+static uint32_t beat_samples(void);                   /* (fx.c) */
+static uint32_t slc_sb[SMP_USER_SLOTS][SLC_SEGS];     /* a user zone's beat in source samples, 0 = no tempo */
+/* the beat of n source samples at rate (Q16): n over the power of two beats that makes it 1/4 .. 1/2 s at 44.1 kHz
+ * (120 .. 240 BPM); 0 when the whole is shorter than 1/4 s */
+static uint32_t slc_beat_of(uint32_t n, uint32_t rate)
+{
+    uint64_t out = rate ? ((uint64_t)n << 16) / rate : 0u;   /* its length in output samples */
+    uint32_t beats = 1;
+    if (out < FS / 4u)
+        return 0;
+    while (beats < 256u && out > (uint64_t)FS / 2u * beats)
+        beats <<= 1;
+    return n / beats;
+}
+/* the beat (source samples) of zone seg of s, 0 = none (PIANO) */
+static uint32_t slc_sb_of(const slc_src_t *s, uint32_t seg)
+{
+    uint32_t k = slc_slot_of(s);
+    if (k < SMP_USER_SLOTS)
+        return seg < SLC_SEGS ? slc_sb[k][seg] : 0u;
+#ifdef SLC_BREAK_BPM
+    if (s == &SLC_BREAK)
+        return s->len * 4u / SLC_BREAK_STEPS;          /* one bar of SLC_BREAK_STEPS 16ths: a beat is 4 of them */
+#endif
+    return 0;
+}
+/* the slices' kinds, 2 bits each: [BREAK, USR1..3][32 grid cells, AUTO, MAN][slice / 4] */
+enum { SLC_KICK, SLC_SNARE, SLC_HAT, SLC_GHOST };
+static uint8_t slc_cls[1u + SMP_USER_SLOTS][3][SLC_AUTO / 4u];
+static uint32_t slc_cls_get(const uint8_t *tab, uint32_t j) { return (tab[(j >> 2) & 7u] >> ((j & 3u) * 2u)) & 3u; }
+/* the table of s (0 = PIANO: none) for DIV div (grid, AUTO, MAN: the MAN slices in use, else AUTO's) */
+static const uint8_t *slc_cls_of(const slc_src_t *s, uint32_t div)
+{
+    uint32_t k = s == &SLC_BREAK ? 0u : slc_slot_of(s) + 1u;
+    if (k > SMP_USER_SLOTS)
+        return 0;
+    return slc_cls[k][div < SLC_DIV_AUTO ? 0 : div == SLC_DIV_MAN && slc_man_of(s) ? 2 : 1];
+}
+#define SLC_FEAT_N 1536u                              /* samples a slice is judged by (35 ms at 44.1 kHz) */
+/* sort the slices of DIV div (3: the 32 grid cells) of s into out (main loop): per slice its peak, the share of its
+ * level in the first difference (bright) and under a ~440 Hz low-pass (low): little low HAT, else quiet (below 35 %
+ * of the loudest) GHOST, else low and dark KICK, else SNARE (on BREAK 8 of its 9 hits as gen_samples.py built them) */
+static void slc_classify(const slc_src_t *s, uint32_t div, uint8_t *out)
+{
+    uint16_t pk[SLC_AUTO];
+    uint8_t br[SLC_AUTO], lo[SLC_AUTO];
+    uint32_t n = slc_count(s, div), j, maxpk = 1;
+    memset(out, 0, SLC_AUTO / 4u);
+    n = n < SLC_AUTO ? n : SLC_AUTO;
+    for (j = 0; j < n; j++) {
+        uint32_t a, b, st, i, w;
+        uint64_t sa = 1, sd = 0, sl = 0;
+        int32_t prev = 0, y = 0, m = 0;
+        slc_dec_t d;
+        slc_bounds(s, div, j, &a, &b, &st);
+        w = b > a ? b - a : 0u;
+        w = w < SLC_FEAT_N ? w : SLC_FEAT_N;
+        slc_dec_at(&d, a, st);
+        for (i = 0; i < w; i++) {
+            int32_t x = slc_dec_next(s, &d), e = i ? x - prev : 0;
+            prev = x;
+            y += (x - y) >> 4;
+            sa += (uint32_t)(x < 0 ? -x : x);
+            sd += (uint32_t)(e < 0 ? -e : e);
+            sl += (uint32_t)(y < 0 ? -y : y);
+            m = (x < 0 ? -x : x) > m ? (x < 0 ? -x : x) : m;
+        }
+        pk[j] = (uint16_t)(m > 65535 ? 65535 : m);
+        br[j] = (uint8_t)(sd * 64u / sa > 255u ? 255u : sd * 64u / sa);
+        lo[j] = (uint8_t)(sl * 64u / sa > 255u ? 255u : sl * 64u / sa);
+        maxpk = pk[j] > maxpk ? pk[j] : maxpk;
+    }
+    for (j = 0; j < n; j++) {
+        uint32_t c = lo[j] < SLC_LOW_HAT ? SLC_HAT : pk[j] * 100u < maxpk * SLC_GHOST_PCT ? SLC_GHOST :
+                     lo[j] >= SLC_LOW_KICK && br[j] < SLC_BRIGHT_KICK ? SLC_KICK : SLC_SNARE;
+        out[j >> 2] |= (uint8_t)(c << ((j & 3u) * 2u));
+    }
+}
+/* every table of s (k: its row of slc_cls), MAN's too */
+static void slc_classify_all(const slc_src_t *s, uint32_t k)
+{
+    slc_classify(s, 3u, slc_cls[k][0]);
+    slc_classify(s, SLC_DIV_AUTO, slc_cls[k][1]);
+    if (slc_man_of(s))
+        slc_classify(s, SLC_DIV_MAN, slc_cls[k][2]);
+}
+static uint8_t slc_cls_break;                         /* BREAK's tables made (once, the first slot scan) */
+
 /* ---- the slice table of a user slot (main loop) */
 /* the grid states and the AUTO slices of s (len samples; s->len stays 0 meanwhile): see the top */
 static void slc_scan(slc_src_t *s, uint32_t len)
@@ -263,6 +373,10 @@ static void slc_user_scan(uint32_t k, int valid)
 {
     slc_src_t *s = &slc_usr[k];
     uint32_t i, j, at = 0;
+    if (!slc_cls_break && SLC_BREAK.len) {           /* JUNGLE: BREAK's kinds, once */
+        slc_classify_all(&SLC_BREAK, 0);
+        slc_cls_break = 1;
+    }
     s->len = 0;
     RING_PUBLISH();
     slc_man[k][0].n = slc_man[k][1].n = 0;          /* new material: its MAN slices are gone (slc_man_load: the stored) */
@@ -286,10 +400,13 @@ static void slc_user_scan(uint32_t k, int valid)
         return;
     s->rate = usr_zone[k][0].rate;
     slc_scan(s, at);
+    for (i = 0; i < SLC_SEGS; i++)                      /* JUNGLE: BREAK SYNC's beat of each zone */
+        slc_sb[k][i] = i < s->nseg ? slc_beat_of(s->seg[i].n, s->rate) : 0u;
     RING_PUBLISH();
     s->len = at;
     if (slc_man_load)
         slc_man_load(k);
+    slc_classify_all(s, k + 1u);                        /* AMEN BRAIN's kinds (MAN's: slc_man_commit too) */
 }
 
 /* ---- MAN: editing (main loop, the SLICES page; based on hugelton/Felucca#27 by andreahaku). Begin with
@@ -338,8 +455,11 @@ static slc_man_t *slc_man_begin(uint32_t k)
 }
 static void slc_man_commit(uint32_t k)
 {
+    const slc_src_t *s;
     RING_PUBLISH();
     slc_man_cur[k] ^= 1u;
+    if (k < SMP_USER_SLOTS && (s = slc_get(k + 1u)) != 0 && slc_man_of(s))   /* JUNGLE: AMEN BRAIN's kinds of them */
+        slc_classify(s, SLC_DIV_MAN, slc_cls[k + 1u][2]);
 }
 
 /* move the start of slice j by d samples (slice 0's start trims the material's head); keeps SLC_MIN to both
@@ -436,11 +556,76 @@ static int16_t *slc_rb(track_t *t, voice_t *v)
     return p < NPART && i < NVOICE ? (*(slc_rbuf_t *)ENG_MEM(p))[i] : 0;
 }
 
+/* AMEN BRAIN (see the top): the slice j of n (DIV div) a note-on plays is re-cut: *j another, *rev flipped, *off a
+ * pitch jump (1/16 semitones); 1 = dropped (nothing plays). The part's xorshift, seeded by the part */
+static slc_mem_t *slc_pm(track_t *t)
+{
+    uint32_t p = (uint32_t)(t - trk);
+    return p < NPART ? (slc_mem_t *)ENG_MEM(p) : 0;
+}
+static uint32_t slc_rand(slc_mem_t *pm)
+{
+    uint32_t x = pm->rng ? pm->rng : 0x9E3779B9u ^ (uint32_t)(uintptr_t)pm;
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    pm->rng = x;
+    return x;
+}
+static __attribute__((noinline)) int slc_brain(track_t *t, const slc_src_t *s, uint32_t div, uint32_t n, uint32_t *j,
+                                               uint32_t *rev, int32_t *off)
+{
+    static const int8_t JUMP[4] = {-12, -5, 7, 12};
+    slc_mem_t *pm = slc_pm(t);
+    const uint8_t *tab = slc_cls_of(s, div);
+    uint32_t c = (uint32_t)clamp(t->p[P_BRAIN], 0, 127) * 100u / 127u, r, mv, cls, pmove, cell, i, k, pick;
+    uint32_t sh = div < SLC_DIV_AUTO ? 3u - div : 0u;  /* slice -> grid cell (32 of them) */
+    if (!pm || !tab || n < 2u)
+        return 0;
+    r = slc_rand(pm);
+    cell = *j << sh;
+    cls = slc_cls_get(tab, cell);
+    pmove = c;
+    if (cls <= SLC_SNARE && c < 50u)                   /* the backbone holds at low settings */
+        pmove = c * c / 50u;
+    if (!(t->seq_idx & 3u) && c < 70u)                 /* .. and so do the quarter beats */
+        pmove /= 2u;
+    if (r % 100u < pmove) {
+        mv = (r >> 8) % 100u;
+        if (mv < 55u) {                                /* a swap: the same kind (a wild one: any) */
+            int wild = mv >= 40u && c > 60u;
+            k = 0;
+            pick = (r >> 16) % n;
+            for (i = 0; i < n; i++) {                  /* the pick-th match, going round from a random start */
+                uint32_t q = (pick + i) % n;
+                if (q != *j && (wild || slc_cls_get(tab, q << sh) == cls)) {
+                    *j = q;
+                    k = 1;
+                    break;
+                }
+            }
+            (void)k;
+        } else if (mv < 70u) {
+            *rev ^= 1u;
+        } else if (mv < 80u) {
+            *off += JUMP[(r >> 16) & 3u] * 16;
+        } else if (mv < 95u) {
+            if (pm->last && pm->last - 1u < n)
+                *j = pm->last - 1u;                    /* a stutter: what it played before */
+        } else if (cls != SLC_KICK) {
+            return 1;                                  /* dropped */
+        }
+    }
+    pm->last = (uint8_t)(*j + 1u);
+    return 0;
+}
+
 static void slice_note_on(track_t *t, voice_t *v)
 {
     const int16_t *p = t->p;
     uint32_t src = slc_src_of(p), div = (uint32_t)clamp(p[P_E1], 0, SLC_DIV_MAN), rev = p[P_E5] != 0;
     uint32_t a, b, st, j;
+    int32_t off = t->roll16;                            /* JUNGLE: DRILL UP / DN (voice_start's pitch16 cancels here) */
     const slc_src_t *s = slc_get(src);
     v->ph[1] = 0;
     v->s[2] = v->s[3] = 0;
@@ -455,10 +640,13 @@ static void slice_note_on(track_t *t, voice_t *v)
         return;
     }
     j = slc_note_slice(p, v->note, slc_count(s, div));
+    if (p[P_BRAIN] > 0 && slc_brain(t, s, div, slc_count(s, div), &j, &rev, &off))
+        return;                                        /* AMEN BRAIN dropped it (s[6] 2: it ends at once) */
     slc_bounds(s, div, j, &a, &b, &st);
     if (b <= a || (rev && !slc_rb(t, v)))
         return;
-    v->s[4] = (int32_t)(src | (st >> 24) << 3 | rev << 7 | j << 8 | div << 16);
+    off = clamp(off, -2048, 2047);
+    v->s[4] = (int32_t)(src | (st >> 24) << 3 | rev << 7 | j << 8 | div << 16 | ((uint32_t)off & 0xFFFu) << 20);
     v->s[6] = 0;
     if (rev) {
         v->ph[0] = b;
@@ -565,7 +753,19 @@ static void slice_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const
         v->active = 0;
         return;
     }
-    stepq = (pow2_q16(clamp(m->pitch16 - v->pitch_cur + p[P_E3] * 16, -1536, 576)) >> 8) * (s->rate >> 8);
+    {
+        int32_t x = clamp(m->pitch16 - v->pitch_cur + p[P_E3] * 16 + ((int32_t)pk >> 20), -1536, 576);
+        uint32_t sb = p[P_BSYNC] > 0 ? slc_sb_of(s, (pk >> 3) & 15u) : 0u;
+        if (sb) {                                       /* BREAK SYNC: a source beat per song beat (HALF, DBL) */
+            uint32_t base = (sb << 13) / ((beat_samples() >> 3) | 1u);   /* Q16 (sb < 2^19) */
+            uint64_t q;
+            base = p[P_BSYNC] == 1 ? base >> 1 : p[P_BSYNC] >= 3 ? base << 1 : base;
+            q = ((uint64_t)pow2_q16(x) * base) >> 16;
+            stepq = q < (32u << 16) ? (uint32_t)q : 32u << 16;
+        } else {
+            stepq = (pow2_q16(x) >> 8) * (s->rate >> 8);
+        }
+    }
     d.pos = v->ph[0];
     d.pred = v->s[0];
     d.idx = v->s[1];
@@ -643,5 +843,5 @@ static const engine_t ENG_SLICE = {
     .sampled = 1,
     .keys = slice_keys,
     .amp = slice_amp,
-    .mem = sizeof(slc_rbuf_t),
+    .mem = sizeof(slc_mem_t),
 };

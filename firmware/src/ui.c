@@ -432,10 +432,10 @@ static int page_visible(uint32_t i)
     if (PAGES[i].graph >= GR_FMOP && PAGES[i].graph <= GR_FMENV)
         return TSEL->eng_req % NENGINES == ENGI_FM6;
 #if FELUCCA_SLICE
-    if (PAGES[i].graph == GR_SLICES)
+    if (PAGES[i].graph == GR_SLICES || PAGES[i].id[0] == P_BSYNC)   /* (JUNGLE: BSYNC BRAIN DRILL) */
         return ENGINES[TSEL->eng_req % NENGINES] == &ENG_SLICE;
 #else
-    if (PAGES[i].graph == GR_SLICES)
+    if (PAGES[i].graph == GR_SLICES || PAGES[i].id[0] == P_BSYNC)
         return 0;
 #endif
     return !(PAGES[i].fam == FAM_EDIT && PAGES[i].id[0] >= P_FM1_ATK &&

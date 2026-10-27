@@ -69,6 +69,9 @@ enum {                          /* per-track parameters */
     P_ITYPE, P_IA, P_IB, P_IC, P_IMIX,         /* 1.5 (#78, #177): the INSERT, its TYPE, three values and MIX (fx.c) */
     P_FTYPE,                                   /* 1.5 (#104): ANALOG's filter TYPE, LP (as before) / BP / HP (eng_analog.c) */
     P_ESYNC,                                   /* 1.5 (#175): ENV SYNC: ATK DEC REL as note values of the tempo (voice.c) */
+    P_BSYNC,                                   /* JUNGLE: BREAK SYNC, SLICE's loops at the song tempo: OFF HALF SYNC DBL (eng_slice.c) */
+    P_BRAIN,                                   /* JUNGLE: AMEN BRAIN, SLICE's slices re-cut as they play, 0..127 (eng_slice.c) */
+    P_DRILL,                                   /* JUNGLE: DRILL, a step's RATCH x1/x2/x4/x8 more, pitch UP / DN (seq.c) */
     P_E0, P_E1, P_E2, P_E3, P_E4, P_E5, P_E6, P_E7,
     P_COUNT
 };
@@ -310,11 +313,12 @@ typedef struct track {
     uint8_t lfo_wrap;            /* the LFO's phase wrapped this block: its S&H is drawn after the parts (voice.c) */
     uint32_t esync_k[3];         /* ATK's step, DEC's and REL's coefficient (Q16) this block (voice.c esync_coef) */
     uint8_t spread_on;           /* SPREAD this block (fx.c mix_part, voice.c track_render) */
-    uint8_t rsv_sz[1];           /* (sizeof(track_t) a multiple of 16: below) */
+    uint8_t rsv_sz[11];          /* (sizeof(track_t) a multiple of 16: below; JUNGLE's 3 parameters and roll16) */
 #else
-    uint8_t rsv_sz[14];          /* (sizeof(track_t) a multiple of 16: below) */
+    uint8_t rsv_sz[8];           /* (sizeof(track_t) a multiple of 16: below; JUNGLE's 3 parameters and roll16) */
 #endif
     int16_t armp, aholdp;        /* P_AMODE / P_AHOLD as last seen by the ISR */
+    int16_t roll16;              /* JUNGLE DRILL UP / DN: the pitch (1/16 semitone) the next note-ons are moved by (seq.c) */
     /* engine switch (voice.c engine_block): the old engine's voices fade out, then it switches */
     uint8_t xf_on, xf;           /* fading; blocks of the fade still to render */
     int16_t pe_old[8];           /* P_E0..P_E7 of the sounding engine: the fade renders with these */
