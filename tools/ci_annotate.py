@@ -7,7 +7,7 @@ import sys
 
 title, path = sys.argv[1], sys.argv[2]
 lines = open(path, errors="replace").read().splitlines()
-pat = re.compile(r"FAIL|failed|over budget|exceeds|headroom|undefined reference|error:|Error:|Traceback|not ok|!=")
+pat = re.compile(r"FAIL|failed|over budget|exceeds|headroom|undefined reference|error:|Error:|Traceback|not ok|!=|fatal|rejected|denied|cannot|No such")
 hit = [f"{i}: {ln}" for i, ln in enumerate(lines)
        if pat.search(ln) and "warning:" not in ln and not ln.rstrip().endswith(" ok")]
 tail = [f"{len(lines) - 15 + i}: {ln}" for i, ln in enumerate(lines[-15:])]
