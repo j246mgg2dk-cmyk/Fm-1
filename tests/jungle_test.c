@@ -10,6 +10,7 @@
  * 4. DRILL: x2 x4 x8 more hits in a step (x8 of a RATCH x4: 32), UP / DN an octave from first to last, OFF as RATCH.
  * 5. demos into DEMO_DIR: BREAK at 172 synced, brained and drilled; the user loop synced to 174. */
 #include <stdarg.h>
+#include <sys/stat.h>
 #include <stdint.h>
 static uint32_t host_slots[3u * 0x14000u / 4u];          /* USR1..3, as the flash at 0xA0000 */
 #define SMP_USER_XIP(k) ((const uint8_t *)host_slots + (k) * SMP_USER_SIZE)
