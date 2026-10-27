@@ -4,7 +4,7 @@ set -e
 v="$1"
 d=$(mktemp -d)
 ls -la "build/release-$v"
-cp "build/release-$v"/* "$d/"
+cp -r "build/release-$v"/. "$d/"
 cd "$d"
 git init -q
 git checkout -q -b main
