@@ -61,10 +61,10 @@ jobs:
           echo "version=$v" >> "$GITHUB_OUTPUT"
 
       - name: Build (development package, for the tests)
-        run: ./build.sh
+        run: ./build.sh 2>&1 | tee build-dev.log || { python3 tools/ci_annotate.py build build-dev.log; exit 1; }
 
       - name: Tests
-        run: sh tests/run_tests.sh
+        run: sh tests/run_tests.sh 2>&1 | tee tests.log || { python3 tools/ci_annotate.py tests tests.log; exit 1; }
 
       - name: Build (release package)
         run: ./build.sh --release "${{ steps.ver.outputs.version }}"
