@@ -3744,12 +3744,12 @@ static void host_slot_make(uint32_t k)                /* USR k + 1: 2 s at 22.05
 }
 static int test_slices(void)
 {
-    static const char *const CYC_S[] = {"EDIT 1", "EDIT 2", "SLICES", "VOICE", "VOICE 2", "VOICE 3", "EDIT 1"};
+    static const char *const CYC_S[] = {"EDIT 1", "EDIT 2", "JUNGLE", "SLICES", "VOICE", "VOICE 2", "VOICE 3", "EDIT 1"};
     int bad = 0, ok;
     uint32_t n, j, p0, k, note;
     ui_power_on();
     set_engine_of(TSEL, 13u);                        /* SLICE CHOP: BREAK, 16 */
-    bad += check("SLICES: SLICE's EDIT cycle EDIT 1 EDIT 2 SLICES VOICE VOICE 2 VOICE 3 EDIT 1", engine_cycle(CYC_S, NELEM(CYC_S)));
+    bad += check("SLICES: SLICE's EDIT cycle EDIT 1 EDIT 2 JUNGLE SLICES VOICE VOICE 2 VOICE 3 EDIT 1", engine_cycle(CYC_S, NELEM(CYC_S)));
     go_page(GR_SLICES); frame();
     n = slice_count();
     p0 = TSEL->p[P_E1];
