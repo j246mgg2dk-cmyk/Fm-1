@@ -16,7 +16,7 @@ permissions:
   contents: write
 
 env:
-  DEV_VERSION: 1.6.1-glitchdev
+  DEV_VERSION: 1.6.1-jungledev
   SDK_TAG: AC79NN_SDK_V1.2.1_2023-12-13
 
 jobs:
