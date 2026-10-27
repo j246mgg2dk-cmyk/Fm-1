@@ -61,13 +61,20 @@ jobs:
           echo "version=$v" >> "$GITHUB_OUTPUT"
 
       - name: Build (development package, for the tests)
-        run: ./build.sh 2>&1 | tee build-dev.log || { python3 tools/ci_annotate.py build build-dev.log; exit 1; }
+        run: |
+          set -o pipefail
+          ./build.sh 2>&1 | tee build-dev.log || { python3 tools/ci_annotate.py build build-dev.log; exit 1; }
 
       - name: Tests
-        run: sh tests/run_tests.sh 2>&1 | tee tests.log || { python3 tools/ci_annotate.py tests tests.log; exit 1; }
+        run: |
+          set -o pipefail
+          sh tests/run_tests.sh 2>&1 | tee tests.log || { python3 tools/ci_annotate.py tests tests.log; exit 1; }
 
       - name: Build (release package)
-        run: ./build.sh --release "${{ steps.ver.outputs.version }}"
+        run: |
+          set -o pipefail
+          ./build.sh --release "${{ steps.ver.outputs.version }}" 2>&1 | tee build-rel.log ||
+            { python3 tools/ci_annotate.py release build-rel.log; exit 1; }
 
       - name: Web installer site
         run: |
