@@ -46,6 +46,19 @@ Original sounds made in the manner of the late-70s polysynths: no samples or pat
 
 TITAN sounds can't be starred as favourites (the settings keep that row of the table for MIDI LEARN).
 
+### Tested, and not yet tested
+
+- **Tested on the Mac / Linux host** (the same C code, `tests/dream_test.c` and Felucca's own suite): TITAN's eight
+  sounds (level, no clipping, voices end), golden renders; DREAM writes the same music from the same seed, never
+  touches the half that is playing, goes through its acts, keeps the four tracks at 64 steps, MOTION and the moods
+  change what it writes; the DREAM page and TITAN's pages pass the layout lint in every palette. The firmware builds
+  with the JieLi toolchain on GitHub Actions.
+- **Not tested on an FM-1 yet:** the sound through the real DAC, the CPU with eight TITAN voices on the FM-1's core,
+  DREAM starting at power-on. To check: install, switch off and on (DREAM should start by itself with the GLO > DREAM
+  page showing), let it play through a PEAK (about two minutes), turn MOOD to PULSE, press OCT+ for a new one, then
+  edit a step on T1 (DREAM hands over). If a crackle or dropout comes in the PEAK, say so: the second core (MENU >
+  SYSTEM > 2ND CORE ON) or fewer voices fixes it.
+
 ## The new effects
 
 Hold **FX** and press a key. The effect lasts while you hold the key (or toggles, with MENU > FX LATCH ON). Everything
