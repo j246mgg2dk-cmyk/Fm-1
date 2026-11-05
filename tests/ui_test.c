@@ -4035,9 +4035,10 @@ static int test_quick_layers(void)
     ok = TSEL->eng_req == 2u && TSEL->preset == 0u && ui.layer == LAYER_EDIT && sync_reload && !gates();
     key_up(white(eng_rank(2))); frame();
     key_down(white(1)); key_up(white(1)); frame();
-    ok &= TSEL->eng_req == ENGI_TITAN;                  /* (G3: TITAN, second in ENGINE_ORDER: this fork) */
+    ok &= TSEL->eng_req == (FELUCCA_FM4 ? ENGI_FM6 : ENGI_TITAN);   /* (G3: TITAN, second in ENGINE_ORDER: this fork;
+                                                                 * FELUCCA_FM4 builds show no TITAN) */
     key_down(white(2)); key_up(white(2)); frame();
-    ok &= TSEL->eng_req == ENGI_FM6;                    /* (A3: FM6, third) */
+    ok &= TSEL->eng_req == eng_vis(2);                  /* (A3: FM6, third) */
     key_down(white(NENG_SHOWN - 1u)); key_up(white(NENG_SHOWN - 1u)); frame();
     ok &= TSEL->eng_req == ENGI_DRUM;                   /* (the last key: DRUM) */
     ok &= !memcmp(TSEL->step, before.step, sizeof before.step) && TSEL->p[P_SLEN] == before.p[P_SLEN] &&

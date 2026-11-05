@@ -190,8 +190,10 @@ static int select_page(void)
     }
     go_title("SONG"); frame();
     turn(EN_SELECT, 1);
-    ok &= title_is("SONG");                             /* (GLO: one page) */
-    bad += check("  PAGE: EDIT's round is the engine's pages; a family of one page stays", ok);
+    ok &= title_is("DREAM");                            /* (GLO: SONG and, this fork, DREAM) */
+    turn(EN_SELECT, 1);
+    ok &= title_is("SONG");
+    bad += check("  PAGE: EDIT's round is the engine's pages; GLO's two go round (SONG, DREAM)", ok);
 
     go_title("ENV"); frame();
     b0 = song.g[G_BPM];

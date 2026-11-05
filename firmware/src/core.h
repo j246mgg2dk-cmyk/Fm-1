@@ -34,7 +34,8 @@
 #define ENGI_SLICE 13u
 #define ENGI_TITAN 14u
 #define ENGI_DIGITAL 1u          /* reserved without FELUCCA_FM4: never selectable (eng_ok), its sounds load as FM6 */
-#define NENG_SHOWN (NENGINES - !FELUCCA_FM4 - !FELUCCA_SLICE)   /* the engines one can pick: PRESETS, the EDIT layer, the editor,
+#define NENG_SHOWN (NENGINES - !FELUCCA_FM4 - !FELUCCA_SLICE - FELUCCA_FM4)   /* (FELUCCA_FM4: DIGITAL shown, TITAN not:
+                                                * the EDIT layer has 16 white keys) */   /* the engines one can pick: PRESETS, the EDIT layer, the editor,
                                                 * in the display order of engines.c ENGINE_ORDER */
 #define UP_SLOTS 32u             /* user presets (upreset.c) */
 
