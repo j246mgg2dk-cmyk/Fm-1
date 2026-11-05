@@ -98,6 +98,46 @@ static void fm1_fault(const fm1_crash_t *c)
     fm1_reboot();
 }
 
+/* DREAM (this fork, dream.c): at power-on with no music of the user's to put back (the first start, RESTORE LAST OFF)
+ * or the last music a dream: a new dream, its mood and seed from the time the start took (TIMER4) and the battery's
+ * reading, and its page (GLO > DREAM) on the screen. Not after a crash, a hang or a failed boot (boot_clean) */
+static void dream_boot(void)
+{
+    uint32_t i, seed = fm1_ticks() * 2654435761u ^ (uint32_t)fm1_adc_read(FM1_ADC_BATT) * 40503u ^ fm1_ms;
+    dream.rng = seed | 1u;
+    dream.mood = (uint8_t)dr_pick(DR_NMOOD);
+    dream_start(seed);
+    for (i = 0; i < NPAGES && PAGES[i].graph != GR_DREAM; i++)
+        ;
+    if (i < NPAGES) {
+        ui.page = (uint8_t)i;
+        ui.fam_last[FAM_GLO] = (uint8_t)i;
+        ui.home = 0;
+        ui.force = 1;
+    }
+}
+/* main loop: DREAM's work (dream_poll); a new dream names the music DREAM (so the next power-on dreams again); the act
+ * it is in, said once as it changes, while its page shows */
+static void dream_main(void)
+{
+    dream_poll();
+    if (dream.named) {
+        dream.named = 0;
+        str_cpy(proj_name, "DREAM", sizeof proj_name);
+        proj_cur = PROJ_NO_SLOT;
+    }
+    if (dream.on && song.playing && !ui.home && !ui.menu && cur_page()->graph == GR_DREAM) {
+        uint32_t ph = dr_phase(dream.half ? dream.half - 1u : 0u);
+        if (dream.said != ph + 1u) {
+            char b[12];
+            dream.said = (uint8_t)(ph + 1u);
+            b[0] = ' ';
+            str_cpy(b + 1, N_DR_MOOD[dream.mood % DR_NMOOD], sizeof b - 1u);
+            ui_say(N_DR_ACT[ph], b);                  /* "BLOOM NOIR" */
+        }
+    }
+}
+
 /* power-on: the parts with their default sounds (TRK_DEF); the sequencers empty */
 static void felucca_init(void)
 {
@@ -210,7 +250,8 @@ static void fm1_main(void)
         panel_setup();                        /* OCT- + OCT+ held at power-on */
         settings_save();
     }
-    autosave_boot(boot_clean);                /* (1.2) the last session's music, under the splash */
+    if ((!autosave_boot(boot_clean) || str_eq(proj_name, "DREAM")) && boot_clean)   /* (1.2) the last session's music, */
+        dream_boot();                         /* under the splash; none (or a DREAM's): DREAM wakes (this fork) */
     for (ms = 0; ms < 400u; ms += 10u) {      /* the splash; the pot followed (MIDI IN plays under it) */
         fm1_delay_ms(10);
         master_poll();
@@ -307,6 +348,7 @@ static void fm1_main(void)
         ui_input();
         settings_poll();                              /* queued settings save: only while stopped */
         autosave_poll();                              /* (1.2) the music, stopped and idle: project.c */
+        dream_main();                                 /* DREAM (this fork): the next half, the breathing, its name */
         felucca_dbg.stage = 2;
         ui_leds();
         ui_draw();

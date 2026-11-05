@@ -452,6 +452,10 @@ if [ -f build/gen/felucca_tables.h ]; then
         mkdir -p build/jungle_demo
         run "JUNGLE: BREAK SYNC tempos, AMEN BRAIN kinds and moves, DRILL rolls, demos" "$OUT/jungle_test" \
             build/slice_demo/loop build/jungle_demo
+        # TITAN and DREAM (this fork): the engine's presets, the self-playing music (tests/dream_test.c), 60 s demos
+        $CC -O2 -w -Ibuild/gen -Ifirmware/src -o "$OUT/dream_test" tests/dream_test.c -lm
+        run "TITAN and DREAM: presets, the same seed the same music, halves rewritten off the playhead, acts, demos" \
+            "$OUT/dream_test" build/dream_demo 60
     else
         echo "== SLICE: build/ was made with FELUCCA_SLICE=0 (no BREAK); run ./build.sh without it first"
         fail=1

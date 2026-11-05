@@ -40,6 +40,7 @@ static uint8_t eng_mem_owner[NPART];       /* engine index + 1 whose state is in
 #if FELUCCA_SLICE
 #include "eng_slice.c"
 #endif
+#include "eng_titan.c"           /* TITAN (this fork): two layers, HPF, gritty LPF, drift */
 
 /* the editor protocol, user presets and projects store these indices: append, never reorder */
 static const engine_t *const ENGINES[NENGINES] = {
@@ -62,7 +63,10 @@ static const engine_t *const ENGINES[NENGINES] = {
     &ENG_FM6,                    /* 12 (ENGI_FM6) */
 #if FELUCCA_SLICE
     &ENG_SLICE,                  /* 13 (FELUCCA_SLICE=0 builds without it) */
+#else
+    &ENG_FM4_GONE,               /* 13: reserved without SLICE (never offered: eng_ok) */
 #endif
+    &ENG_TITAN,                  /* 14 (this fork): the two-layer polysynth */
 };
 
 /* a track's engine number as an index (the audio paths: a compare, cheaper than % NENGINES; a bad number: 0) */
@@ -113,6 +117,7 @@ static const char *snd_missing(const track_t *t, uint32_t *code)
  * stores and the protocol hold them); only this table orders them */
 static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
     0,                           /* ANALOG */
+    14,                          /* TITAN (this fork): second, beside ANALOG */
     12,                          /* FM6 */
 #if FELUCCA_FM4
     1,                           /* DIGITAL */
@@ -127,7 +132,7 @@ static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
 
 /* the engines one can pick (engine 1 only with FELUCCA_FM4), in ENGINE_ORDER: eng_ok(e), the n-th of them
  * eng_vis(n), e's place among them eng_rank(e), the next / previous one eng_step(e, dir) (wraps) */
-static int eng_ok(uint32_t e) { return e < NENGINES && (FELUCCA_FM4 || e != ENGI_DIGITAL); }
+static int eng_ok(uint32_t e) { return e < NENGINES && (FELUCCA_FM4 || e != ENGI_DIGITAL) && (FELUCCA_SLICE || e != ENGI_SLICE); }
 static uint32_t eng_vis(uint32_t n) { return ENGINE_ORDER[n % NENG_SHOWN]; }
 static uint32_t eng_rank(uint32_t e)
 {

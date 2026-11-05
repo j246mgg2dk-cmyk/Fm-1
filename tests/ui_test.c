@@ -2701,7 +2701,7 @@ static int test_page_cycles(void)
     for (i = 0; i < NPAGES; i++) {                       /* every page in a family its button reaches, and its LED */
         uint32_t f = PAGES[i].fam;
         ok &= f != FAM_SEQ || PAGES[i].graph == GR_ROLL || PAGES[i].graph == GR_EVENTS;
-        ok &= f != FAM_GLO || PAGES[i].graph == GR_SONG;   /* (1.2: GLO's only page) */
+        ok &= f != FAM_GLO || PAGES[i].graph == GR_SONG || PAGES[i].graph == GR_DREAM;   /* (1.2: SONG; this fork: DREAM) */
         ok &= f != FAM_TRK || PAGES[i].graph == GR_TRK || str_eq(PAGES[i].title, "CLOCK");   /* HOME's: MIXER CLOCK */
         ok &= PAGES[i].graph != GR_TRK || f == FAM_TRK;
         ui_power_on(); ui.home = 0; ui.page = (uint8_t)i; page_entered();
@@ -2710,8 +2710,8 @@ static int test_page_cycles(void)
     }
     for (i = 0; i < NPAGES; i++)
         ok &= !str_eq(PAGES[i].title, "PATTERN") && !str_eq(PAGES[i].title, "CHANCE") && !str_eq(PAGES[i].title, "AUTO LIST");
-    bad += check("1.2: SEQ has STEP and AUTOMATION only; SONG is GLO's only page, PHRASES SAVE's, MIXER and CLOCK HOME's "
-                 "(their LED HOME)", ok);
+    bad += check("1.2: SEQ has STEP and AUTOMATION only; SONG (and this fork's DREAM) GLO's, PHRASES SAVE's, MIXER and "
+                 "CLOCK HOME's (their LED HOME)", ok);
     {   /* 1.2: GLOBAL and SYSTEM are gone; their knobs: BPM SWG CLK on HOME > CLOCK, TUNE and ROUT on no page (the MENU's),
          * MIDI SYNC CPU on none (INFO shows the USB state and the CPU) */
         uint32_t k, clock = 0;
@@ -2741,17 +2741,19 @@ static int test_page_cycles(void)
     open_family(FAM_SEQ); ok &= cur_page()->graph == GR_ROLL;
     open_family(FAM_ENV); ok &= str_eq(cur_page()->title, "ENV");
     open_family(FAM_SAVE); ok &= str_eq(cur_page()->title, "USER");
-    open_family(FAM_GLO); open_family(FAM_GLO);          /* SONG again (its only page) */
-    ok &= str_eq(cur_page()->title, "SONG");
+    open_family(FAM_GLO); open_family(FAM_GLO);          /* (this fork) DREAM, GLO's second page */
+    ok &= str_eq(cur_page()->title, "DREAM");
+    open_family(FAM_GLO); ok &= str_eq(cur_page()->title, "SONG");   /* .. and round */
     go_home(); open_family(FAM_GLO); ok &= str_eq(cur_page()->title, "SONG");
     for (i = 0; i < 256u; i++) {                         /* any remembered index (the old GLOBAL 25, SYSTEM 27, ..) */
         go_home(); ui.fam_last[FAM_GLO] = (uint8_t)i; open_family(FAM_GLO);
-        ok &= str_eq(cur_page()->title, "SONG") && ui.fam_last[FAM_GLO] == ui.page;
+        ok &= str_eq(cur_page()->title, i < NPAGES && PAGES[i].graph == GR_DREAM ? "DREAM" : "SONG") &&
+              ui.fam_last[FAM_GLO] == ui.page;
         go_home(); ui.fam_last[FAM_TRK] = (uint8_t)i; press(B_HOME);
         ok &= cur_page()->graph == GR_TRK && !ui.home;
     }
-    bad += check("1.2: a remembered page no longer in its family (or none) lands on the family's first; GLO always SONG, "
-                 "HOME always the MIXER first", ok);
+    bad += check("1.2: a remembered page no longer in its family (or none) lands on the family's first; GLO SONG (or DREAM "
+                 "remembered), HOME always the MIXER first", ok);
 
     /* AUTOMATION: + ADD CHANCE / RATCH, the knobs, EDIT: the step's fields only */
     ui_power_on();
@@ -2893,9 +2895,10 @@ static int test_product_ux(void)
     ui_power_on();
     frames(320);                                       /* (taps further apart than a double tap: #83) */
     press(B_GLO); frames(320); ok = cur_page()->fam == FAM_GLO && str_eq(cur_page()->title, "SONG");
-    press(B_GLO); frames(320); ok &= str_eq(cur_page()->title, "SONG") && cur_page()->fam == FAM_GLO && !ui.home;
+    press(B_GLO); frames(320); ok &= str_eq(cur_page()->title, "DREAM") && cur_page()->fam == FAM_GLO && !ui.home;
+    press(B_GLO); frames(320); ok &= str_eq(cur_page()->title, "SONG");
     go_title("CLOCK"); press(B_GLO); frames(320); ok &= str_eq(cur_page()->title, "SONG");
-    bad += check("1.2: GLO opens SONG directly, again SONG (no GLOBAL, no SYSTEM, no MIXER)", ok);
+    bad += check("1.2: GLO opens SONG directly, again DREAM (this fork), again SONG (no GLOBAL, no SYSTEM, no MIXER)", ok);
     go_home(); btn_down(B_SEQ); frames(500);
     ok = ui.layer == LAYER_SEQ && ui.home;
     btn_up(B_SEQ); frame();
@@ -4032,13 +4035,15 @@ static int test_quick_layers(void)
     ok = TSEL->eng_req == 2u && TSEL->preset == 0u && ui.layer == LAYER_EDIT && sync_reload && !gates();
     key_up(white(eng_rank(2))); frame();
     key_down(white(1)); key_up(white(1)); frame();
-    ok &= TSEL->eng_req == ENGI_FM6;                    /* (G3: FM6, second in ENGINE_ORDER) */
+    ok &= TSEL->eng_req == ENGI_TITAN;                  /* (G3: TITAN, second in ENGINE_ORDER: this fork) */
+    key_down(white(2)); key_up(white(2)); frame();
+    ok &= TSEL->eng_req == ENGI_FM6;                    /* (A3: FM6, third) */
     key_down(white(NENG_SHOWN - 1u)); key_up(white(NENG_SHOWN - 1u)); frame();
     ok &= TSEL->eng_req == ENGI_DRUM;                   /* (the last key: DRUM) */
     ok &= !memcmp(TSEL->step, before.step, sizeof before.step) && TSEL->p[P_SLEN] == before.p[P_SLEN] &&
           TSEL->p[P_SLCR] == SL_STUT;
     btn_up(B_EDIT); frame();
-    bad += check("EDIT + white key n: the n-th engine shown (FM6 2nd, DRUM last), while playing; steps, LEN, SLICER stay", ok);
+    bad += check("EDIT + white key n: the n-th engine shown (TITAN 2nd, FM6 3rd, DRUM last), while playing; steps, LEN, SLICER stay", ok);
     hold(B_SAVE);
     bad += check("  SAVE held: UNDO back to before the layer's loads, the steps untouched",
                  TSEL->eng_req == 0u && TSEL->preset == before.preset && !memcmp(TSEL->step, before.step, sizeof before.step));
@@ -5043,10 +5048,10 @@ static int test_fm4_retired(void)
         seen |= 1u << TSEL->eng_req;
     }
     bad += check("PRESETS KNOB 2: the engines in order, DIGITAL skipped, back to the first",
-                 seen == all && TSEL->eng_req == 0u && eng_step(0, 1) == ENGI_FM6 && eng_step(ENGI_FM6, 1) == 2u &&
-                 eng_step(ENGI_FM6, -1) == 0u && eng_step(0, -1) == ENGI_DRUM);
+                 seen == all && TSEL->eng_req == 0u && eng_step(0, 1) == ENGI_TITAN && eng_step(ENGI_TITAN, 1) == ENGI_FM6 &&
+                 eng_step(ENGI_FM6, 1) == 2u && eng_step(ENGI_FM6, -1) == ENGI_TITAN && eng_step(0, -1) == ENGI_DRUM);
     {   /* the display order (engines.c ENGINE_ORDER): every engine one can pick once; the PRESETS list follows it */
-        static const char *const ORDER[] = {"ANALOG", "FM6", "PHASE", "LOFI", "SAMPLE", "VOICE", "TRIO", "WHEEL", "GRAIN",
+        static const char *const ORDER[] = {"ANALOG", "TITAN", "FM6", "PHASE", "LOFI", "SAMPLE", "VOICE", "TRIO", "WHEEL", "GRAIN",
                                             "PHYS", "NOISE", "SLICE", "DRUM"};
         uint32_t last = 0xFFu, r = 0, n = 0;
         ok = NENG_SHOWN == NELEM(ORDER);
@@ -5062,7 +5067,7 @@ static int test_fm4_retired(void)
             last = e;
             r++;
         }
-        bad += check("engines shown ANALOG FM6 PHASE ... NOISE SLICE DRUM (ENGINE_ORDER); PRESETS lists them so",
+        bad += check("engines shown ANALOG TITAN FM6 PHASE ... NOISE SLICE DRUM (ENGINE_ORDER); PRESETS lists them so",
                      ok && r == NENG_SHOWN);
     }
     /* a user preset stored with engine 1: kept as it is, it loads as FM6 with the converted patch */
@@ -7177,7 +7182,7 @@ static int test_layer_lock(void)
     btn_down(B_GLO); frames(500);
     ok &= ui.layer == LAYER_GLO && !ui.lock;
     btn_up(B_GLO); frame();
-    ok &= !ui.layer && !ui.lock && str_eq(cur_page()->title, "SONG");
+    ok &= !ui.layer && !ui.lock && str_eq(cur_page()->title, "DREAM");   /* (the tap: SONG -> DREAM, this fork) */
     press(B_SCL);
     lay_combo(B_SCL, white(2));
     key_up(white(2)); btn_up(B_SCL); frame(); frames(400);

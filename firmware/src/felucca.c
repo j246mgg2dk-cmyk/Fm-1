@@ -86,6 +86,7 @@
 #endif
 #include "song_chain.c"
 #include "seq.c"
+#include "dream.c"               /* DREAM (this fork): the FM-1 plays itself (TITAN, PHYS) */
 #include "audio.c"
 
 /* -------------------------------------------------------------- UI --- */

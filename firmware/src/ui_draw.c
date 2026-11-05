@@ -973,6 +973,15 @@ static void draw_columns(void)
         }
         return;
     }
+    if (cur_page()->graph == GR_DREAM) {            /* DREAM (this fork): MOOD MOTION BLOOM DRIFT */
+        for (c = 0; c < 4u; c++) {
+            const param_desc_t *d = &DR_DESC[c];
+            int32_t v = dream_get(c);
+            param_format(d, v, val, &unit);
+            draw_column(c, d->label, val, unit, VAL(c), RATIO(d, v), param_icon(d, v));
+        }
+        return;
+    }
     if (cur_page()->graph == GR_SONG) {             /* SECTION, TRACK, its PAT (A..D, -), REPS (the section's) */
         uint32_t row = ui.song_row < CHAIN_ROWS ? ui.song_row : CHAIN_ROWS - 1u, k = ui.song_trk % NTRK, sl;
         int used = row < chain_config.count;

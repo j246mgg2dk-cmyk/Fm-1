@@ -81,7 +81,8 @@ static int mom_turn(uint32_t k, int32_t s)
         d = &TP[MIX_ID[k & 3u]];
     } else {
         if (act_cols() || lock_held() || !(pg->scope == SC_TRACK || pg->scope == SC_ENGINE || pg->scope == SC_GLOBAL) ||
-            pg->graph == GR_EVENTS || pg->graph == GR_SONG || pg->graph == GR_BROWSE || pg->graph == GR_USER ||
+            pg->graph == GR_EVENTS || pg->graph == GR_SONG || pg->graph == GR_DREAM || pg->graph == GR_BROWSE ||
+            pg->graph == GR_USER ||
             pg->graph == GR_PATS || (pg->graph == GR_SLICES && k < 2u) || (pg->graph == GR_MOD && k == 0u))
             return 0;
         d = page_desc(pg, k, &vp);
@@ -948,6 +949,11 @@ static void edit_param(uint32_t slot, int32_t steps)
         ev_knob(slot, steps);
         return;
     }
+    if (pg->graph == GR_DREAM) {                          /* DREAM: MOOD (a detent a mood), MOTION, BLOOM, DRIFT */
+        int32_t st = slot ? accel(EN_K1 + slot, steps, 127) : (steps > 0 ? 1 : -1);
+        dream_set(slot, dream_get(slot) + st);
+        return;
+    }
     if (pg->graph == GR_SONG) {                       /* KNOB 1 SECTION, 2 TRACK, 3 PAT (A..D, -), 4 REPS */
         chain_row_t *r;
         if (slot == 0u) {
@@ -1061,6 +1067,12 @@ static void act_do(void)
         return;
     if (cur_page()->graph == GR_EVENTS) {
         ev_oct();
+        return;
+    }
+    if (cur_page()->graph == GR_DREAM) {                  /* a new dream (the controls as they are), playing */
+        dream_start(fm1_ms * 2654435761u ^ dream.seed * 40503u ^ song.tick);
+        ui_message("DREAMING");
+        ui.force = 1;
         return;
     }
     if (cur_page()->graph == GR_TOOLS) {
@@ -1795,7 +1807,7 @@ static void ui_input(void)
         }
         if (ui.home || pg->scope == SC_STEP || pg->scope == SC_TRK || page_desc(pg, k, &hv) ||
             ((pg->graph == GR_USER || pg->graph == GR_MOD || pg->graph == GR_PATS) && k == 0u)
-            || pg->graph == GR_SONG || (pg->graph == GR_SLICES && k < 2u) || fop_page(pg->graph)) {   /* (not an empty
+            || pg->graph == GR_SONG || pg->graph == GR_DREAM || (pg->graph == GR_SLICES && k < 2u) || fop_page(pg->graph)) {   /* (not an empty
                                                                                                           * column) */
             ui.hot_col = (uint8_t)k;
             ui.hot_t = 40;

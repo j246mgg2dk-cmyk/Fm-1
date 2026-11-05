@@ -1,8 +1,50 @@
-# FM-1 GLITCH (a Felucca fork)
+# FM-1 GLITCH (a Felucca fork): TITAN, DREAM, GLITCH, JUNGLE
 
 Custom firmware for the M-VAVE FM-1, built on [Felucca](https://github.com/hugelton/Felucca) 1.6.1 by Leo Kuroshita /
-Hügelton Instruments (GPL-3.0-only). It keeps everything Felucca does and adds glitch effects to the **FX layer** and JUNGLE breakbeat tools to SLICE.
+Hügelton Instruments (GPL-3.0-only). It keeps everything Felucca does and adds **TITAN** (a big two-layer polysynth
+engine), **DREAM** (the FM-1 plays itself), glitch effects in the **FX layer** and JUNGLE breakbeat tools in SLICE.
 Felucca's authors don't endorse or support it, so please don't send them reports about this fork.
+
+## DREAM: switch it on and it plays
+
+Switch the FM-1 on and it starts dreaming: slow brass swells blooming open, a growl from far below, a pulsing
+arpeggio and a lonely lead with a late vibrato, in the manner of the early-80s film scores. No samples: everything is
+the TITAN engine. It never plays the same twice and never stops changing. The music grows in **acts** of 32 bars:
+EMERGE (the swells alone, dark), BLOOM (the pulse comes in), RISE (the lead and the growl), PEAK (everything, wide
+open) and DISSOLVE, then a new progression, and with DRIFT a new key or mood. The screen says which act it is in.
+
+It starts by itself at power-on when there is no music of yours to put back (the first start after installing, or
+MENU > SYSTEM > RESTORE LAST OFF), and again whenever the last music was a dream. Music of your own that was playing
+when you switched off comes back as always, and DREAM stays asleep.
+
+**GLO > DREAM** (tap GLO twice: SONG, then DREAM):
+
+| Control | What it does |
+|---|---|
+| **KNOB 1 MOOD** | NOIR (minor, the brass), RAIN (dorian), PULSE (minor, the arpeggio from the first second), NEON (major), VOID (phrygian, the growl, slow), ALIEN (hungarian minor) |
+| **KNOB 2 MOTION** | how much happens: the pulse in eighths or sixteenths, the growl's heartbeat, the lead's phrases |
+| **KNOB 3 BLOOM** | how bright and open: the cutoffs, sevenths and ninths in the chords |
+| **KNOB 4 DRIFT** | how fast it wanders off: new progressions, keys and moods |
+| **OCT+** | a new dream (NEW while one plays) |
+| **PLAY** | stop and go on as always |
+
+The four tracks are ordinary music: T1 the swells, T2 the growl, T3 the pulse, T4 the lead, 64 steps of 1/16 each.
+Turn any sound's knobs while it dreams. Play the keys over it. Hold FX and mangle it with GLITCH or ROLL. **Edit a step**
+(REC, STEP, a phrase, a project load) and DREAM hands the music over to you: it stops writing and what is there stays.
+Save it as a project like any other.
+
+## TITAN: the engine
+
+Engine 14, second in the PRESETS list after ANALOG (and on the second white key of the EDIT layer). Per voice two
+complete layers (WAVE: SAW2, SAWPW, PWM2, SUB, SINE, SQR2; INT the second layer's interval), a ring modulator (RING),
+a high-pass (HPF) before a resonant low-pass (CUT, RES) and GRIT, an overdrive into the filter whose resonance
+growls instead of ringing. DRFT spreads the layers in cents and makes every voice wander on its own, slowly (pitch,
+pulse width, cutoff), so a chord never sits still. HOME's knobs: CUT, RES, DRFT, GRIT.
+
+The eight sounds: VAST BRASS, NOIR SWELL, GOD STRING, UPSIDE ARP, IRON BASS, 2049 GROWL, TEARS LEAD, CATHEDRAL.
+Original sounds made in the manner of the late-70s polysynths: no samples or patches of anyone else's.
+
+TITAN sounds can't be starred as favourites (the settings keep that row of the table for MIDI LEARN).
 
 ## The new effects
 

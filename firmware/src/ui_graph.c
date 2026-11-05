@@ -1193,6 +1193,8 @@ static uint32_t graph_signature(void)
     if (strip_kind() == SK_TITLE)                    /* MENU > LARGE: the page's title (its engine, its number) */
         return h ^ 0x5A17u;
     if (pg->graph == GR_NONE || pg->graph == GR_ARP) h ^= ui.frame / 2u;
+    if (pg->graph == GR_DREAM)                       /* its scope (dreaming), or its note: which */
+        h ^= dream.on && song.playing ? ui.frame / 2u : (dream.on + 1u) * 0x9E3779B9u;
     for (i = 0; i < P_COUNT; i++)
         h = (h ^ (uint32_t)t->p[i]) * 16777619u;
     h ^= (uint32_t)TSEL->preset * 7u + (uint32_t)song.g[G_SLOT] * 13u + TSEL->user * 257u + up_gen * 7919u + ui.uslot * 104729u +
@@ -2316,6 +2318,15 @@ static void draw_graph(void)
         case GR_SONG:
             cv_oy = 0;
             graph_song();
+            break;
+        case GR_DREAM:                               /* DREAM (this fork): the music's scope while it dreams */
+            cv_oy = 0;
+            if (dream.on && song.playing)
+                graph_scope(c);
+            else if (dream.on)
+                panel_note("DREAM PAUSED", "[PLAY] DREAM ON", "[OCT+] A NEW ONE");
+            else
+                panel_note("THE FM-1 PLAYS ITSELF", "[OCT+] DREAM", 0);
             break;
         case GR_PATS:
             cv_oy = 0;
