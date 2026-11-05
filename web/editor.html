@@ -1687,7 +1687,7 @@ function makeMockDevice(opt = {}) {
     E("MIDI", ["USB", "TRS"], 0), E("SYNC", NDASH, 0), E("ROUT", ["CH1-4", "SEL", "CH5-8", "CH9-12", "CH13-16", "TRACK"], 0), D("CPU", F.INT, 0, 0, 0),
     D("SLOT", F.INT, 1, 4, 1), E("NAME", NDASH, 0), E("LOAD", NGO, 0), E("SAVE", NGO, 0),
     E("ENG", ["ANALOG", "-", "PHASE", "LOFI", "SAMPLE", "VOICE", "TRIO", "WHEEL",
-      "GRAIN", "PHYS", "DRUM", "NOISE", "FM6", "SLICE"], 0), E("SET", NGO, 0),
+      "GRAIN", "PHYS", "DRUM", "NOISE", "FM6", "SLICE", "TITAN"], 0), E("SET", NGO, 0),
     E("CLRSQ", NGO, 0), E("INIT", NGO, 0),
     E("TYPE", ["ROOM", "SPRING", "HALL"], 2),       /* G_RTYPE (id 24, was G_DRCH): the reverb's model (HALL: 1.2) */
     D("-", F.INT, 0, 0, 0), D("-", F.INT, 0, 0, 0),   /* G_DRLVL, G_DRREV: inert since 1.0 */
@@ -1774,6 +1774,18 @@ function makeMockDevice(opt = {}) {
         E("DIV", ["4", "8", "16", "32", "AUTO", "MAN"], 2), D("START", F.INT, 0, 31, 0), D("PTCH", F.SEMI, -24, 24, 0),
         E("MODE", ["ONE", "GATE", "LOOP"], 0), E("REV", ["OFF", "ON"], 0), D("DCAY", F.TIME, 0, 127, 127), D("TONE", F.INT, 0, 127, 127)],
       presets: [P("CHOP", [0, 2, 0, 0, 0, 0, 127, 127], [0, 127, 127, 30], 0, 9), P("STUTTER", [0, 1, 0, 0, 1, 0, 90, 110], [0, 127, 127, 12], 0, 10)] },
+    /* this fork: TITAN (engine 14, src/eng_titan.c) */
+    { name: "TITAN", titles: ["LAYERS", "FILTER"], edit: [E("WAVE", ["SAW2", "SAWPW", "PWM2", "SUB", "SINE", "SQR2"], 0),
+        D("INT", F.SEMI, -24, 24, 0), D("DRFT", F.PCT, 0, 127, 60), D("RING", F.PCT, 0, 127, 0),
+        D("CUT", F.CUTOFF, 0, 127, 60), D("RES", F.PCT, 0, 127, 20), D("HPF", F.PCT, 0, 127, 0), D("GRIT", F.PCT, 0, 127, 0)],
+      presets: [P("VAST BRASS", [0, 0, 70, 0, 40, 24, 12, 10], [98, 104, 100, 102], 0, 6),
+        P("NOIR SWELL", [2, 12, 90, 0, 48, 14, 18, 0], [104, 108, 110, 108], 0, 5),
+        P("GOD STRING", [1, 12, 80, 0, 60, 10, 30, 0], [100, 104, 115, 106], 0, 5),
+        P("UPSIDE ARP", [1, 12, 24, 0, 46, 62, 14, 18], [0, 86, 20, 66], 0, 13),
+        P("IRON BASS", [3, 0, 30, 0, 36, 70, 0, 90], [0, 86, 70, 70], 1, 2),
+        P("2049 GROWL", [3, 0, 64, 18, 26, 66, 0, 118], [96, 106, 112, 104], 1, 8),
+        P("TEARS LEAD", [0, 0, 50, 0, 54, 30, 16, 20], [84, 100, 104, 100], 1, 4),
+        P("CATHEDRAL", [2, -12, 110, 30, 70, 8, 40, 0], [108, 112, 120, 116], 0, 5)] },
   ];
   const FM6_E = ENG.findIndex((e) => e.name === "FM6"), FM6_OWN = FM6.FACTORY_PK.length, DRUM_E = ENG.findIndex((e) => e.name === "DRUM");
   /* factory PATTERNS[] (engines.c; the device loads them from SAVE > PHRASES, presets only suggest one): absolute
@@ -2427,7 +2439,7 @@ function enumShown(d) {
 /* the order the device shows its engines in (src/engines.c ENGINE_ORDER): the lists here follow it, the protocol keeps
    the engine numbers. engineOrder(names): the indices of names in that order, "-" (a reserved number) left out; a name
    the list does not know (another firmware) follows in index order */
-const ENGINE_ORDER = ["ANALOG", "FM6", "DIGITAL", "PHASE", "LOFI", "SAMPLE", "VOICE", "TRIO", "WHEEL", "GRAIN", "PHYS", "NOISE",
+const ENGINE_ORDER = ["ANALOG", "TITAN", "FM6", "DIGITAL", "PHASE", "LOFI", "SAMPLE", "VOICE", "TRIO", "WHEEL", "GRAIN", "PHYS", "NOISE",
   "SLICE", "DRUM"];
 function engineOrder(names) {
   const rank = (n) => { const k = ENGINE_ORDER.indexOf(n); return k < 0 ? ENGINE_ORDER.length : k; };
