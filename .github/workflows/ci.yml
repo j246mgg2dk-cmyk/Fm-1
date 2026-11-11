@@ -3,11 +3,13 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   core-tests:
     name: FM1Core tests (macOS)
-    runs-on: macos-15
+    # Intel runners: the arm64 macOS pool often never picks jobs up on free accounts.
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v4
       - name: Run tests
@@ -15,7 +17,7 @@ jobs:
 
   ios-build:
     name: iPad app build
-    runs-on: macos-15
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v4
       - name: Install XcodeGen
@@ -24,7 +26,14 @@ jobs:
         run: xcodegen
       - name: Build for iOS Simulator
         run: |
+          set +e
+          xcodebuild -version
           xcodebuild -project FM1.xcodeproj -scheme FM1 \
             -destination 'generic/platform=iOS Simulator' \
-            CODE_SIGNING_ALLOWED=NO build | tail -n 200
-          exit ${PIPESTATUS[0]}
+            CODE_SIGNING_ALLOWED=NO build > build.log 2>&1
+          status=$?
+          echo "=== errors ==="
+          grep -E "error:" build.log | sort -u | head -n 300
+          echo "=== tail ==="
+          tail -n 60 build.log
+          exit $status
