@@ -13,7 +13,7 @@ final class AudioIO {
     struct Configuration: Equatable {
         var preferredSampleRate: Double = 48_000
         var preferredBufferFrames: Int = 128
-        /// Let AUM, Koala, etc. keep making sound while FM-1 runs.
+        /// Let AUM, Koala, etc. keep making sound while Mod-Lab runs.
         var mixWithOthers = true
         /// Allow Bluetooth headphones (adds lots of latency; off for studio use).
         var allowBluetoothOutput = false
@@ -104,7 +104,7 @@ final class AudioIO {
         do {
             try start()
         } catch {
-            NSLog("FM-1 audio restart failed: \(error)")
+            NSLog("Mod-Lab audio restart failed: \(error)")
         }
         onRouteChange?(status)
     }
@@ -169,7 +169,7 @@ final class AudioIO {
             componentFlagsMask: 0)
         let au = try AUAudioUnit(componentDescription: desc)
 
-        let outFormat = AVAudioFormat.fm1(channels: status.outputChannels, sampleRate: status.sampleRate)
+        let outFormat = AVAudioFormat.modLab(channels: status.outputChannels, sampleRate: status.sampleRate)
         // On an IO unit, input bus 0 is "what the app sends to the hardware output".
         try au.inputBusses[0].setFormat(outFormat)
         au.isOutputEnabled = true
@@ -177,7 +177,7 @@ final class AudioIO {
         let wantsInput = status.inputChannels > 0 && AVAudioApplication.shared.recordPermission == .granted
         if wantsInput {
             // Output bus 1 is "what the hardware input gives the app".
-            let inFormat = AVAudioFormat.fm1(channels: status.inputChannels, sampleRate: status.sampleRate)
+            let inFormat = AVAudioFormat.modLab(channels: status.inputChannels, sampleRate: status.sampleRate)
             try au.outputBusses[1].setFormat(inFormat)
             au.isInputEnabled = true
         } else {
@@ -251,8 +251,8 @@ private extension UnsafeMutableAudioBufferListPointer {
 }
 
 extension AVAudioFormat {
-    /// Deinterleaved Float32 with N discrete channels: the only format FM-1 uses internally.
-    static func fm1(channels: Int, sampleRate: Double) -> AVAudioFormat {
+    /// Deinterleaved Float32 with N discrete channels: the only format Mod-Lab uses internally.
+    static func modLab(channels: Int, sampleRate: Double) -> AVAudioFormat {
         if channels <= 2, let f = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: AVAudioChannelCount(max(channels, 1))) {
             return f
         }

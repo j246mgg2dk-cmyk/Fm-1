@@ -5,7 +5,7 @@ import FM1Core
 import UIKit
 
 /// Host-side info every plugin can query (tempo, beat, playing) so arps,
-/// delays, LFOs and Koala's sequencer lock to FM-1's transport.
+/// delays, LFOs and Koala's sequencer lock to Mod-Lab's transport.
 final class HostClockInfo: @unchecked Sendable {
     // Written by the audio thread at the start of each block, read by plugins during that block.
     var tempo: Double = 120
@@ -19,7 +19,7 @@ final class HostClockInfo: @unchecked Sendable {
 }
 
 /// One AUv3 instance (any vendor: Moog, Korg, FabFilter, Koala, Drambo, etc.)
-/// rendered manually by FM-1's graph — the same approach AUM uses — which is
+/// rendered manually by Mod-Lab's graph — the same approach AUM uses — which is
 /// what makes per-channel routing, CV and sends possible.
 final class HostedPlugin {
     let deviceID: UUID
@@ -58,7 +58,7 @@ final class HostedPlugin {
         self.role = component.role
         self.maxFrames = maxFrames
 
-        let fmt = AVAudioFormat.fm1(channels: 2, sampleRate: sampleRate)
+        let fmt = AVAudioFormat.modLab(channels: 2, sampleRate: sampleRate)
         if au.outputBusses.count > 0 { try au.outputBusses[0].setFormat(fmt) }
         if au.inputBusses.count > 0 { try? au.inputBusses[0].setFormat(fmt) }
         au.maximumFramesToRender = AUAudioFrameCount(maxFrames)
@@ -189,7 +189,7 @@ final class HostedPlugin {
     /// After the interface's sample rate changes. Only call while no graph references this plugin.
     func reconfigure(sampleRate: Double) throws {
         au.deallocateRenderResources()
-        let fmt = AVAudioFormat.fm1(channels: 2, sampleRate: sampleRate)
+        let fmt = AVAudioFormat.modLab(channels: 2, sampleRate: sampleRate)
         if au.outputBusses.count > 0 { try au.outputBusses[0].setFormat(fmt) }
         if au.inputBusses.count > 0 { try? au.inputBusses[0].setFormat(fmt) }
         try au.allocateRenderResources()

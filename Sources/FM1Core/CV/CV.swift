@@ -1,7 +1,7 @@
 import Foundation
 
 /// CV output over a DC-coupled audio interface (Expert Sleepers ES-8/ES-9,
-/// MOTU UltraLite mk5, etc.). FM-1 writes DC sample values; the interface turns
+/// MOTU UltraLite mk5, etc.). Mod-Lab writes DC sample values; the interface turns
 /// full-scale (±1.0) into ±`fullScaleVolts`.
 public struct CVCalibration: Codable, Hashable, Sendable {
     /// Volts produced by a sample value of 1.0. ES-8: 10 V. MOTU mk5: ~10 V (check with a meter).

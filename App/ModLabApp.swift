@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct FM1App: App {
+struct ModLabApp: App {
     @StateObject private var model = AppModel()
     @Environment(\.scenePhase) private var scenePhase
 
@@ -13,7 +13,7 @@ struct FM1App: App {
                 .environmentObject(model.catalog)
                 .task { await model.start() }
                 .onOpenURL { url in
-                    if url.pathExtension == "fm1" { model.open(url) }
+                    if url.pathExtension == "modlab" { model.open(url) }
                 }
         }
         .onChange(of: scenePhase) { _, phase in

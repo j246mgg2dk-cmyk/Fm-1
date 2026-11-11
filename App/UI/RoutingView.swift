@@ -32,8 +32,8 @@ struct RoutingView: View {
                     model.rebuild()
                 }
                 Button {
-                    let src = model.midiSources.first?.id ?? .fm1VirtualIn
-                    let dst = model.midiDestinations.first?.id ?? .fm1VirtualOut
+                    let src = model.midiSources.first?.id ?? .modLabVirtualIn
+                    let dst = model.midiDestinations.first?.id ?? .modLabVirtualOut
                     editing = MIDIRoute(source: src, destination: dst)
                 } label: { Label("New Route", systemImage: "plus") }
             }
@@ -44,7 +44,7 @@ struct RoutingView: View {
                 ForEach(model.midiDestinations) { d in
                     Label("\(d.id.name)  ·  \(d.id.kind.rawValue)", systemImage: "arrow.up.circle")
                 }
-                Text("FM-1 also appears to other apps as \"FM-1 In\" / \"FM-1 Out\".").font(.caption).foregroundStyle(.secondary)
+                Text("Mod-Lab also appears to other apps as \"Mod-Lab In\" / \"Mod-Lab Out\".").font(.caption).foregroundStyle(.secondary)
             }
         }
         .sheet(item: $editing) { route in
@@ -103,7 +103,7 @@ struct RouteEditor: View {
 
     var sourceOptions: [(String, EndpointID)] {
         var out = model.midiSources.map { ($0.id.name, $0.id) }
-        out.append(("FM-1 In (from other apps)", .fm1VirtualIn))
+        out.append(("Mod-Lab In (from other apps)", .modLabVirtualIn))
         for t in model.project.tracks {
             for d in t.devices { out.append(("\(t.name) › \(d.component.name) MIDI out", .plugin(d.id))) }
         }
@@ -112,7 +112,7 @@ struct RouteEditor: View {
 
     var destinationOptions: [(String, EndpointID)] {
         var out = model.midiDestinations.map { ($0.id.name, $0.id) }
-        out.append(("FM-1 Out (to other apps)", .fm1VirtualOut))
+        out.append(("Mod-Lab Out (to other apps)", .modLabVirtualOut))
         for t in model.project.tracks where t.kind != .audio { out.append(("Track: \(t.name)", t.endpoint)) }
         return out
     }

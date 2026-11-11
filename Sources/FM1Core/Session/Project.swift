@@ -193,10 +193,10 @@ public struct Track: Identifiable, Codable, Hashable, Sendable {
 extension EndpointID {
     public static func track(_ id: UUID) -> EndpointID { EndpointID(.track, id.uuidString) }
     public static func plugin(_ device: UUID) -> EndpointID { EndpointID(.plugin, device.uuidString) }
-    public static let clock = EndpointID(.internalClock, "FM-1 Clock")
-    /// FM-1's own virtual ports, visible to AUM, Koala, Drambo, etc.
-    public static let fm1VirtualOut = EndpointID(.virtualPort, "FM-1 Out")
-    public static let fm1VirtualIn = EndpointID(.virtualPort, "FM-1 In")
+    public static let clock = EndpointID(.internalClock, "Mod-Lab Clock")
+    /// Mod-Lab's own virtual ports, visible to AUM, Koala, Drambo, etc.
+    public static let modLabVirtualOut = EndpointID(.virtualPort, "Mod-Lab Out")
+    public static let modLabVirtualIn = EndpointID(.virtualPort, "Mod-Lab In")
 }
 
 public struct LaunchScene: Identifiable, Codable, Hashable, Sendable {

@@ -1,7 +1,7 @@
 /// Conversion between Universal MIDI Packets (what CoreMIDI's modern
 /// `MIDIEventList` APIs speak) and plain MIDI 1.0 messages.
 ///
-/// FM-1 opens its CoreMIDI ports with the MIDI 1.0 protocol so CoreMIDI
+/// Mod-Lab opens its CoreMIDI ports with the MIDI 1.0 protocol so CoreMIDI
 /// hands us type 1/2/3 packets. Type 4 (MIDI 2.0 channel voice) is down-converted
 /// as a fallback so nothing is silently dropped.
 public struct UMPDecoder {

@@ -31,7 +31,7 @@ final class AudioClipBuffer {
 
     init(url: URL, sampleRate: Double) throws {
         let file = try AVAudioFile(forReading: url)
-        let fmt = AVAudioFormat.fm1(channels: 2, sampleRate: sampleRate)
+        let fmt = AVAudioFormat.modLab(channels: 2, sampleRate: sampleRate)
         let srcFrames = AVAudioFrameCount(file.length)
         guard let src = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: srcFrames) else {
             throw CocoaError(.fileReadCorruptFile)

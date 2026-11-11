@@ -135,7 +135,7 @@ struct SyncView: View {
                 if model.project.clock.source == .externalMIDI {
                     Picker("Follow input", selection: Binding(get: { model.project.clock.externalInput }, set: { model.project.clock.externalInput = $0; model.rebuild() })) {
                         Text("None").tag(EndpointID?.none)
-                        Text("FM-1 In").tag(EndpointID?.some(.fm1VirtualIn))
+                        Text("Mod-Lab In").tag(EndpointID?.some(.modLabVirtualIn))
                         ForEach(model.midiSources) { Text($0.id.name).tag(EndpointID?.some($0.id)) }
                     }
                     Text(live.externalTempo.map { String(format: "Receiving %.2f BPM", $0) } ?? "No clock received yet")
@@ -150,7 +150,7 @@ struct SyncView: View {
                 }
             }
             SwiftUI.Section {
-                ForEach(model.midiDestinations + [MIDIManager.Endpoint(id: .fm1VirtualOut, ref: 0, isOnline: true, manufacturer: "")]) { d in
+                ForEach(model.midiDestinations + [MIDIManager.Endpoint(id: .modLabVirtualOut, ref: 0, isOnline: true, manufacturer: "")]) { d in
                     Toggle(d.id.name, isOn: Binding(get: { model.project.clock.sendClockTo.contains(d.id) }, set: { on in
                         if on { model.project.clock.sendClockTo.append(d.id) } else { model.project.clock.sendClockTo.removeAll { $0 == d.id } }
                         model.rebuild()
@@ -232,7 +232,7 @@ struct AudioIOView: View {
             }
             SwiftUI.Section("Recording") {
                 Toggle("Also record the master mix (jam capture)", isOn: $model.project.recordMasterMix)
-                Text("Recordings land in Files › On My iPad › FM-1 › <project> › Audio, ready for Koala, AUM, AudioShare or your desktop DAW.")
+                Text("Recordings land in Files › On My iPad › Mod-Lab › <project> › Audio, ready for Koala, AUM, AudioShare or your desktop DAW.")
                     .font(.caption).foregroundStyle(.secondary)
             }
         }
@@ -261,8 +261,8 @@ struct ConnectView: View {
                 Text("Network MIDI")
             }
             SwiftUI.Section {
-                Text("FM-1 In / FM-1 Out are virtual MIDI ports. In AUM, Koala, Drambo etc., pick \"FM-1 Out\" as an input to receive FM-1's clock and notes, or send to \"FM-1 In\".")
-                Text("Any AUv3 that works in AUM loads inside FM-1, including Koala Sampler's AUv3 and AUM-style MIDI FX.")
+                Text("Mod-Lab In / Mod-Lab Out are virtual MIDI ports. In AUM, Koala, Drambo etc., pick \"Mod-Lab Out\" as an input to receive Mod-Lab's clock and notes, or send to \"Mod-Lab In\".")
+                Text("Any AUv3 that works in AUM loads inside Mod-Lab, including Koala Sampler's AUv3 and AUM-style MIDI FX.")
             } header: {
                 Text("Other apps")
             }

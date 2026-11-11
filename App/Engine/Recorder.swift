@@ -66,7 +66,7 @@ final class RecordingStream {
             let n = ringL.read(into: ch[0], count: avail)
             if channels > 1 { _ = ringR.read(into: ch[1], count: n) }
             scratch.frameLength = AVAudioFrameCount(n)
-            do { try file.write(from: scratch) } catch { NSLog("FM-1 record write failed: \(error)") ; break }
+            do { try file.write(from: scratch) } catch { NSLog("Mod-Lab record write failed: \(error)") ; break }
             total += n
         }
         return total
@@ -75,7 +75,7 @@ final class RecordingStream {
 
 /// Drains all active streams to disk on a utility thread.
 final class RecordingWriter {
-    private let queue = DispatchQueue(label: "fm1.recording.writer", qos: .userInitiated)
+    private let queue = DispatchQueue(label: "modlab.recording.writer", qos: .userInitiated)
     private var timer: DispatchSourceTimer?
     private var streams: [RecordingStream] = []
 

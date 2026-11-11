@@ -41,7 +41,7 @@ struct RootView: View {
             List(AppSection.allCases, selection: $section) { s in
                 Label(s.rawValue, systemImage: s.icon).tag(s)
             }
-            .navigationTitle("FM-1")
+            .navigationTitle("Mod-Lab")
         } detail: {
             VStack(spacing: 0) {
                 TransportBar()
@@ -63,7 +63,7 @@ struct RootView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .alert("FM-1", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
+        .alert("Mod-Lab", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
             Button("OK") { model.errorMessage = nil }
         } message: {
             Text(model.errorMessage ?? "")

@@ -101,7 +101,7 @@ public final class FloatRingBuffer: @unchecked Sendable {
 
 /// Publish an object from the main thread; the audio thread borrows it without
 /// retaining. The previous object is handed back to the caller, who must keep
-/// it alive until the audio thread can no longer be using it (FM-1 parks old
+/// it alive until the audio thread can no longer be using it (Mod-Lab parks old
 /// graphs for a second before letting them go).
 public final class AtomicReference<T: AnyObject>: @unchecked Sendable {
     private let raw = ManagedAtomic<Unmanaged<T>?>(nil)

@@ -62,7 +62,7 @@ final class PluginCatalog: ObservableObject {
     }
 }
 
-/// Shows a plugin's own UI (the Moog/Korg/FabFilter panel) inside FM-1.
+/// Shows a plugin's own UI (the Moog/Korg/FabFilter panel) inside Mod-Lab.
 struct PluginView: UIViewControllerRepresentable {
     let viewController: UIViewController
 

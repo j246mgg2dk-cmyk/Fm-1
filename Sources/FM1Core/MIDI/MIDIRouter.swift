@@ -8,10 +8,10 @@ public struct EndpointID: Hashable, Codable, Sendable, CustomStringConvertible {
         case hardware      // USB / DIN interfaces, class-compliant synths
         case bluetooth     // BLE-MIDI
         case network       // RTP-MIDI session
-        case virtualPort   // other apps: AUM, Koala, Drambo ... and FM-1's own virtual ports
-        case track         // an FM-1 track input
+        case virtualPort   // other apps: AUM, Koala, Drambo ... and Mod-Lab's own virtual ports
+        case track         // an Mod-Lab track input
         case plugin        // MIDI output of a hosted AUv3
-        case internalClock // FM-1's transport/clock generator
+        case internalClock // Mod-Lab's transport/clock generator
     }
 
     public var kind: Kind
@@ -156,7 +156,7 @@ public struct RoutedMIDI: Equatable, Sendable {
     }
 }
 
-/// The patchbay. Every MIDI message in FM-1 passes through here, whether it
+/// The patchbay. Every MIDI message in Mod-Lab passes through here, whether it
 /// comes from a USB keyboard, a BLE controller, AUM, a plugin's MIDI out or the
 /// internal clock.
 ///

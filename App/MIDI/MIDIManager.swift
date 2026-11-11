@@ -5,8 +5,8 @@ import FM1Core
 /// Everything CoreMIDI: USB class-compliant gear, DIN interfaces, Bluetooth
 /// LE MIDI, RTP network sessions and other apps (AUM, Koala, Drambo, ...).
 ///
-/// FM-1 publishes two virtual ports, "FM-1 Out" and "FM-1 In", so any other
-/// app can send to or receive from FM-1 like a hardware device.
+/// Mod-Lab publishes two virtual ports, "Mod-Lab Out" and "Mod-Lab In", so any other
+/// app can send to or receive from Mod-Lab like a hardware device.
 ///
 /// Every incoming message goes through `MIDIRouter` on the CoreMIDI thread,
 /// then out to hardware immediately or into a track's lock-free inbox.
@@ -44,7 +44,7 @@ final class MIDIManager {
     private var pluginSourceTable: [EndpointID] = []
 
     private var senderTimer: DispatchSourceTimer?
-    private let senderQueue = DispatchQueue(label: "fm1.midi.sender", qos: .userInteractive)
+    private let senderQueue = DispatchQueue(label: "modlab.midi.sender", qos: .userInteractive)
 
     init() {
         MIDINetworkSession.default().isEnabled = true
@@ -52,7 +52,7 @@ final class MIDIManager {
     }
 
     func start() throws {
-        var status = MIDIClientCreateWithBlock("FM-1" as CFString, &client) { [weak self] notification in
+        var status = MIDIClientCreateWithBlock("Mod-Lab" as CFString, &client) { [weak self] notification in
             let id = notification.pointee.messageID
             if id == .msgSetupChanged || id == .msgObjectAdded || id == .msgObjectRemoved {
                 DispatchQueue.main.async { self?.refreshEndpoints() }
@@ -60,22 +60,22 @@ final class MIDIManager {
         }
         guard status == noErr else { throw MIDIError(status) }
 
-        status = MIDIInputPortCreateWithProtocol(client, "FM-1 Input" as CFString, ._1_0, &inputPort) { [weak self] list, srcRef in
+        status = MIDIInputPortCreateWithProtocol(client, "Mod-Lab Input" as CFString, ._1_0, &inputPort) { [weak self] list, srcRef in
             guard let self, let srcRef else { return }
             let ref = MIDIEndpointRef(UInt(bitPattern: srcRef))
             self.receive(list, from: ref)
         }
         guard status == noErr else { throw MIDIError(status) }
 
-        status = MIDIOutputPortCreate(client, "FM-1 Output" as CFString, &outputPort)
+        status = MIDIOutputPortCreate(client, "Mod-Lab Output" as CFString, &outputPort)
         guard status == noErr else { throw MIDIError(status) }
 
-        // Virtual ports other apps see as a device called "FM-1".
-        status = MIDISourceCreateWithProtocol(client, "FM-1 Out" as CFString, ._1_0, &virtualSource)
+        // Virtual ports other apps see as a device called "Mod-Lab".
+        status = MIDISourceCreateWithProtocol(client, "Mod-Lab Out" as CFString, ._1_0, &virtualSource)
         guard status == noErr else { throw MIDIError(status) }
-        status = MIDIDestinationCreateWithProtocol(client, "FM-1 In" as CFString, ._1_0, &virtualDestination) { [weak self] list, _ in
+        status = MIDIDestinationCreateWithProtocol(client, "Mod-Lab In" as CFString, ._1_0, &virtualDestination) { [weak self] list, _ in
             guard let self else { return }
-            self.receive(list, from: self.virtualDestination, id: .fm1VirtualIn)
+            self.receive(list, from: self.virtualDestination, id: .modLabVirtualIn)
         }
         guard status == noErr else { throw MIDIError(status) }
         // Stable unique IDs so AUM/Koala remember the connection between launches.
@@ -107,7 +107,7 @@ final class MIDIManager {
         }
         sourceIDs = Dictionary(newSources.map { ($0.ref, $0.id) }, uniquingKeysWith: { a, _ in a })
         destinationRefs = Dictionary(newDests.map { ($0.id, $0.ref) }, uniquingKeysWith: { a, _ in a })
-        destinationRefs[.fm1VirtualOut] = virtualSource
+        destinationRefs[.modLabVirtualOut] = virtualSource
         lock.unlock()
         sources = newSources
         destinations = newDests

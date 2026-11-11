@@ -28,7 +28,7 @@ jobs:
         run: |
           set +e
           xcodebuild -version
-          xcodebuild -project FM1.xcodeproj -scheme FM1 \
+          xcodebuild -project ModLab.xcodeproj -scheme ModLab \
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO build > build.log 2>&1
           status=$?

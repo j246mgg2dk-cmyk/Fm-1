@@ -1,7 +1,7 @@
 // swift-tools-version:5.9
 import PackageDescription
 
-// FM1Core is the platform-independent brain of FM-1: MIDI parsing/routing,
+// FM1Core is the platform-independent brain of Mod-Lab: MIDI parsing/routing,
 // transport + clock, Bitwig-style modulators, CV conversion, the project
 // model and realtime-safe queues. It has no UIKit/AVFoundation dependency so
 // it builds and tests on macOS, iOS and Linux.
@@ -10,7 +10,7 @@ import PackageDescription
 // (see project.yml) because it needs an Xcode app target, entitlements and
 // Info.plist keys that SwiftPM cannot express.
 let package = Package(
-    name: "FM1",
+    name: "ModLab",
     platforms: [.iOS(.v17), .macOS(.v14)],
     products: [
         .library(name: "FM1Core", targets: ["FM1Core"]),

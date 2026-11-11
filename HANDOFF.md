@@ -119,3 +119,21 @@ Realtime rules on the audio thread:
   - CV needs a DC-coupled interface;
   - a free Apple ID install lasts 7 days.
 - Commit work on branch `claude/ipad-daw-plugins-i87gra` and push it.
+
+---
+
+## 7. Status update (2026-11-11)
+
+- **Name decided: Mod-Lab.** Renamed everywhere:
+  - Xcode target and scheme `ModLab`, app name "Mod-Lab";
+  - bundle ID `com.modularmayhem.modlab`;
+  - MIDI ports "Mod-Lab In" / "Mod-Lab Out";
+  - project files `.modlab`.
+  The internal Swift library keeps the name `FM1Core` (not visible to users).
+- `swift test`: all 33 tests pass on Linux (Swift 6.0.2) and on macOS CI.
+- The iPad app builds on GitHub Actions (Xcode 16.4, iOS 18.5 SDK) after three small fixes:
+  - `hasCustomView` is macOS-only;
+  - the parameter slider expression was too complex to type-check;
+  - a missing `AudioToolbox` import.
+- CI uses `macos-15-intel`: the arm64 macOS pool never picked the jobs up.
+- Still untested on a real iPad. Next step: install Xcode on the Mac and run the app on the iPad (see section 3).

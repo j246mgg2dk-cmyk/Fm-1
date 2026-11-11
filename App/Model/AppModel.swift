@@ -649,7 +649,7 @@ final class AppModel: ObservableObject {
         live.externalTempo = project.clock.source == .externalMIDI && engine.externalTempo.value > 0 ? engine.externalTempo.value : nil
     }
 
-    // MARK: Persistence (Files app: On My iPad > FM-1)
+    // MARK: Persistence (Files app: On My iPad > Mod-Lab)
 
     static var projectsRoot: URL {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -669,7 +669,7 @@ final class AppModel: ObservableObject {
         }
         do {
             try FileManager.default.createDirectory(at: projectFolder, withIntermediateDirectories: true)
-            let url = projectFolder.appendingPathComponent("\(Self.safe(project.name)).fm1")
+            let url = projectFolder.appendingPathComponent("\(Self.safe(project.name)).modlab")
             try project.encoded().write(to: url, options: .atomic)
             UserDefaults.standard.set(url.path, forKey: "lastProject")
         } catch {
@@ -725,7 +725,7 @@ final class AppModel: ObservableObject {
         let fm = FileManager.default
         guard let dirs = try? fm.contentsOfDirectory(at: Self.projectsRoot, includingPropertiesForKeys: nil) else { return [] }
         return dirs.flatMap { d in
-            ((try? fm.contentsOfDirectory(at: d, includingPropertiesForKeys: nil)) ?? []).filter { $0.pathExtension == "fm1" }
+            ((try? fm.contentsOfDirectory(at: d, includingPropertiesForKeys: nil)) ?? []).filter { $0.pathExtension == "modlab" }
         }.sorted { $0.lastPathComponent < $1.lastPathComponent }
     }
 

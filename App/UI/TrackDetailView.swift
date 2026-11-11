@@ -150,7 +150,7 @@ struct TrackDetailView: View {
         Group {
             Picker("MIDI Out", selection: Binding(get: { track.midiOutput }, set: { v in model.updateTrack(track.id) { $0.midiOutput = v } })) {
                 Text("None").tag(EndpointID?.none)
-                Text("FM-1 Out (to AUM/Koala…)").tag(EndpointID?.some(.fm1VirtualOut))
+                Text("Mod-Lab Out (to AUM/Koala…)").tag(EndpointID?.some(.modLabVirtualOut))
                 ForEach(model.midiDestinations) { d in Text(d.id.name).tag(EndpointID?.some(d.id)) }
             }
             Picker("MIDI Channel", selection: Binding(get: { track.midiOutputChannel }, set: { v in model.updateTrack(track.id) { $0.midiOutputChannel = v } })) {

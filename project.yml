@@ -1,7 +1,7 @@
 # Generate the Xcode project with:  brew install xcodegen && xcodegen
-name: FM1
+name: ModLab
 options:
-  bundleIdPrefix: com.yourname
+  bundleIdPrefix: com.modularmayhem
   deploymentTarget:
     iOS: "17.0"
   createIntermediateGroups: true
@@ -16,7 +16,7 @@ settings:
     SWIFT_STRICT_CONCURRENCY: minimal
 
 targets:
-  FM1:
+  ModLab:
     type: application
     platform: iOS
     sources:
@@ -32,8 +32,8 @@ targets:
       # - framework: Vendor/LinkKit.xcframework
     settings:
       base:
-        PRODUCT_NAME: FM-1
-        PRODUCT_BUNDLE_IDENTIFIER: com.yourname.fm1   # change to your own
+        PRODUCT_NAME: Mod-Lab
+        PRODUCT_BUNDLE_IDENTIFIER: com.modularmayhem.modlab   # change to your own
         TARGETED_DEVICE_FAMILY: "2"                   # iPad
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
@@ -42,7 +42,7 @@ targets:
     info:
       path: App/Info.plist
       properties:
-        CFBundleDisplayName: FM-1
+        CFBundleDisplayName: Mod-Lab
         UILaunchScreen: {}
         # Keep the engine, MIDI clock and plugins running when you switch to AUM/Koala.
         UIBackgroundModes: [audio]
@@ -53,26 +53,26 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
-        NSMicrophoneUsageDescription: FM-1 records and processes audio from your interface inputs.
-        NSBluetoothAlwaysUsageDescription: FM-1 connects to Bluetooth MIDI controllers and synths.
-        NSLocalNetworkUsageDescription: FM-1 uses the local network for Network MIDI and Ableton Link.
+        NSMicrophoneUsageDescription: Mod-Lab records and processes audio from your interface inputs.
+        NSBluetoothAlwaysUsageDescription: Mod-Lab connects to Bluetooth MIDI controllers and synths.
+        NSLocalNetworkUsageDescription: Mod-Lab uses the local network for Network MIDI and Ableton Link.
         NSBonjourServices: [_apple-midi._udp]
-        # Projects and recordings visible in the Files app (On My iPad › FM-1).
+        # Projects and recordings visible in the Files app (On My iPad › Mod-Lab).
         UIFileSharingEnabled: true
         LSSupportsOpeningDocumentsInPlace: true
         CFBundleDocumentTypes:
-          - CFBundleTypeName: FM-1 Project
+          - CFBundleTypeName: Mod-Lab Project
             LSHandlerRank: Owner
-            LSItemContentTypes: [com.yourname.fm1.project]
+            LSItemContentTypes: [com.modularmayhem.modlab.project]
         UTExportedTypeDeclarations:
-          - UTTypeIdentifier: com.yourname.fm1.project
-            UTTypeDescription: FM-1 Project
+          - UTTypeIdentifier: com.modularmayhem.modlab.project
+            UTTypeDescription: Mod-Lab Project
             UTTypeConformsTo: [public.json]
             UTTypeTagSpecification:
-              public.filename-extension: [fm1]
+              public.filename-extension: [modlab]
 
 schemes:
-  FM1:
+  ModLab:
     build:
       targets:
-        FM1: all
+        ModLab: all

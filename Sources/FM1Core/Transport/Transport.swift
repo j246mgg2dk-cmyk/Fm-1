@@ -7,13 +7,13 @@ public struct TimeSignature: Codable, Hashable, Sendable {
         self.beatsPerBar = max(1, beatsPerBar)
         self.noteValue = max(1, noteValue)
     }
-    /// Length of a bar in quarter-note beats (FM-1's beat unit everywhere).
+    /// Length of a bar in quarter-note beats (Mod-Lab's beat unit everywhere).
     public var quarterNotesPerBar: Double { Double(beatsPerBar) * 4.0 / Double(noteValue) }
 }
 
 /// Where the tempo comes from.
 public enum ClockSource: String, Codable, Sendable, CaseIterable {
-    case internalClock      // FM-1 is the master
+    case internalClock      // Mod-Lab is the master
     case externalMIDI       // follow MIDI clock from a chosen input
     case abletonLink        // share tempo/phase with Link peers (AUM, Koala, Ableton, Bitwig...)
 }
