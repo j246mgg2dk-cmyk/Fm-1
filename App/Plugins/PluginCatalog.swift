@@ -45,7 +45,8 @@ final class PluginCatalog: ObservableObject {
                                                  manufacturer: d.componentManufacturer,
                                                  name: c.name, manufacturerName: c.manufacturerName),
                     description: d,
-                    hasCustomView: c.hasCustomView)
+                    // iOS has no hasCustomView; requestViewController returns nil when there is no UI.
+                    hasCustomView: true)
             }
             .sorted { ($0.component.manufacturerName, $0.component.name) < ($1.component.manufacturerName, $1.component.name) }
     }
