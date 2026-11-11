@@ -1,7 +1,7 @@
 .DS_Store
 .build/
 .swiftpm/
-*.xcodeproj
+# ModLab.xcodeproj is committed so it opens in Xcode without installing XcodeGen.
 xcuserdata/
 DerivedData/
 Vendor/LinkKit.xcframework/

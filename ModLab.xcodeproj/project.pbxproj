@@ -1,0 +1,470 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0669871BFF96F01DA63516F9 /* Recorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117D8299962D70046E02278B /* Recorder.swift */; };
+		1DECAD29D8B6DA992F836219 /* MixerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33C09583DDB7EF1AE94D62CB /* MixerView.swift */; };
+		2962EC9E23BE18A3BB6682F7 /* FM1Core in Frameworks */ = {isa = PBXBuildFile; productRef = C001947EA8F3F93D4F865128 /* FM1Core */; };
+		30FC5C3DCB0D301E843D1893 /* CoreMIDI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6151803449F66F398D444ABC /* CoreMIDI.framework */; };
+		32818FFE0CFFA388DF69124E /* ModulatorsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5286D322393C0789C74EE791 /* ModulatorsView.swift */; };
+		4343772C5C7C7C87AA0C9F6F /* SessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DDE17A16A5D7A9F43AE37C5 /* SessionView.swift */; };
+		448FA7063E01E0DAF4EE8BA6 /* SetupViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC88DFE934561D350D5B3221 /* SetupViews.swift */; };
+		65B5F95C3CA4228DB84DCD51 /* LinkSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 069537D7F873331AA8F4C96E /* LinkSync.swift */; };
+		6CA5F61E316451687DE58D69 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EAA31A88BF62453C6BCB6AE /* AppModel.swift */; };
+		75A1F048145B9FBAE88D8437 /* TrackDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF95C378968BCC8230EE230B /* TrackDetailView.swift */; };
+		7F69A33945CCA85D558F95A6 /* PluginCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47E4BDFC2A04D0511FC233A9 /* PluginCatalog.swift */; };
+		8E653A48D9FEB064EB189159 /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFC86731F1EF68AD41E0950 /* AudioEngine.swift */; };
+		97B2DA6CB4F137EAC5AEF1E1 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C5F55E2EE10D7A033750C318 /* AVFoundation.framework */; };
+		9D49C75D3172F919501111CF /* BluetoothMIDI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 267E8CEAC257789F450826CE /* BluetoothMIDI.swift */; };
+		A57D96879BDA58FDC4213A0E /* AudioIO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FFF86832694656EB29A7647 /* AudioIO.swift */; };
+		A5C0739C9DC98AA6ED3BE3E4 /* RenderGraph.swift in Sources */ = {isa = PBXBuildFile; fileRef = E970A75488C454A3EEED32AD /* RenderGraph.swift */; };
+		C9FC232F92FB6F17BB09B8B0 /* CoreAudioKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EF923F05A603BE804A928CB3 /* CoreAudioKit.framework */; };
+		D440DB71605DE45FCF9EC8E0 /* MIDIManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E14C9F44344E1BD046A8457A /* MIDIManager.swift */; };
+		D457E6380AB89ABD5F83BC25 /* RoutingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7EA297807CCCB4AF7BE1660 /* RoutingView.swift */; };
+		DA72411D449376C1113F794C /* HostedPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 473E63A71EA2346E07336384 /* HostedPlugin.swift */; };
+		F184A8B2D6157D1B6F6A097E /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6774F8CC2D8972CB1F06D7E7 /* AudioToolbox.framework */; };
+		F9FBCBCA8E9351BC83F28BD3 /* ModLabApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B369C70CBA7846147A3C8FD8 /* ModLabApp.swift */; };
+		FB21EF207813C167AECF322F /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76F813C8A7E97C0151054244 /* RootView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		069537D7F873331AA8F4C96E /* LinkSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkSync.swift; sourceTree = "<group>"; };
+		117D8299962D70046E02278B /* Recorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Recorder.swift; sourceTree = "<group>"; };
+		1EAA31A88BF62453C6BCB6AE /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		267E8CEAC257789F450826CE /* BluetoothMIDI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothMIDI.swift; sourceTree = "<group>"; };
+		33C09583DDB7EF1AE94D62CB /* MixerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MixerView.swift; sourceTree = "<group>"; };
+		473E63A71EA2346E07336384 /* HostedPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostedPlugin.swift; sourceTree = "<group>"; };
+		47E4BDFC2A04D0511FC233A9 /* PluginCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginCatalog.swift; sourceTree = "<group>"; };
+		4DDE17A16A5D7A9F43AE37C5 /* SessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionView.swift; sourceTree = "<group>"; };
+		5286D322393C0789C74EE791 /* ModulatorsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModulatorsView.swift; sourceTree = "<group>"; };
+		5CFC86731F1EF68AD41E0950 /* AudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngine.swift; sourceTree = "<group>"; };
+		5FFF86832694656EB29A7647 /* AudioIO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioIO.swift; sourceTree = "<group>"; };
+		6151803449F66F398D444ABC /* CoreMIDI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMIDI.framework; path = System/Library/Frameworks/CoreMIDI.framework; sourceTree = SDKROOT; };
+		6774F8CC2D8972CB1F06D7E7 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
+		76F813C8A7E97C0151054244 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		A2742B4210B047CE0B6E8281 /* fm-1 */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "fm-1"; path = .; sourceTree = SOURCE_ROOT; };
+		A7EA297807CCCB4AF7BE1660 /* RoutingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutingView.swift; sourceTree = "<group>"; };
+		B369C70CBA7846147A3C8FD8 /* ModLabApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModLabApp.swift; sourceTree = "<group>"; };
+		B7EB7A5B84B2F906403DD3C8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		C5F55E2EE10D7A033750C318 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		CC88DFE934561D350D5B3221 /* SetupViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupViews.swift; sourceTree = "<group>"; };
+		D6F885C7357A5DDB7E933896 /* ModLab.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ModLab.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E14C9F44344E1BD046A8457A /* MIDIManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MIDIManager.swift; sourceTree = "<group>"; };
+		E970A75488C454A3EEED32AD /* RenderGraph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderGraph.swift; sourceTree = "<group>"; };
+		EF923F05A603BE804A928CB3 /* CoreAudioKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudioKit.framework; path = System/Library/Frameworks/CoreAudioKit.framework; sourceTree = SDKROOT; };
+		EF95C378968BCC8230EE230B /* TrackDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackDetailView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		3E9B72EAB8DA90973F572D02 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2962EC9E23BE18A3BB6682F7 /* FM1Core in Frameworks */,
+				97B2DA6CB4F137EAC5AEF1E1 /* AVFoundation.framework in Frameworks */,
+				F184A8B2D6157D1B6F6A097E /* AudioToolbox.framework in Frameworks */,
+				C9FC232F92FB6F17BB09B8B0 /* CoreAudioKit.framework in Frameworks */,
+				30FC5C3DCB0D301E843D1893 /* CoreMIDI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0C6ACF05939E86F5A5192204 = {
+			isa = PBXGroup;
+			children = (
+				12BEF5C3249D4788AEA88D4B /* App */,
+				30CD7FE77A422BF3D3BCF295 /* Packages */,
+				5A6A893820D2787646EF5E3B /* Frameworks */,
+				69B82D99A0FC598DFC5BEC47 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		12BEF5C3249D4788AEA88D4B /* App */ = {
+			isa = PBXGroup;
+			children = (
+				B7EB7A5B84B2F906403DD3C8 /* Info.plist */,
+				B369C70CBA7846147A3C8FD8 /* ModLabApp.swift */,
+				8EBE41F0A7C6EACDCBC37FE4 /* Engine */,
+				C8CBC0B55F2165B2254A8E8E /* MIDI */,
+				131A2CDA150BBC7FE06D8D2F /* Model */,
+				7F142E6F640CCC82672563FA /* Plugins */,
+				DC57E5AEC519CCDA501B5F3F /* UI */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		131A2CDA150BBC7FE06D8D2F /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				1EAA31A88BF62453C6BCB6AE /* AppModel.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		30CD7FE77A422BF3D3BCF295 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				A2742B4210B047CE0B6E8281 /* fm-1 */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		5A6A893820D2787646EF5E3B /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				6774F8CC2D8972CB1F06D7E7 /* AudioToolbox.framework */,
+				C5F55E2EE10D7A033750C318 /* AVFoundation.framework */,
+				EF923F05A603BE804A928CB3 /* CoreAudioKit.framework */,
+				6151803449F66F398D444ABC /* CoreMIDI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		69B82D99A0FC598DFC5BEC47 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D6F885C7357A5DDB7E933896 /* ModLab.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		7F142E6F640CCC82672563FA /* Plugins */ = {
+			isa = PBXGroup;
+			children = (
+				47E4BDFC2A04D0511FC233A9 /* PluginCatalog.swift */,
+			);
+			path = Plugins;
+			sourceTree = "<group>";
+		};
+		8EBE41F0A7C6EACDCBC37FE4 /* Engine */ = {
+			isa = PBXGroup;
+			children = (
+				5CFC86731F1EF68AD41E0950 /* AudioEngine.swift */,
+				5FFF86832694656EB29A7647 /* AudioIO.swift */,
+				473E63A71EA2346E07336384 /* HostedPlugin.swift */,
+				069537D7F873331AA8F4C96E /* LinkSync.swift */,
+				117D8299962D70046E02278B /* Recorder.swift */,
+				E970A75488C454A3EEED32AD /* RenderGraph.swift */,
+			);
+			path = Engine;
+			sourceTree = "<group>";
+		};
+		C8CBC0B55F2165B2254A8E8E /* MIDI */ = {
+			isa = PBXGroup;
+			children = (
+				267E8CEAC257789F450826CE /* BluetoothMIDI.swift */,
+				E14C9F44344E1BD046A8457A /* MIDIManager.swift */,
+			);
+			path = MIDI;
+			sourceTree = "<group>";
+		};
+		DC57E5AEC519CCDA501B5F3F /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				33C09583DDB7EF1AE94D62CB /* MixerView.swift */,
+				5286D322393C0789C74EE791 /* ModulatorsView.swift */,
+				76F813C8A7E97C0151054244 /* RootView.swift */,
+				A7EA297807CCCB4AF7BE1660 /* RoutingView.swift */,
+				4DDE17A16A5D7A9F43AE37C5 /* SessionView.swift */,
+				CC88DFE934561D350D5B3221 /* SetupViews.swift */,
+				EF95C378968BCC8230EE230B /* TrackDetailView.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		81204B68D3274D10D1E72399 /* ModLab */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2459003FFEF91CA7672A37C2 /* Build configuration list for PBXNativeTarget "ModLab" */;
+			buildPhases = (
+				ECDA830D9077139D68C1567D /* Sources */,
+				3E9B72EAB8DA90973F572D02 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ModLab;
+			packageProductDependencies = (
+				C001947EA8F3F93D4F865128 /* FM1Core */,
+			);
+			productName = ModLab;
+			productReference = D6F885C7357A5DDB7E933896 /* ModLab.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		8106FD3DE2788049D34C1A64 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					81204B68D3274D10D1E72399 = {
+						DevelopmentTeam = "";
+					};
+				};
+			};
+			buildConfigurationList = CD807F2FB662B091F070E3A6 /* Build configuration list for PBXProject "ModLab" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 0C6ACF05939E86F5A5192204;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				E0D23A2DC315E29A799EFB1D /* XCLocalSwiftPackageReference "." */,
+			);
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				81204B68D3274D10D1E72399 /* ModLab */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		ECDA830D9077139D68C1567D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6CA5F61E316451687DE58D69 /* AppModel.swift in Sources */,
+				8E653A48D9FEB064EB189159 /* AudioEngine.swift in Sources */,
+				A57D96879BDA58FDC4213A0E /* AudioIO.swift in Sources */,
+				9D49C75D3172F919501111CF /* BluetoothMIDI.swift in Sources */,
+				DA72411D449376C1113F794C /* HostedPlugin.swift in Sources */,
+				65B5F95C3CA4228DB84DCD51 /* LinkSync.swift in Sources */,
+				D440DB71605DE45FCF9EC8E0 /* MIDIManager.swift in Sources */,
+				1DECAD29D8B6DA992F836219 /* MixerView.swift in Sources */,
+				F9FBCBCA8E9351BC83F28BD3 /* ModLabApp.swift in Sources */,
+				32818FFE0CFFA388DF69124E /* ModulatorsView.swift in Sources */,
+				7F69A33945CCA85D558F95A6 /* PluginCatalog.swift in Sources */,
+				0669871BFF96F01DA63516F9 /* Recorder.swift in Sources */,
+				A5C0739C9DC98AA6ED3BE3E4 /* RenderGraph.swift in Sources */,
+				FB21EF207813C167AECF322F /* RootView.swift in Sources */,
+				D457E6380AB89ABD5F83BC25 /* RoutingView.swift in Sources */,
+				4343772C5C7C7C87AA0C9F6F /* SessionView.swift in Sources */,
+				448FA7063E01E0DAF4EE8BA6 /* SetupViews.swift in Sources */,
+				75A1F048145B9FBAE88D8437 /* TrackDetailView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		12B97B42CEDAA397DDE47218 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		22F0D6787A3F7A3D8E7F6E71 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.modularmayhem.modlab;
+				PRODUCT_NAME = "Mod-Lab";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		79A8D34E46216F5F705A3029 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.modularmayhem.modlab;
+				PRODUCT_NAME = "Mod-Lab";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
+		B73193CE5B050E8C0F3071BD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2459003FFEF91CA7672A37C2 /* Build configuration list for PBXNativeTarget "ModLab" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				22F0D6787A3F7A3D8E7F6E71 /* Debug */,
+				79A8D34E46216F5F705A3029 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		CD807F2FB662B091F070E3A6 /* Build configuration list for PBXProject "ModLab" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				12B97B42CEDAA397DDE47218 /* Debug */,
+				B73193CE5B050E8C0F3071BD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		E0D23A2DC315E29A799EFB1D /* XCLocalSwiftPackageReference "." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = .;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C001947EA8F3F93D4F865128 /* FM1Core */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FM1Core;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 8106FD3DE2788049D34C1A64 /* Project object */;
+}
