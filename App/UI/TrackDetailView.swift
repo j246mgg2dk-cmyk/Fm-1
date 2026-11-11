@@ -1,3 +1,4 @@
+import AudioToolbox
 import FM1Core
 import SwiftUI
 
@@ -112,11 +113,28 @@ struct TrackDetailView: View {
         List(model.plugin(deviceID)?.parameters() ?? []) { p in
             VStack(alignment: .leading) {
                 Text(p.name).font(.caption)
-                Slider(value: Binding(get: { Double(model.plugin(deviceID)?.au.parameterTree?.parameter(withAddress: p.address)?.value ?? p.value) },
-                                      set: { model.plugin(deviceID)?.au.parameterTree?.parameter(withAddress: p.address)?.value = AUValue($0) }),
-                       in: Double(p.min)...Double(max(p.max, p.min + 0.0001)))
+                Slider(value: parameterBinding(deviceID, p), in: parameterRange(p))
             }
         }
+    }
+
+    private func parameterBinding(_ deviceID: UUID, _ p: HostedPlugin.ParameterInfo) -> Binding<Double> {
+        let address = p.address
+        let fallback = Double(p.value)
+        return Binding<Double>(
+            get: {
+                let param = model.plugin(deviceID)?.au.parameterTree?.parameter(withAddress: address)
+                return param.map { Double($0.value) } ?? fallback
+            },
+            set: { newValue in
+                let param = model.plugin(deviceID)?.au.parameterTree?.parameter(withAddress: address)
+                param?.value = AUValue(newValue)
+            })
+    }
+
+    private func parameterRange(_ p: HostedPlugin.ParameterInfo) -> ClosedRange<Double> {
+        let lo = Double(p.min)
+        return lo...max(Double(p.max), lo + 0.0001)
     }
 
     private func inputPicker(_ track: Track) -> some View {
