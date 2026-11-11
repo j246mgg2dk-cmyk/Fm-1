@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  core-tests:
+    name: FM1Core tests (macOS)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests
+        run: swift test
+
+  ios-build:
+    name: iPad app build
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        run: xcodegen
+      - name: Build for iOS Simulator
+        run: |
+          xcodebuild -project FM1.xcodeproj -scheme FM1 \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build | tail -n 200
+          exit ${PIPESTATUS[0]}

@@ -1,0 +1,78 @@
+# Generate the Xcode project with:  brew install xcodegen && xcodegen
+name: FM1
+options:
+  bundleIdPrefix: com.yourname
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+
+packages:
+  FM1Core:
+    path: .
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+
+targets:
+  FM1:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+    dependencies:
+      - package: FM1Core
+        product: FM1Core
+      - sdk: AVFoundation.framework
+      - sdk: AudioToolbox.framework
+      - sdk: CoreAudioKit.framework
+      - sdk: CoreMIDI.framework
+      # Ableton Link (optional): download LinkKit.xcframework into Vendor/ and uncomment.
+      # - framework: Vendor/LinkKit.xcframework
+    settings:
+      base:
+        PRODUCT_NAME: FM-1
+        PRODUCT_BUNDLE_IDENTIFIER: com.yourname.fm1   # change to your own
+        TARGETED_DEVICE_FAMILY: "2"                   # iPad
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        DEVELOPMENT_TEAM: ""                          # set your Apple team ID (free account works for your own iPad)
+        ENABLE_PREVIEWS: YES
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: FM-1
+        UILaunchScreen: {}
+        # Keep the engine, MIDI clock and plugins running when you switch to AUM/Koala.
+        UIBackgroundModes: [audio]
+        # Allow Split View / Slide Over next to other music apps.
+        UIRequiresFullScreen: false
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        NSMicrophoneUsageDescription: FM-1 records and processes audio from your interface inputs.
+        NSBluetoothAlwaysUsageDescription: FM-1 connects to Bluetooth MIDI controllers and synths.
+        NSLocalNetworkUsageDescription: FM-1 uses the local network for Network MIDI and Ableton Link.
+        NSBonjourServices: [_apple-midi._udp]
+        # Projects and recordings visible in the Files app (On My iPad › FM-1).
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: FM-1 Project
+            LSHandlerRank: Owner
+            LSItemContentTypes: [com.yourname.fm1.project]
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.yourname.fm1.project
+            UTTypeDescription: FM-1 Project
+            UTTypeConformsTo: [public.json]
+            UTTypeTagSpecification:
+              public.filename-extension: [fm1]
+
+schemes:
+  FM1:
+    build:
+      targets:
+        FM1: all
