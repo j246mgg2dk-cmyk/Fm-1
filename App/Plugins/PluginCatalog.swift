@@ -57,7 +57,10 @@ final class PluginCatalog: ObservableObject {
                 let isApple = d.componentManufacturer == kAudioUnitManufacturer_Apple
                 var isV3 = false
                 if let ac = AudioComponentFindNext(nil, [d]) {
-                    isV3 = (AudioComponentGetFlags(ac) & AudioComponentFlags.isV3AudioUnit.rawValue) != 0
+                    var full = AudioComponentDescription()
+                    if AudioComponentGetDescription(ac, &full) == noErr {
+                        isV3 = (full.componentFlags & AudioComponentFlags.isV3AudioUnit.rawValue) != 0
+                    }
                 }
                 return Entry(
                     component: PluginComponentID(type: d.componentType, subtype: d.componentSubType,
