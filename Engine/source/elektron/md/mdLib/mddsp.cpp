@@ -1,0 +1,460 @@
+#include "mddsp.h"
+
+#include "mdhardware.h"
+#include "mdtransportpolicy.h"
+
+#include "mc68k/hdi08.h"
+#include "synthLib/realtimeInstrumentation.h"
+
+namespace md
+{
+	using dsp56k::TWord;
+
+	namespace
+	{
+		// DSP56303 memory sizing. XY is bridged into
+		// P above g_bridgedAddr, so external SRAM (>= 0x020000) is shared between P and
+		// XY. The Machinedrum second-stage loader uploads its main program into external
+		// SRAM and jumps there, so sizeP() must span the external range.
+		constexpr TWord g_pMemSize    = 0x800000;
+		constexpr TWord g_xyMemSize   = 0x800000;
+		constexpr TWord g_bridgedAddr = 0x020000;
+
+		// Fill unused low P with a block-terminating op (RTS) so a stray jump there
+		// compiles cleanly under the JIT.
+		constexpr TWord g_trapFillEnd = 0x020000;
+		constexpr TWord g_fillInstr   = 0x00000C;	// RTS
+
+	}
+
+	Dsp::Dsp(Hardware& _hw, mc68k::Hdi08& _hdiUc, const uint32_t _index)
+		: m_hardware(_hw)
+		, m_hdiUC(_hdiUc)
+		, m_index(_index)
+		, m_buffer(dsp56k::Memory::calcMemSize(g_pMemSize, g_xyMemSize, g_bridgedAddr), 0)
+		, m_memory(m_validator, g_pMemSize, g_xyMemSize, g_bridgedAddr, m_buffer.data())
+		, m_dsp(m_memory, &m_periphX, &m_periphNop)
+		, m_boot(m_dsp)
+	{
+		if(!_hw.isValid())
+			return;
+
+		// Clock the serial ports from DSP cycles. At 101.6064 MHz, the 1152-cycle
+		// codec slot and two slots per frame produce exactly 44.1 kHz; the firmware's
+		// ESSI0 divider derives the 96-cycle inter-DSP link slot.
+		m_periphX.getEssiClock().setExternalClockFrequency(10'240'000);
+		m_periphX.getEssiClock().setSamplerate(44100);
+		m_periphX.getEssiClock().setClockSource(dsp56k::EsxiClock::ClockSource::Cycles);
+		m_periphX.getEssiClock().setExactCycleDeadlineEnabled(
+			transportPolicy(m_hardware.getModel()).exactEssiCycleDeadlines);
+
+		// Fine-link mode must be active before the firmware writes CRA so ESSI0 can
+		// run below the codec clock base. Synchronous receivers skip RX when their
+		// wire is empty instead of fabricating a DMA word from the retained RX value.
+		m_periphX.getEssiClock().setCyclesPerSample(1152u);
+		m_periphX.getEssi0().setFineLinkMode(true);
+		if(m_index == 0 || !m_hardware.isMonomachine())
+		{
+			m_periphX.getEssi0().setRxDataAvailableCallback([this]
+			{
+				return !m_periphX.getEssi0().getAudioInputs().empty();
+			});
+
+			// An RX0 read with DMA4 disabled flushes staged link data. DMA reads
+			// occur with the channel enabled, which distinguishes the two cases.
+			// This protocol is specific to Machinedrum DSP1.
+			if(m_index == 0 && !m_hardware.isMonomachine())
+			{
+				m_periphX.getEssi0().setRxConsumeCallback([this]
+				{
+					if(m_periphX.getDMA().getDCR(4) & (1u << dsp56k::DmaChannel::De))
+						return;
+					auto& ring = m_periphX.getEssi0().getAudioInputs();
+#if MD_TRANSPORT_DIAGNOSTICS
+					const auto purgedFrames = ring.size();
+#endif
+					while(!ring.empty())
+						ring.pop_front();
+#if MD_TRANSPORT_DIAGNOSTICS
+					m_hardware.recordMdLinkPurge(purgedFrames);
+#endif
+					m_hardware.mdLinkWindowFlushed();
+				});
+			}
+		}
+
+		// Serialize host commands through the HI08 busy state so overlapping
+		// commands cannot overwrite one another.
+		hdi08().setHostCommandArbitration(true);
+		// HC and received words belong to the same machine-time domain. A DSP
+		// advanced inline may have accepted a command in the CPU's future.
+		// Expose that acknowledgement only at its actual acceptance timestamp,
+		// not immediately on the CVR write or as late as handler return.
+		if(m_hardware.isMonomachine())
+			m_hdiUC.setReadCvrCallback([this](uint8_t value)
+			{
+				m_hardware.schedCatchUpDsp(m_index);
+				const bool pending = hdi08().hostCommandPending();
+				const bool future = m_hardware.hostRxReadyCycle(m_index, hdi08().hostCommandAcceptedCycle())
+					> m_hardware.hostCurrentCycle();
+				return static_cast<uint8_t>((value & ~mc68k::Hdi08::Hc) | ((pending || future) ? mc68k::Hdi08::Hc : 0));
+			});
+
+		auto config = m_dsp.getJit().getConfig();
+		config.aguSupportBitreverse = true;
+		// Keep eager child-block linking disabled because bootstrap targets may lie
+		// outside the active program range.
+		config.linkJitBlocks = false;
+		config.dynamicPeripheralAddressing = false;
+		// Loader execution can enter vector-area code as ordinary control flow, so
+		// select the processing mode dynamically, as the other emulator hosts do.
+		config.dynamicFastInterrupts = true;
+		// Cap JIT block size so tight program loops return to the dispatcher often enough
+		// for the peripherals (the ESSI cycle clock in particular) to be serviced; the
+		// EssiClock ticks at most once per peripherals exec.
+		config.maxInstructionsPerBlock = 32;
+		// Likewise return from hardware DO loops regularly to service peripherals.
+		config.maxDoIterations = 4;
+#if defined(__APPLE__) && defined(__aarch64__)
+		// JIT blocks are first compiled synchronously by the audio thread. On Apple
+		// silicon, the optimizer's cold cost exceeds its measured steady-state gain.
+		config.enableOptimizer = false;
+#endif
+		config.getBlockConfig = [](const TWord)
+			-> std::optional<dsp56k::JitConfig>
+		{
+			synthLib::RealtimeInstrumentation::recordCurrentCallbackJitCompilation();
+			return {};
+		};
+		m_dsp.getJit().setConfig(config);
+		m_dsp.getJit().preallocateBlockRuntimeData(
+			RealtimeJitBlockRuntimeDataReserve);
+
+		const TWord fillEnd = std::min<TWord>(g_trapFillEnd, m_memory.sizeP());
+		for(TWord i = 0; i < fillEnd; ++i)
+		{
+			m_memory.set(dsp56k::MemArea_P, i, g_fillInstr);
+			m_dsp.getJit().notifyProgramMemWrite(i);
+		}
+
+		// Keep the DSP from blocking on empty serial input during boot.
+		m_periphX.getEssi0().writeEmptyAudioIn(64);
+		m_periphX.getEssi1().writeEmptyAudioIn(64);
+
+		hdi08().setRXRateLimit(0);
+		hdi08().setTransmitDataAlwaysEmpty(false);
+
+		// HI08 has a DSP transmit register and a host receive latch. Transfer a
+		// word into the free latch, then let HTDE pace the DSP. A DSP running
+		// ahead must not publish RXDF/HREQ before the host reaches its timestamp.
+		if(m_hardware.isMonomachine())
+			hdi08().setWriteTxCallback([this]
+			{
+				m_mmHostTxCycle = m_dsp.getCycles();
+				hdiTransferDSPtoUC();
+			});
+
+		// ---- Bridge the ColdFire-facing HI08 register file to the DSP (n2x model) ----
+
+		m_hdiUC.setRxEmptyCallback([this](const bool _needMoreData)
+		{
+			onUCRxEmpty(_needMoreData);
+		});
+
+		// TX: during the boot upload each assembled 24-bit word drives DspBoot. Once boot
+		// has finished the callback is switched to feed the running DSP's HORX.
+		m_hdiUC.setWriteTxCallback([this](const uint32_t _word)
+		{
+			if(m_boot.hdiWriteTX(_word))
+				onDspBootFinished();
+		});
+
+		m_hdiUC.setWriteIrqCallback([this](const uint8_t _irq)
+		{
+			hdiSendIrqToDSP(_irq);
+		});
+
+		m_hdiUC.setReadIsrCallback([this](const uint8_t _isr)
+		{
+			return hdiUcReadIsr(_isr);
+		});
+
+		// Derive TXDE/TRDY from the receive depth for this interface. Other products
+		// retain the default always-ready behavior.
+		m_hdiUC.setForceTxde(false);
+
+		m_hdiUC.setInitHdi08Callback([this]
+		{
+			// Complete host-port initialization and report the transmitter ready.
+			m_hdiUC.icr(m_hdiUC.icr() & 0x7f);
+			m_hdiUC.isr(m_hdiUC.isr() | mc68k::Hdi08::IsrBits::Txde | mc68k::Hdi08::IsrBits::Trdy);
+		});
+
+	}
+
+	void Dsp::onDspBootFinished()
+	{
+		// After boot, further host words are input to the DSP program.
+		m_hdiUC.setWriteTxCallback([this](const uint32_t _word)
+		{
+			hdiTransferUCtoDSP(_word);
+		});
+
+		// There are no background DSP threads. Publish the completed boot state to
+		// the deterministic scheduler that owns all subsequent execution.
+		m_schedRunnable.store(true, std::memory_order_release);
+	}
+
+	namespace
+	{
+		uint64_t schedInlineClamp(const MachineModel _model)
+		{
+			return transportPolicy(_model).catchUpMaxDspCycles;
+		}
+	}
+
+	size_t Dsp::hostTxBacklog()
+	{
+		return hdi08().txData().size() + m_hdiUC.rxDataSize()
+			+ (m_timedHostRx.pending() ? 1 : 0);
+	}
+
+	uint32_t Dsp::pumpHostRx(const size_t _maxUcWords)
+	{
+		if(m_hardware.isMonomachine())
+			return hdiTransferDSPtoUC() ? 1 : 0;
+
+		// Drain DSP HOTX continuously into a bounded host-side queue rather than
+		// demand-pulling one word at a time; that queue depth is what
+		// raises HI08 HREQ (>= set_host_rx_irq_min_words words). Our UC-facing HI08 backing queue
+		// (m_rxData) is that host-side queue: push DSP HOTX words straight into it, bypassing the
+		// one-word RXDF latch gate in hdiTransferDSPtoUC (canReceiveData) which otherwise caps
+		// availability at a single word and makes HREQ's >= 3 threshold unreachable. Bounded by
+		// _maxUcWords so we don't grow it unbounded when the host isn't reading. This also fixes
+		// the "HOTX is full, Discarding" overflow: DSP2's HOTX now drains promptly instead of only
+		// when the firmware happens to demand a word.
+		uint32_t moved = 0;
+		while(m_hdiUC.rxDataSize() < _maxUcWords && hdi08().hasTX())
+		{
+			const auto w = hdi08().readTX();
+			m_hdiUC.writeRx(w);
+			++moved;
+		}
+		// If the host consumed the latched word on the previous instruction but more remain queued
+		// (and no fresh DSP word re-latched them above), latch the next now so it is delivered in
+		// FIFO order rather than read back as a spurious 0.
+		m_hdiUC.relatchRx();
+		return moved;
+	}
+
+	void Dsp::setHostPumpWakeCallback(const std::function<void()>& _callback)
+	{
+		hdi08().setHostPumpWakeCallback(_callback);
+		m_hdiUC.setIcrWriteCallback([_callback](const uint8_t)
+		{
+			_callback();
+		});
+		m_hdiUC.setRxStateChangedCallback(_callback);
+	}
+
+	void Dsp::onUCRxEmpty(const bool _needMoreData)
+	{
+		m_hardware.notifyHostPumpStateChanged();
+
+		if(_needMoreData)
+		{
+			// A blocking host read needs its peer to make progress on this single
+			// scheduler thread, so run the target DSP inline until it produces the
+			// reply or the in-flight host command has been fully serviced, bounded.
+			// A reserved/readable MM reply already satisfies production: wait for
+			// CPU time to make it visible instead of running the producer farther.
+			const uint64_t startCycle = m_dsp.getCycles();
+			const uint64_t clampStop = startCycle
+				+ schedInlineClamp(m_hardware.getModel());
+			while(!hdi08().hasTX()
+				&& (!m_hardware.isMonomachine() || (!m_timedHostRx.pending() && m_hdiUC.canReceiveData()))
+				&& (hdi08().hostCommandBusy() || dsp().hasPendingInterrupts())
+				&& m_dsp.getCycles() < clampStop)
+				m_dsp.exec();
+#if MD_TRANSPORT_DIAGNOSTICS
+			const bool workComplete = hdi08().hasTX()
+				|| (m_hardware.isMonomachine()
+					&& (m_timedHostRx.pending() || !m_hdiUC.canReceiveData()))
+				|| (!hdi08().hostCommandBusy() && !dsp().hasPendingInterrupts());
+			m_hardware.recordInlineHdi08Run(m_index, startCycle, clampStop,
+				workComplete);
+#endif
+			hdiTransferDSPtoUC();
+			return;
+		}
+
+		hdiTransferDSPtoUC();
+	}
+
+	void Dsp::hdiTransferUCtoDSP(const uint32_t _word)
+	{
+		// Catch the DSP up to the UC's current machine time before the word
+		// lands, so it consumes everything up to "now" first.
+		m_hardware.schedCatchUpDsp(m_index);
+
+		// Route ordinary data words through the paced host receive path. Host-command
+		// arbitration keeps each argument with its in-flight command.
+		writeWordToDsp(_word);
+	}
+
+	void Dsp::writeWordToDsp(const uint32_t _word)
+	{
+		// The DSP56303 HI08 host data path has a host latch and a one-word HRX. Before placing
+		// a word in HRX, advance the target DSP until the previous word drains, bounded by the
+		// scheduler clamp. This preserves receive ordering without a wall-clock
+		// wait or an unbounded host-side FIFO.
+		const uint64_t startCycle = m_dsp.getCycles();
+		const uint64_t clampStop = startCycle
+			+ schedInlineClamp(m_hardware.getModel());
+		while(hdi08().hasRXData() && m_dsp.getCycles() < clampStop)
+			m_dsp.exec();
+#if MD_TRANSPORT_DIAGNOSTICS
+		m_hardware.recordInlineHdi08Run(m_index, startCycle, clampStop,
+			!hdi08().hasRXData());
+#endif
+		hdi08().writeRX(&_word, 1);
+		return;
+	}
+
+	void Dsp::waitForHostCommandIdle()
+	{
+		// A CVR write may not overtake a host command already in flight. Hold the current
+		// transaction in emulated time until RTI clears host-command-busy.
+		if(!hdi08().hostCommandBusy())
+			return;
+
+		const uint64_t startCycle = m_dsp.getCycles();
+		const uint64_t clampStop = startCycle
+			+ schedInlineClamp(m_hardware.getModel());
+		while(hdi08().hostCommandBusy() && m_dsp.getCycles() < clampStop)
+			m_dsp.exec();
+#if MD_TRANSPORT_DIAGNOSTICS
+		m_hardware.recordInlineHdi08Run(m_index, startCycle, clampStop,
+			!hdi08().hostCommandBusy());
+#endif
+		return;
+	}
+
+	void Dsp::dispatchHostCommandInterrupt(const uint8_t _vba)
+	{
+		// Under the arbitration config, route the host-command vector through the DSP-side HDI08
+		// so it raises HCP and arms the handler hold as it injects (native DSP56303 host-command
+		// dispatch). Otherwise fall back to the legacy out-of-band inject (default uitest path).
+		if(hdi08().hostCommandArbitration())
+			hdi08().writeHostCommand(_vba);
+		else
+			dsp().injectExternalInterrupt(_vba);
+	}
+
+	void Dsp::hdiSendIrqToDSP(const uint8_t _irq)
+	{
+		// Catch the DSP up to the UC's current machine time before the CVR is
+		// dispatched, so HCP is raised at a defined point in DSP time.
+		if(booted())
+			m_hardware.schedCatchUpDsp(m_index);
+		// Preserve Monomachine host-command ordering. Data words precede the next
+		// command, so drain the receive path before dispatching that command. Run the DSP
+		// inline until HORX has drained before dispatching the CVR. This is needed
+		// only for the MM transport.
+		const bool s_mmInOrderCvr = m_hardware.isMonomachine();
+		if(s_mmInOrderCvr && booted())
+		{
+			const uint64_t startCycle = m_dsp.getCycles();
+			const uint64_t clampStop = startCycle
+				+ schedInlineClamp(m_hardware.getModel()) * 4;
+			while(!hdi08().rxData().empty() && m_dsp.getCycles() < clampStop)
+				m_dsp.exec();
+#if MD_TRANSPORT_DIAGNOSTICS
+			m_hardware.recordInlineHdi08Run(m_index, startCycle, clampStop,
+				hdi08().rxData().empty());
+#endif
+		}
+
+		if(!booted())
+		{
+			// Pre-boot: nothing to interrupt.
+			return;
+		}
+
+		// Serialize host commands before dispatch. The HI08 command bit remains busy
+		// until the current handler returns, keeping the following argument words with
+		// the correct command.
+		waitForHostCommandIdle();
+
+		dispatchHostCommandInterrupt(_irq);
+
+		hdiTransferDSPtoUC();
+	}
+
+	uint8_t Dsp::hdiUcReadIsr(uint8_t _isr)
+	{
+		// Catch the DSP up to the UC's current machine time before reporting
+		// status, so a UC status-poll loop sees the DSP's progress (e.g. a reply it is waiting for)
+		// in fine lockstep instead of a frozen snapshot.
+		m_hardware.schedCatchUpDsp(m_index);
+		hdiTransferDSPtoUC();
+		// Publication above may have changed RXDF after Hdi08 sampled _isr.
+		// Return the current latch state, including on the first data-byte read.
+		_isr = static_cast<uint8_t>((_isr & ~mc68k::Hdi08::Rxdf)
+			| (m_hdiUC.canReceiveData() ? 0 : mc68k::Hdi08::Rxdf));
+
+		// Mirror the DSP's host flags HF2/HF3 into the UC-visible ISR.
+		const auto hf23 = hdi08().readControlRegister() & 0x18;	// HF2 (bit3), HF3 (bit4)
+		_isr &= ~0x18;
+		_isr |= static_cast<uint8_t>(hf23);
+
+		// Model the two-stage HI08 transmit path described by DSP56303UM 6.3.6/6.6.8:
+		// TXDE reports room in the host latch, while TRDY additionally requires the
+		// DSP receive latch to be empty.
+		const auto horxDepth = hdi08().rxData().size();
+		_isr &= static_cast<uint8_t>(~(mc68k::Hdi08::IsrBits::Txde | mc68k::Hdi08::IsrBits::Trdy));
+		if(horxDepth == 0)
+			_isr |= mc68k::Hdi08::IsrBits::Txde | mc68k::Hdi08::IsrBits::Trdy;
+		else if(horxDepth == 1)
+			_isr |= mc68k::Hdi08::IsrBits::Txde;
+		// HREQ is routed separately; composing it here would require the unmodelled IVR path.
+
+		return _isr;
+	}
+
+	bool Dsp::hdiTransferDSPtoUC()
+	{
+		if(m_hardware.isMonomachine())
+		{
+			// The deferred word reserves the same receive latch as m_hdiUC:
+			// never stage another word while that latch is readable by the CPU.
+			if(!m_hdiUC.canReceiveData())
+				return false;
+
+			if(!m_timedHostRx.pending() && hdi08().hasTX())
+			{
+				const auto word = hdi08().readTX();
+				m_timedHostRx.stage(word,
+					m_hardware.hostRxReadyCycle(m_index, m_mmHostTxCycle));
+				m_hardware.notifyHostPumpStateChanged();
+			}
+
+			uint32_t word;
+			if(!m_timedHostRx.take(m_hardware.hostCurrentCycle(), word))
+				return false;
+			m_hdiUC.writeRx(word);
+			m_hardware.notifyHostPumpStateChanged();
+			return true;
+		}
+
+		const bool hasTx = hdi08().hasTX();
+		if(m_hdiUC.canReceiveData() && hasTx)
+		{
+			const auto echo = hdi08().readTX();
+			m_hdiUC.writeRx(echo);
+			m_hardware.notifyHostPumpStateChanged();
+			return true;
+		}
+		return false;
+	}
+}

@@ -1,0 +1,9 @@
+# Never commit Elektron firmware or anything derived from it.
+*.bin
+*.cache
+*.syx
+nvram/
+roms/
+DerivedData/
+xcuserdata/
+.DS_Store

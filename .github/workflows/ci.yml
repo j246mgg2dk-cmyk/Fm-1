@@ -1,0 +1,17 @@
+name: iPad build
+on: [push, workflow_dispatch]
+jobs:
+  ipad:
+    runs-on: macos-15-intel
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build for iPad (arm64 device, no signing)
+        run: |
+          set +e
+          xcodebuild -version
+          xcodebuild -project MDEngineTest.xcodeproj -scheme MDEngineTest -configuration Release \
+            -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build > build.log 2>&1
+          status=$?
+          echo "=== errors ==="; grep -E "error:" build.log | sort -u | head -n 200
+          echo "=== tail ==="; tail -n 40 build.log
+          exit $status

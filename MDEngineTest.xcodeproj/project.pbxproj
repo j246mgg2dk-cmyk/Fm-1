@@ -1,0 +1,1507 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0092C89296C994860EF05642 /* x86assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9526997BB48588DE3E3DAFB /* x86assembler.cpp */; };
+		02341C148A70AECC06CE0543 /* debuggerinterface.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1739B15F41E7A1C0B909FBE5 /* debuggerinterface.cpp */; };
+		030F5AA61CF2CC9AD9948408 /* m68kcpu.c in Sources */ = {isa = PBXBuildFile; fileRef = 517965993D8D0A689736AAA5 /* m68kcpu.c */; };
+		039B547507246F11F8E2F573 /* mdstate.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 61579E285B152D2461233B1F /* mdstate.cpp */; };
+		05B7BBC4D97E9EA3358DBD8F /* a64emithelper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 82526003A9E23C086BC0507B /* a64emithelper.cpp */; };
+		05CCFFDAE2EF37EAA230A0DA /* mmuhelper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 54885B60397FF0EBBA2762E1 /* mmuhelper.cpp */; };
+		064763C5945B28B47E7D8979 /* a64builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 68B9C5CCAF0410E9F497A4E6 /* a64builder.cpp */; };
+		06F76B143B84738DB2857FBA /* support.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6942278AC47D415045908FB3 /* support.cpp */; };
+		083678C6E7ED13A96CE9CC36 /* commandline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40D04ADF7D24ACC45169DC43 /* commandline.cpp */; };
+		09B88699DBDA51925E86D8D4 /* dma.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FCCB4DF0768AE4F08AB826AB /* dma.cpp */; };
+		09F83B25F31D4EE4C583472B /* virtmem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D40A983F5D7D31AA6C0D3BB0 /* virtmem.cpp */; };
+		0A767077233CE917F004E62A /* os.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3BE72B77087F6E9555E6C239 /* os.cpp */; };
+		0B3BCDDFDB3F3E542A35DE9A /* instructioncache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 171CA7DCAA9181FF25B8DF96 /* instructioncache.cpp */; };
+		0B43B0BDD8B75DAB4AF8D6B6 /* wavWriter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3EB2C9F6FE92BFD90631A7EF /* wavWriter.cpp */; };
+		0BB3C080C1DE6131047A0D64 /* jitops_helper_aarch64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 97F70BAEAD48D7355E33EA9B /* jitops_helper_aarch64.cpp */; };
+		0C77402DF2AF4396EBC75586 /* dspassert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9CC5AB4AAB0CCA1CD0CC07A8 /* dspassert.cpp */; };
+		0E07F8CECFD31579F7C1ADC4 /* jitprofilingsupport.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 146999BBF273021553765FB3 /* jitprofilingsupport.cpp */; };
+		115529311443259CD0ACC960 /* mddevice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 14B5A238AC8C27CEBA946AAA /* mddevice.cpp */; };
+		11D4EF16EBEC7465BACC2938 /* zone.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 64C313CFF24251F28A07E674 /* zone.cpp */; };
+		11FC045EAA7D0354821DD81E /* device.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FFC93CEC5B39431247B6424D /* device.cpp */; };
+		136FE0BC1B7A375DF7001ED0 /* m68kdasm.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3B9AA746FF32C1E36A199C /* m68kdasm.c */; };
+		13BF44183457B526B92EFBD3 /* jitblockruntimedata.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F880FECAADA8667D06FD5B48 /* jitblockruntimedata.cpp */; };
+		144D8949501C7B616FA67086 /* jitops_alu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 11A7989C970DB3095E978EA3 /* jitops_alu.cpp */; };
+		14C67CEF16C4368C85FA1265 /* a64rapass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E5AC71EF4EB13710E228B2C2 /* a64rapass.cpp */; };
+		153DAA8BCDC982F17D69D972 /* lcdfonts.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 20D56C9FA4B14EB99A6DB790 /* lcdfonts.cpp */; };
+		16AE01A95757E4DF599B949E /* midiToSysex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 83B978D25CD9AF71FB317516 /* midiToSysex.cpp */; };
+		195413C3CD54D32315457328 /* os.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 25C874E2BF47EBEDE8D14718 /* os.cpp */; };
+		195ACBA89834B901043FC91A /* audiobuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EEE542B7EAF58B24649D9153 /* audiobuffer.cpp */; };
+		1A4862D0E7FF54555F7B8835 /* a64formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 20BD308B543511FED6AA441C /* a64formatter.cpp */; };
+		1A7BE0CD30C71E83FB30E8AF /* x86instapi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B821790DAD580CFE48491BE /* x86instapi.cpp */; };
+		1A9AD608CB701CB1064B3C3D /* wavReader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 06B77EC8AA47E9D6951B7424 /* wavReader.cpp */; };
+		1E71A7779C31BAA971D4E25A /* jitoptimizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1B13AA9420C8F57CF6653796 /* jitoptimizer.cpp */; };
+		1E8B1CCCC006A732E1FFC48B /* jitblock.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C2DD2B2BAC0F35A345DE48A8 /* jitblock.cpp */; };
+		1E9FA8873BDAF68BC803E746 /* constpool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B7CF15379DD653D0F66E70B9 /* constpool.cpp */; };
+		1EC73BE4BCE0494033AA81A1 /* a64func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9D6D5CF1CBB8CE581DA05FC5 /* a64func.cpp */; };
+		20534F2343E32E3D9E8EC435 /* emitter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A0B9877D6F859985B1AFD63C /* emitter.cpp */; };
+		21A3433EB1127673893879FB /* jitasmjithelpers.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3CB968230DFFE153E846E97 /* jitasmjithelpers.cpp */; };
+		21D41E31D224E141F0755813 /* mdmc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 622276175A7A43807FF366E7 /* mdmc.cpp */; };
+		227B58021620C3FE83B1956D /* opcodecycles.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D3042FA46F1B69DB500D9E10 /* opcodecycles.cpp */; };
+		23994CBD8A521AADDE5B56CC /* jitdspmode.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D5CF72A2AAF001AB5AF9D1F3 /* jitdspmode.cpp */; };
+		244050E80426728D39771FBD /* peripheralBase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FF918E72BC61FA3699B3BD01 /* peripheralBase.cpp */; };
+		24CCC892AC3ED3EAF49E916E /* x86func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 03424AC5ED2C91FB050FC7A2 /* x86func.cpp */; };
+		253E3FB944D6F7401968C7CB /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92246618F16F079A764D86D4 /* assembler.cpp */; };
+		25C1BAEAB84FCF5828BFBD10 /* MDTestApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40F440F5107DBA8B95D86A83 /* MDTestApp.swift */; };
+		29E683FFC36ED54F0C128162 /* timers.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D141DC25D4B29FA136590827 /* timers.cpp */; };
+		2B6B6BACDC0181CC1A4E72FF /* environment.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A0DCA5136C35435E350C1748 /* environment.cpp */; };
+		2DCC2AFB50E6E643C66D99C3 /* sim.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 49123F5E474ED8331CBD3422 /* sim.cpp */; };
+		32005B6111006BEC3A039DAE /* archtraits.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6F49ED3A468F0D2FABF07348 /* archtraits.cpp */; };
+		32E1FF4BFD8E6A07216D8E49 /* jitops_jmp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FA372B44F3BE76CBDD6D0C46 /* jitops_jmp.cpp */; };
+		33FEDF4B42ADF6E148B50A33 /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D5E337B8DD28F884ACA04457 /* compiler.cpp */; };
+		3573CAC8FF0AC4635BF8AADE /* filesystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 44DA56B01F69363026ECF02E /* filesystem.cpp */; };
+		357B2166D65D77FB6EB28DCD /* deviceException.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 95F78A919B3FB4ECDBE8C8E6 /* deviceException.cpp */; };
+		36500E0AF84E1EBEDCAE0A67 /* lcd.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 415EA464E772C03A90577479 /* lcd.cpp */; };
+		38AF42C59677D79575B795C8 /* hdi08.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 785ABFFB4ED54AD7AC682E82 /* hdi08.cpp */; };
+		3AA97E86B8209F68C6B39DDB /* jitblockchain.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9B34C426BA4197AC23BDD0D7 /* jitblockchain.cpp */; };
+		3B706765A0C6DAA084375950 /* mdsim.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB41E0833C147770E6626E6F /* mdsim.cpp */; };
+		3CF4329CFBDC1FF16F09E8F2 /* jitops_decode_aarch64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7396C717F201ACF1E9EA77BA /* jitops_decode_aarch64.cpp */; };
+		3E55E7B407ACA445CC0931B3 /* jitops.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1CBF536CDCA1B6C24AAB8077 /* jitops.cpp */; };
+		402263A0479158798E7E5A55 /* mameResamplers.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7A4FA372F2697C3B6A9BD2B4 /* mameResamplers.cpp */; };
+		40974335DE74AB7528774EFE /* cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C4F83F184F1588B6EDC6231A /* cpuinfo.cpp */; };
+		40D2694D09D9929DC5353E60 /* x86instdb.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 76BAA41A7CC1C215844E5248 /* x86instdb.cpp */; };
+		411CF1D93BC8B0BE49A09859 /* sysexToMidi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2A5B52B314EFD508643362CD /* sysexToMidi.cpp */; };
+		41EB98257D4C5CE7A0DCD045 /* win8sync.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 32C22C6CA90FF6962E6AC8C6 /* win8sync.cpp */; };
+		42DD83989A074CC6709C0D2F /* logging.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1960A8A29B3A712E3F52C6E7 /* logging.cpp */; };
+		4612B2AC4DCB4360C55C3CEE /* event.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6F32814C9EA2E8B501584C35 /* event.cpp */; };
+		4B928EB7A19F126B33714B24 /* jitops_decode_x64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08BE8D430BDF96E65DE579C3 /* jitops_decode_x64.cpp */; };
+		4C317A783FB77B8A540CB23E /* globals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D1C2EB69DE17F0B72A98BFB6 /* globals.cpp */; };
+		4C3B35ED9969BA3707F1412A /* midiRateLimiter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7B8B60E2D2751CA5FB133608 /* midiRateLimiter.cpp */; };
+		4C7C52C576C55E75663393B6 /* jitops_ccr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E43E7E83A7477C67FC291DF9 /* jitops_ccr.cpp */; };
+		4CEF21388F03DBA343263724 /* func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 247C37ACC09D2167785D566A /* func.cpp */; };
+		4E350F985C708571A1662C00 /* dspBootCode.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FFAF65E28437B51918F9D201 /* dspBootCode.cpp */; };
+		4FBBE40FF5A012A0D6C8504E /* resamplerInOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7511F1E8BF522BAD5FC00206 /* resamplerInOut.cpp */; };
+		5271D62F2E45F199C50DA479 /* type.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B15E13B61A1A76B65197D1A /* type.cpp */; };
+		573A7BC62CE5ED3734046DF5 /* interpreterunittests.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7A9A212E199D8DC810094306 /* interpreterunittests.cpp */; };
+		5BA0D01CFA57F8EC9EA36234 /* mdpanel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D808B3570DC34130EF7131D2 /* mdpanel.cpp */; };
+		5C518DE56D7B81A5687DD8FF /* md5.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 43E156DCF8196ACC4C7858B7 /* md5.cpp */; };
+		5C890D03B3E7AEEBF609835C /* binarystream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8653C2AC53C2791BEECF6C47 /* binarystream.cpp */; };
+		5CF93DBBB5B93C6012C0ACDE /* mdflash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F992A4AEA3FB8FEE7D4B7F51 /* mdflash.cpp */; };
+		5D2CA7F68EA1553F247C8049 /* i2c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D80CDC536365CE733F538912 /* i2c.cpp */; };
+		5E12FD4ADA7F9C6B91998662 /* dspthread.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8E2CEA0E5F7C578F9F5DAB31 /* dspthread.cpp */; };
+		5FC216E2E866D5FAEE428E53 /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 25D748EBF7BFD32C4117CD27 /* logger.cpp */; };
+		60F59AAB2E9AA12FF99A128D /* codewriter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDCDB06EE0B9D4F8F9BEC607 /* codewriter.cpp */; };
+		62E2ADD5E94C1608195FCC9D /* romLoader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 48680C1797F69807720F15AD /* romLoader.cpp */; };
+		63A9D93FF4A66995E1A29EB6 /* jitops_alu_x64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7A4E44875310049DC376CD9D /* jitops_alu_x64.cpp */; };
+		645B84D45AD9681D0BDA767B /* threadtools.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 28BC6043316D0B2559687B41 /* threadtools.cpp */; };
+		6466AD29FFF3050F2D47EE5E /* jitallocator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51D9CF48CC88E776192838D3 /* jitallocator.cpp */; };
+		655BBEC52C0B6E525CC9E774 /* sysexRemoteControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 25CA45C68441F71A4E987CDE /* sysexRemoteControl.cpp */; };
+		660E7FB19F2D082EE9ADE969 /* sounddiverLibLoader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4888A84B6D2A608E7FDDBAD6 /* sounddiverLibLoader.cpp */; };
+		6670E1EFC967317BB69E0988 /* port.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FBCFD040297B88DCF6840A20 /* port.cpp */; };
+		672F466FA462AB69B7A4E6EE /* a64instapi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1ED69E83290B00BD0CF710C9 /* a64instapi.cpp */; };
+		6793A31C6D5060869AF00B87 /* audio.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FD26625EBCC701F9817182AD /* audio.cpp */; };
+		6919A0429F6109279981CD2B /* jitunittests.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EE0A38E4A0F8A5BB0F2DB62B /* jitunittests.cpp */; };
+		699C86CD4F7B738B1537C27E /* midiClock.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A307CFAF1697AFDD88AAE6DE /* midiClock.cpp */; };
+		69D2852E692AB48F413C7F4A /* ralocal.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D87ADC9B750A5732D62D500C /* ralocal.cpp */; };
+		6AEF343685B84EA5434FBFA3 /* emitterutils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D5C57BDD802D8A372FF0709B /* emitterutils.cpp */; };
+		6CB7BF32135597609E3E92B1 /* utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8239EC7A45BCFEB623FD6EBA /* utils.cpp */; };
+		6CD569BF080EA7FCD431D681 /* realtimeInstrumentation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BA2175B63F0768F5AB0EF2B3 /* realtimeInstrumentation.cpp */; };
+		6E32F08F8AB71836B26E37E0 /* string.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B2BE0F82EFA5042708728297 /* string.cpp */; };
+		6EFE6E5E693B85DB43CB3AE1 /* jitops_ccr_aarch64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 91C984316D6BC718804CF9A8 /* jitops_ccr_aarch64.cpp */; };
+		6FBD839C57DF213384AF4AD1 /* mutex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A36E2647E2B23B784FE7C496 /* mutex.cpp */; };
+		6FFCDC1FE6F23687E6231406 /* m68kfpu.c in Sources */ = {isa = PBXBuildFile; fileRef = BE9EE878A2825199D5F0F2E4 /* m68kfpu.c */; };
+		70EF26AA2C6947278AA28969 /* a64assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 42AB14D501BE4E174CF78083 /* a64assembler.cpp */; };
+		728D6EA1DCCA567C5B9DEB9A /* jitemitter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D1E4E433ABD60A14FE65E2BE /* jitemitter.cpp */; };
+		741540C99A91FD2157A8C334 /* jitstackhelper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2DE16B91C5FA89A836185462 /* jitstackhelper.cpp */; };
+		753C59AC95A30B945980C0FC /* propertyMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6BC79FC41016A0C03AF7B365 /* propertyMap.cpp */; };
+		75F44F2FA760AF22263DE721 /* x86compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 674D8B04F881EFA9D89B0CA0 /* x86compiler.cpp */; };
+		76E39BEA00D7364E34B607C1 /* inst.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 754D91247CB0EEBC7E1B406B /* inst.cpp */; };
+		7724D9EADBDB70386904C5F0 /* types.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7973D9DC36E26D6DB195EE62 /* types.cpp */; };
+		77D3016FEA65592DBD2BCCCF /* filterkit.c in Sources */ = {isa = PBXBuildFile; fileRef = C15827D732642F65A7545399 /* filterkit.c */; };
+		78AA9A417EFD089247C5D0EE /* midiRoutingMatrix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 48018B2B89EA07319923A143 /* midiRoutingMatrix.cpp */; };
+		790F7F736D2DEAEA586EE985 /* osutils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE926932880E667A2EA9C3BA /* osutils.cpp */; };
+		7AB2A41E2543E57D6B3DA06B /* dsp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C1FA3157F28E592B7B7E9C1C /* dsp.cpp */; };
+		7B3E92FC9A00A2C78702F7D3 /* x86emithelper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C242B0B14C349754785E2664 /* x86emithelper.cpp */; };
+		7C52F334E6F26E0402F23F56 /* logging.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6A7977CFBA33695D07AC5ED1 /* logging.cpp */; };
+		7FEA3A078758B93B46C0F96F /* registers.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B06876D29F2C7446562EB886 /* registers.cpp */; };
+		801FFB600A62BDAA35A119E5 /* jitdspregs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6751AD5C1081B46891721304 /* jitdspregs.cpp */; };
+		8408F9DEE3111205716DA9CF /* midiTranslator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 70E75C688E1B3C992745DFBA /* midiTranslator.cpp */; };
+		868806FFCB7C7E88AEAC15EE /* funcargscontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A9FFA195DEF873CB95F84023 /* funcargscontext.cpp */; };
+		89758403D7EABE477BD4B783 /* jitops_agu_x64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E5CCF0BDCC298E20DAAA7E21 /* jitops_agu_x64.cpp */; };
+		89D362CED9A8178364E2BAE6 /* jitoptimizertests.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7158F49FE76B7304B9E9049 /* jitoptimizertests.cpp */; };
+		8A3F25F4C2C8B533331155A9 /* jitops_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E95194FF3524872E50C64493 /* jitops_helper.cpp */; };
+		8A7EF115560B025DE4BC5BD8 /* errorhandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C8128CE83AE158D186B2170B /* errorhandler.cpp */; };
+		8CA704A8D9AD18467A334215 /* resample.c in Sources */ = {isa = PBXBuildFile; fileRef = 384FA2E5CA29B5EA8AF83961 /* resample.c */; };
+		8CA7169050D46C45FB0F6CF0 /* mdrom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 54455B745ACDFD64DDB45019 /* mdrom.cpp */; };
+		8D76FAA1DDE7B3C94E2F7864 /* emithelper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2EDCC7B3DD59C70DFD3F6E2F /* emithelper.cpp */; };
+		8D9A7B60F90A6745A6E31D0F /* plugin.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AC337F8E5535E6673AEAB978 /* plugin.cpp */; };
+		8E64EFF516D34A80BF15912D /* jitops_decode.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FB1C646350F82B85167574B /* jitops_decode.cpp */; };
+		8E6B2DFF64EF4AED896BB3E0 /* x86rapass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FF0537476FEDEED18FEA80A2 /* x86rapass.cpp */; };
+		8FB4234708D8EA81860EA86E /* rastack.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F97818EB3C1DBB75C856A90B /* rastack.cpp */; };
+		8FB7C28CD84ED5D413007FCD /* zonehash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7C3C394CB63DD7307BFE07DB /* zonehash.cpp */; };
+		9004AB4BB4BF44982D879572 /* softfloat.c in Sources */ = {isa = PBXBuildFile; fileRef = FC2D2F4FAEEE5A7D149215D7 /* softfloat.c */; };
+		903D403C5E47DA6EA53C4BFB /* jitops_agu_aarch64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 69B50F3A7238D4FAB7620DF6 /* jitops_agu_aarch64.cpp */; };
+		91E7C3BB91FD144A54D97B22 /* jitops_alu_aarch64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 333B12FDDA45EBA8CC8D8AF2 /* jitops_alu_aarch64.cpp */; };
+		928FE82A2D4A6673DB43FFA5 /* peripherals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 47D71F879782DF34E644C70B /* peripherals.cpp */; };
+		95363B69F6616DB058093512 /* codeholder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A2105A65C69BC7C02BEEA2D2 /* codeholder.cpp */; };
+		95E7766536D8A9E8575FBC04 /* jitops_move.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E54B3E6A5916CEF39F0A2C0A /* jitops_move.cpp */; };
+		99E8BC9B06CEFE8FA82EB94C /* jitops_agu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1C358087D35787A536485972 /* jitops_agu.cpp */; };
+		9CA9C0DA3E8A0792724EEB53 /* qspi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3EA91589A98BA25AC4875D72 /* qspi.cpp */; };
+		9E6F9220A616FCDA526A91A2 /* qsm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 36899CCF6E77C1FF145CBAA7 /* qsm.cpp */; };
+		A051C710184B5A06FACCC1B2 /* dac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FD18A416868BDC88F647836 /* dac.cpp */; };
+		A10A0F722550B22203CF8EBA /* jitops_ccr_x64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C543AB0B30956F9B151C898A /* jitops_ccr_x64.cpp */; };
+		A1780F18C730509C3FCF1B02 /* resamplesubs.c in Sources */ = {isa = PBXBuildFile; fileRef = 25D9BC9D1742B084B253CA2C /* resamplesubs.c */; };
+		A223618EF9538A3566E6D70F /* rapass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1E65DFF72232E093B7EBB51D /* rapass.cpp */; };
+		A31F6898DA2F1825882142BB /* mc68k.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7C5B58CBC71BC8A3AD1BCC04 /* mc68k.cpp */; };
+		A468AA841E608AC4C4926127 /* jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D6066CDED136700EAB918D0A /* jit.cpp */; };
+		A4D5BCD1934B0B56ADE4FAF9 /* zonelist.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 080D843C6DBE496383396F6F /* zonelist.cpp */; };
+		A83990EE7B908FE89BECCDB3 /* jitblockinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7108949A0F3C942A6038D6FE /* jitblockinfo.cpp */; };
+		ABD7C4FF3F81EF313C205BF8 /* midiBufferParser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CA8ACBCF11005D616E6F812B /* midiBufferParser.cpp */; };
+		AFB33FA4D126F77288771B63 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B390F5936AE765D2A7E7B7B8 /* AVFoundation.framework */; };
+		B291A21BB57A57A8617C8301 /* operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2CDBDEEE5BDC084C8DE5FEE2 /* operand.cpp */; };
+		B33D8561571CA785737544F4 /* disasm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8A1D9EA52BB420F1ADB88383 /* disasm.cpp */; };
+		B4CC923043971BF0C21FEC6E /* esxi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C3F6F5CB20708DC82E12B730 /* esxi.cpp */; };
+		B52DC449A9CE00DA248BD044 /* jitdspvalue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 089C0F4604979810C41CA2C7 /* jitdspvalue.cpp */; };
+		B6D519117966EBE33F669DD0 /* m68kops.c in Sources */ = {isa = PBXBuildFile; fileRef = 0530FC20E48CD0ECE9D104FA /* m68kops.c */; };
+		B6EF7F278100B9F46D0F0A08 /* agu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 979D488CD6974C397F982E8E /* agu.cpp */; };
+		B72A9C193FE3D038E6C6E68F /* performanceReport.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 66282F48E2993E7C957FC0CE /* performanceReport.cpp */; };
+		B7958DDEB89E5F1803CC9DAC /* jitruntimedata.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B7F7EF613C78E1F0EEA863D5 /* jitruntimedata.cpp */; };
+		B7B883A5A19BC97578D70191 /* gpio.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8D1104183FE1955B7A24CD1E /* gpio.cpp */; };
+		B802E91CCCF6B4C9AF827CEA /* memory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DE25D55A857D87F7B402BD42 /* memory.cpp */; };
+		B8276C105F30F0625417DD0B /* jitops_mem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FE10782E2D3AAA0267650E2D /* jitops_mem.cpp */; };
+		B89C91A9994C92DC8C34C127 /* unittests.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0C4993F13CFCB712AC8A8CA2 /* unittests.cpp */; };
+		B8FF04E516028F6116831D34 /* a64operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E0D0FC03CD3AE5801BAC0232 /* a64operand.cpp */; };
+		BA47028E0AF275B7C3B771E1 /* a64compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C8210EC5CE2AF709385C2751 /* a64compiler.cpp */; };
+		BE715130731A0FB40822A1F9 /* conditionvariable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52BFD085AD6E13123DC1919B /* conditionvariable.cpp */; };
+		C02BD3B39A6D3F24A9021446 /* hdi08queue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E7299E5F96717AB0333C1291 /* hdi08queue.cpp */; };
+		C071F02CA515DB7CA2751CFD /* jithelper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B4BA2D555615E223E3E74105 /* jithelper.cpp */; };
+		C077641DB10F2B75F0BE9A0E /* mdturbomidi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 201C1B1D3593A70F323E85D1 /* mdturbomidi.cpp */; };
+		C2BF7018B78340D5286D5951 /* sciMidi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 713320591CFB562C12B5136E /* sciMidi.cpp */; };
+		C31201CBD5D99D87FEA784F5 /* configFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6551EB1AA1B8BADBCB45231F /* configFile.cpp */; };
+		C32E564BE9B227AA03A244ED /* jitops_helper_x64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6B60E4053F71F68A9638A14F /* jitops_helper_x64.cpp */; };
+		C4A95E38E016BD81E8E0C258 /* armformatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 32AEE43C9FE2F7696F7673CE /* armformatter.cpp */; };
+		C4D63171AA695DB062855446 /* esai.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C417691D207D7BAFA1B28308 /* esai.cpp */; };
+		CE2A9700569138D2D9061774 /* am29f.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 758F00DB1FF2091031855456 /* am29f.cpp */; };
+		CEB65EB570423E9CB8AF1898 /* zonetree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 30E6661352935D902C7CA103 /* zonetree.cpp */; };
+		CF377C8FA705D6C421760DD1 /* a64instdb.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 428BDBA8D9B82D0248F9A074 /* a64instdb.cpp */; };
+		CFE7017A509BFE8A43FE9B73 /* esaiclock.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FA070E46CC8C277E4BC37FA9 /* esaiclock.cpp */; };
+		D1F8F4E2DA4E1A31D85F3605 /* mdfrontpanel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E6A79F4FF7ECFFB5111B8D55 /* mdfrontpanel.cpp */; };
+		D270BAE29878F518F8DA3E66 /* logging.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F05B2D1C80333CB114067A63 /* logging.cpp */; };
+		D502C0E9772DAEA51C89C4CA /* i2cFlash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 742FC9E20A710C85434651FC /* i2cFlash.cpp */; };
+		D5BE3E7E6340FC6B2D81BD88 /* MDEngineTest.mm in Sources */ = {isa = PBXBuildFile; fileRef = C2914136403554A56D057A31 /* MDEngineTest.mm */; };
+		D64DEFCCA3EF0D7CB5C524E8 /* jittrampoline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F1E795A30FA835DF588ECA56 /* jittrampoline.cpp */; };
+		D7266ADEEAC6BD4C172015CF /* haltDSP.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5AD8BF88827CD1B9F565CAF4 /* haltDSP.cpp */; };
+		D8290AB1A8C0EC4A7D3C96B9 /* mdromdata.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 923526CF729877A27EED91F3 /* mdromdata.cpp */; };
+		D95EA4D09EF4CC0C0DBF4635 /* zonestack.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 66825ED41B2E09E00957D331 /* zonestack.cpp */; };
+		D98B7932FCE4E26782A2B479 /* mddsp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 523B7B1D7E3DA139DBC3A9E9 /* mddsp.cpp */; };
+		DA0258D2057ADAD99719CFCA /* jitruntime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 32F583A7AECFEFAD3E704A15 /* jitruntime.cpp */; };
+		DB855E745D56A36FA0C5F614 /* assemblertest.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 492E0A19DB4CBCC7E175596B /* assemblertest.cpp */; };
+		DB9BFC8F86C9EFF4B239E3FC /* mdromloader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6D1A7240452F2246CD888648 /* mdromloader.cpp */; };
+		DB9EE8BFD605CC8E3CBD98D6 /* x86formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8FB1569CD862985FBEC0D000 /* x86formatter.cpp */; };
+		DD88708778DA477F1B815873 /* jitmem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 476267C7873D38243F2590A7 /* jitmem.cpp */; };
+		DE5132BE89946A6C88236599 /* vstpreset.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ECC53C544247253DC1CD415C /* vstpreset.cpp */; };
+		DF47B4BC2619F1E1EA3AC98C /* formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 446C75AEDEC2B8EC101B7CE2 /* formatter.cpp */; };
+		DFD0974B89A3BE85B0FDA2C6 /* mdautomation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DF7A69D123F1CF4BC1CF8132 /* mdautomation.cpp */; };
+		E074A63F8BB5EDA1A1DCE404 /* hdi08.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722E3D2AC58528DEC0FBA608 /* hdi08.cpp */; };
+		E4D3036084BE62BBF0E52B27 /* mdsysexautomation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CD332E671C2660715B7726BB /* mdsysexautomation.cpp */; };
+		E687CF37E54C20C3CC7F5CFF /* mdhardware.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB0DC59068154AAFF040F305 /* mdhardware.cpp */; settings = {COMPILER_FLAGS = "-fno-fast-math -ffp-contract=off"; }; };
+		E761590028EA2E2E27C40F84 /* resampler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D74EA7EC665DD3437A551D8A /* resampler.cpp */; };
+		E9966FB9691EC6CFE84B1D09 /* libMDEngine.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3C7DB4B9CB90FDCD4913B0E8 /* libMDEngine.a */; };
+		E9C86B80354B19E486BEC191 /* builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED936A76AC5608ACBEB94FCA /* builder.cpp */; };
+		EAB926E67D7F0AC74CE7C55F /* memorybuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4C26FD14947DDC992EA49CEE /* memorybuffer.cpp */; };
+		EB86D1CA6DFC6E799C668E8D /* jitregtracker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9B10C79A17F7F9D0894983F5 /* jitregtracker.cpp */; };
+		EBFD9B07F79A54208008A50D /* x86operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 791606C16E76AC97B9E3040A /* x86operand.cpp */; };
+		ECFA9C93BBC0DF632214C934 /* gpt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E3C0DFF53902CF3EFC7F6976 /* gpt.cpp */; };
+		ED122A6BB29FA4EB8F34B69F /* lv2PresetExport.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EE6DBABE03C360C097B279D6 /* lv2PresetExport.cpp */; };
+		EE379FFDE9E6CF0CF523E8E8 /* trigger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7C9540DFF48E066AE5948B01 /* trigger.cpp */; };
+		EE850098B2D6620E3094CD45 /* mdautomationsync.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7410AE389DC8B8C029A0EAF8 /* mdautomationsync.cpp */; };
+		F0C3B4450687F09675668538 /* jitdspregpool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 75833CE6351FC1B65E7353BE /* jitdspregpool.cpp */; };
+		F3862E44581DFA778C1C812A /* zonevector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD7BE14B7948510D899261AB /* zonevector.cpp */; };
+		F46DDDAF6EC5D0437721C803 /* essi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53F05322FC5DFEA7462A01AF /* essi.cpp */; };
+		F61F84277839B935EBEFE3A7 /* jitdspregpoolregpair.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92D5775EA9350AC7EDB94557 /* jitdspregpoolregpair.cpp */; };
+		F6E129BDB476FB717C26E682 /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E5F23678A8C45D9805F5C1BD /* assembler.cpp */; };
+		FAA55D3951108D86CB8CC6B6 /* opcodes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 75B053B85EDE15014F311852 /* opcodes.cpp */; };
+		FC9FAEEFCBD8D3971C2EA1F2 /* omfloader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2077620129EC8C1BD6ECB301 /* omfloader.cpp */; };
+		FD4B127EDFBCC838C32DA8EE /* cowmemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4A7DED28CF94F7ECBC5740A5 /* cowmemory.cpp */; };
+		FD6814A0C6D30EB70C1D02B2 /* target.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 938C1E5609C92B76229113A5 /* target.cpp */; };
+		FF01D73FA7B0815DB8DE66BF /* x86builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 63685FCE4EA6845054F6A56C /* x86builder.cpp */; };
+		FFD6AF78BDE561A7EA1D7ED9 /* error.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 12B67D0FF12D500D1AC0AEB4 /* error.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		C66B2B00891B06733438EA13 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E143FEAE3C5E9945506AF744 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D58E6E07DCA763F7AEF3E64E;
+			remoteInfo = MDEngine;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		03424AC5ED2C91FB050FC7A2 /* x86func.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = x86func.cpp; sourceTree = "<group>"; };
+		0530FC20E48CD0ECE9D104FA /* m68kops.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = m68kops.c; sourceTree = "<group>"; };
+		06B77EC8AA47E9D6951B7424 /* wavReader.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = wavReader.cpp; sourceTree = "<group>"; };
+		080D843C6DBE496383396F6F /* zonelist.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = zonelist.cpp; sourceTree = "<group>"; };
+		089C0F4604979810C41CA2C7 /* jitdspvalue.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitdspvalue.cpp; sourceTree = "<group>"; };
+		08BE8D430BDF96E65DE579C3 /* jitops_decode_x64.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitops_decode_x64.cpp; sourceTree = "<group>"; };
+		0C4993F13CFCB712AC8A8CA2 /* unittests.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = unittests.cpp; sourceTree = "<group>"; };
+		11A7989C970DB3095E978EA3 /* jitops_alu.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitops_alu.cpp; sourceTree = "<group>"; };
+		12B67D0FF12D500D1AC0AEB4 /* error.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = error.cpp; sourceTree = "<group>"; };
+		146999BBF273021553765FB3 /* jitprofilingsupport.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitprofilingsupport.cpp; sourceTree = "<group>"; };
+		14B5A238AC8C27CEBA946AAA /* mddevice.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mddevice.cpp; sourceTree = "<group>"; };
+		1519FBF9ECE2903380FD753A /* MDEngineTest.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MDEngineTest.h; sourceTree = "<group>"; };
+		171CA7DCAA9181FF25B8DF96 /* instructioncache.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = instructioncache.cpp; sourceTree = "<group>"; };
+		1739B15F41E7A1C0B909FBE5 /* debuggerinterface.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = debuggerinterface.cpp; sourceTree = "<group>"; };
+		1960A8A29B3A712E3F52C6E7 /* logging.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = logging.cpp; sourceTree = "<group>"; };
+		1B13AA9420C8F57CF6653796 /* jitoptimizer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitoptimizer.cpp; sourceTree = "<group>"; };
+		1C358087D35787A536485972 /* jitops_agu.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitops_agu.cpp; sourceTree = "<group>"; };
+		1CBF536CDCA1B6C24AAB8077 /* jitops.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitops.cpp; sourceTree = "<group>"; };
+		1E65DFF72232E093B7EBB51D /* rapass.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = rapass.cpp; sourceTree = "<group>"; };
+		1ED69E83290B00BD0CF710C9 /* a64instapi.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = a64instapi.cpp; sourceTree = "<group>"; };
+		1FB1C646350F82B85167574B /* jitops_decode.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitops_decode.cpp; sourceTree = "<group>"; };
+		1FD18A416868BDC88F647836 /* dac.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = dac.cpp; sourceTree = "<group>"; };
+		201C1B1D3593A70F323E85D1 /* mdturbomidi.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mdturbomidi.cpp; sourceTree = "<group>"; };
+		2077620129EC8C1BD6ECB301 /* omfloader.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = omfloader.cpp; sourceTree = "<group>"; };
+		20BD308B543511FED6AA441C /* a64formatter.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = a64formatter.cpp; sourceTree = "<group>"; };
+		20D56C9FA4B14EB99A6DB790 /* lcdfonts.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = lcdfonts.cpp; sourceTree = "<group>"; };
+		247C37ACC09D2167785D566A /* func.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = func.cpp; sourceTree = "<group>"; };
+		25C874E2BF47EBEDE8D14718 /* os.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = os.cpp; sourceTree = "<group>"; };
+		25CA45C68441F71A4E987CDE /* sysexRemoteControl.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = sysexRemoteControl.cpp; sourceTree = "<group>"; };
+		25D748EBF7BFD32C4117CD27 /* logger.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = logger.cpp; sourceTree = "<group>"; };
+		25D9BC9D1742B084B253CA2C /* resamplesubs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = resamplesubs.c; sourceTree = "<group>"; };
+		28BC6043316D0B2559687B41 /* threadtools.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = threadtools.cpp; sourceTree = "<group>"; };
+		2A5B52B314EFD508643362CD /* sysexToMidi.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = sysexToMidi.cpp; sourceTree = "<group>"; };
+		2B15E13B61A1A76B65197D1A /* type.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = type.cpp; sourceTree = "<group>"; };
+		2B821790DAD580CFE48491BE /* x86instapi.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = x86instapi.cpp; sourceTree = "<group>"; };
+		2CDBDEEE5BDC084C8DE5FEE2 /* operand.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = operand.cpp; sourceTree = "<group>"; };
+		2DE16B91C5FA89A836185462 /* jitstackhelper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitstackhelper.cpp; sourceTree = "<group>"; };
+		2EDCC7B3DD59C70DFD3F6E2F /* emithelper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = emithelper.cpp; sourceTree = "<group>"; };
+		30E6661352935D902C7CA103 /* zonetree.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = zonetree.cpp; sourceTree = "<group>"; };
+		32AEE43C9FE2F7696F7673CE /* armformatter.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = armformatter.cpp; sourceTree = "<group>"; };
+		32C22C6CA90FF6962E6AC8C6 /* win8sync.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = win8sync.cpp; sourceTree = "<group>"; };
+		32F583A7AECFEFAD3E704A15 /* jitruntime.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitruntime.cpp; sourceTree = "<group>"; };
+		333B12FDDA45EBA8CC8D8AF2 /* jitops_alu_aarch64.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitops_alu_aarch64.cpp; sourceTree = "<group>"; };
+		36899CCF6E77C1FF145CBAA7 /* qsm.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = qsm.cpp; sourceTree = "<group>"; };
+		384FA2E5CA29B5EA8AF83961 /* resample.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = resample.c; sourceTree = "<group>"; };
+		3BE72B77087F6E9555E6C239 /* os.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = os.cpp; sourceTree = "<group>"; };
+		3C7DB4B9CB90FDCD4913B0E8 /* libMDEngine.a */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = archive.ar; path = libMDEngine.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		3EA91589A98BA25AC4875D72 /* qspi.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = qspi.cpp; sourceTree = "<group>"; };
+		3EB2C9F6FE92BFD90631A7EF /* wavWriter.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = wavWriter.cpp; sourceTree = "<group>"; };
+		40D04ADF7D24ACC45169DC43 /* commandline.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = commandline.cpp; sourceTree = "<group>"; };
+		40F440F5107DBA8B95D86A83 /* MDTestApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MDTestApp.swift; sourceTree = "<group>"; };
+		415EA464E772C03A90577479 /* lcd.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = lcd.cpp; sourceTree = "<group>"; };
+		428BDBA8D9B82D0248F9A074 /* a64instdb.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = a64instdb.cpp; sourceTree = "<group>"; };
+		42AB14D501BE4E174CF78083 /* a64assembler.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = a64assembler.cpp; sourceTree = "<group>"; };
+		43E156DCF8196ACC4C7858B7 /* md5.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = md5.cpp; sourceTree = "<group>"; };
+		446C75AEDEC2B8EC101B7CE2 /* formatter.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = formatter.cpp; sourceTree = "<group>"; };
+		44DA56B01F69363026ECF02E /* filesystem.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = filesystem.cpp; sourceTree = "<group>"; };
+		476267C7873D38243F2590A7 /* jitmem.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitmem.cpp; sourceTree = "<group>"; };
+		47D71F879782DF34E644C70B /* peripherals.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = peripherals.cpp; sourceTree = "<group>"; };
+		48018B2B89EA07319923A143 /* midiRoutingMatrix.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = midiRoutingMatrix.cpp; sourceTree = "<group>"; };
+		48680C1797F69807720F15AD /* romLoader.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = romLoader.cpp; sourceTree = "<group>"; };
+		4888A84B6D2A608E7FDDBAD6 /* sounddiverLibLoader.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = sounddiverLibLoader.cpp; sourceTree = "<group>"; };
+		49123F5E474ED8331CBD3422 /* sim.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = sim.cpp; sourceTree = "<group>"; };
+		492E0A19DB4CBCC7E175596B /* assemblertest.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = assemblertest.cpp; sourceTree = "<group>"; };
+		4A7DED28CF94F7ECBC5740A5 /* cowmemory.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = cowmemory.cpp; sourceTree = "<group>"; };
+		4C26FD14947DDC992EA49CEE /* memorybuffer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = memorybuffer.cpp; sourceTree = "<group>"; };
+		4F3B9AA746FF32C1E36A199C /* m68kdasm.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = m68kdasm.c; sourceTree = "<group>"; };
+		517965993D8D0A689736AAA5 /* m68kcpu.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = m68kcpu.c; sourceTree = "<group>"; };
+		51D9CF48CC88E776192838D3 /* jitallocator.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitallocator.cpp; sourceTree = "<group>"; };
+		523B7B1D7E3DA139DBC3A9E9 /* mddsp.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mddsp.cpp; sourceTree = "<group>"; };
+		52BFD085AD6E13123DC1919B /* conditionvariable.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = conditionvariable.cpp; sourceTree = "<group>"; };
+		53F05322FC5DFEA7462A01AF /* essi.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = essi.cpp; sourceTree = "<group>"; };
+		54455B745ACDFD64DDB45019 /* mdrom.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mdrom.cpp; sourceTree = "<group>"; };
+		54885B60397FF0EBBA2762E1 /* mmuhelper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mmuhelper.cpp; sourceTree = "<group>"; };
+		56300F98BA789BA1B5C1D29C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		5AD8BF88827CD1B9F565CAF4 /* haltDSP.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = haltDSP.cpp; sourceTree = "<group>"; };
+		61579E285B152D2461233B1F /* mdstate.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mdstate.cpp; sourceTree = "<group>"; };
+		622276175A7A43807FF366E7 /* mdmc.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mdmc.cpp; sourceTree = "<group>"; };
+		63685FCE4EA6845054F6A56C /* x86builder.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = x86builder.cpp; sourceTree = "<group>"; };
+		64C313CFF24251F28A07E674 /* zone.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = zone.cpp; sourceTree = "<group>"; };
+		6551EB1AA1B8BADBCB45231F /* configFile.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = configFile.cpp; sourceTree = "<group>"; };
+		66282F48E2993E7C957FC0CE /* performanceReport.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = performanceReport.cpp; sourceTree = "<group>"; };
+		66825ED41B2E09E00957D331 /* zonestack.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = zonestack.cpp; sourceTree = "<group>"; };
+		674D8B04F881EFA9D89B0CA0 /* x86compiler.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = x86compiler.cpp; sourceTree = "<group>"; };
+		6751AD5C1081B46891721304 /* jitdspregs.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitdspregs.cpp; sourceTree = "<group>"; };
+		68B9C5CCAF0410E9F497A4E6 /* a64builder.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = a64builder.cpp; sourceTree = "<group>"; };
+		6942278AC47D415045908FB3 /* support.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = support.cpp; sourceTree = "<group>"; };
+		69B50F3A7238D4FAB7620DF6 /* jitops_agu_aarch64.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitops_agu_aarch64.cpp; sourceTree = "<group>"; };
+		6A7977CFBA33695D07AC5ED1 /* logging.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = logging.cpp; sourceTree = "<group>"; };
+		6B60E4053F71F68A9638A14F /* jitops_helper_x64.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitops_helper_x64.cpp; sourceTree = "<group>"; };
+		6BC79FC41016A0C03AF7B365 /* propertyMap.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = propertyMap.cpp; sourceTree = "<group>"; };
+		6D1A7240452F2246CD888648 /* mdromloader.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mdromloader.cpp; sourceTree = "<group>"; };
+		6F32814C9EA2E8B501584C35 /* event.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = event.cpp; sourceTree = "<group>"; };
+		6F49ED3A468F0D2FABF07348 /* archtraits.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = archtraits.cpp; sourceTree = "<group>"; };
+		70E75C688E1B3C992745DFBA /* midiTranslator.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = midiTranslator.cpp; sourceTree = "<group>"; };
+		7108949A0F3C942A6038D6FE /* jitblockinfo.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitblockinfo.cpp; sourceTree = "<group>"; };
+		713320591CFB562C12B5136E /* sciMidi.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = sciMidi.cpp; sourceTree = "<group>"; };
+		722E3D2AC58528DEC0FBA608 /* hdi08.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = hdi08.cpp; sourceTree = "<group>"; };
+		7396C717F201ACF1E9EA77BA /* jitops_decode_aarch64.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitops_decode_aarch64.cpp; sourceTree = "<group>"; };
+		7410AE389DC8B8C029A0EAF8 /* mdautomationsync.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mdautomationsync.cpp; sourceTree = "<group>"; };
+		742FC9E20A710C85434651FC /* i2cFlash.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = i2cFlash.cpp; sourceTree = "<group>"; };
+		7511F1E8BF522BAD5FC00206 /* resamplerInOut.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = resamplerInOut.cpp; sourceTree = "<group>"; };
+		754D91247CB0EEBC7E1B406B /* inst.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = inst.cpp; sourceTree = "<group>"; };
+		75833CE6351FC1B65E7353BE /* jitdspregpool.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitdspregpool.cpp; sourceTree = "<group>"; };
+		758F00DB1FF2091031855456 /* am29f.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = am29f.cpp; sourceTree = "<group>"; };
+		75B053B85EDE15014F311852 /* opcodes.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = opcodes.cpp; sourceTree = "<group>"; };
+		76BAA41A7CC1C215844E5248 /* x86instdb.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = x86instdb.cpp; sourceTree = "<group>"; };
+		785ABFFB4ED54AD7AC682E82 /* hdi08.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = hdi08.cpp; sourceTree = "<group>"; };
+		791606C16E76AC97B9E3040A /* x86operand.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = x86operand.cpp; sourceTree = "<group>"; };
+		7973D9DC36E26D6DB195EE62 /* types.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = types.cpp; sourceTree = "<group>"; };
+		7A4E44875310049DC376CD9D /* jitops_alu_x64.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitops_alu_x64.cpp; sourceTree = "<group>"; };
+		7A4FA372F2697C3B6A9BD2B4 /* mameResamplers.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mameResamplers.cpp; sourceTree = "<group>"; };
+		7A9A212E199D8DC810094306 /* interpreterunittests.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = interpreterunittests.cpp; sourceTree = "<group>"; };
+		7B8B60E2D2751CA5FB133608 /* midiRateLimiter.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = midiRateLimiter.cpp; sourceTree = "<group>"; };
+		7C3C394CB63DD7307BFE07DB /* zonehash.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = zonehash.cpp; sourceTree = "<group>"; };
+		7C5B58CBC71BC8A3AD1BCC04 /* mc68k.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mc68k.cpp; sourceTree = "<group>"; };
+		7C86B850BF7137D41A4D38D6 /* MDTest-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "MDTest-Bridging-Header.h"; sourceTree = "<group>"; };
+		7C9540DFF48E066AE5948B01 /* trigger.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = trigger.cpp; sourceTree = "<group>"; };
+		8239EC7A45BCFEB623FD6EBA /* utils.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = utils.cpp; sourceTree = "<group>"; };
+		82526003A9E23C086BC0507B /* a64emithelper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = a64emithelper.cpp; sourceTree = "<group>"; };
+		83B978D25CD9AF71FB317516 /* midiToSysex.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = midiToSysex.cpp; sourceTree = "<group>"; };
+		8653C2AC53C2791BEECF6C47 /* binarystream.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = binarystream.cpp; sourceTree = "<group>"; };
+		8A1D9EA52BB420F1ADB88383 /* disasm.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = disasm.cpp; sourceTree = "<group>"; };
+		8D1104183FE1955B7A24CD1E /* gpio.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = gpio.cpp; sourceTree = "<group>"; };
+		8E2CEA0E5F7C578F9F5DAB31 /* dspthread.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = dspthread.cpp; sourceTree = "<group>"; };
+		8FB1569CD862985FBEC0D000 /* x86formatter.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = x86formatter.cpp; sourceTree = "<group>"; };
+		91C984316D6BC718804CF9A8 /* jitops_ccr_aarch64.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitops_ccr_aarch64.cpp; sourceTree = "<group>"; };
+		92246618F16F079A764D86D4 /* assembler.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = assembler.cpp; sourceTree = "<group>"; };
+		923526CF729877A27EED91F3 /* mdromdata.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mdromdata.cpp; sourceTree = "<group>"; };
+		92D5775EA9350AC7EDB94557 /* jitdspregpoolregpair.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitdspregpoolregpair.cpp; sourceTree = "<group>"; };
+		938C1E5609C92B76229113A5 /* target.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = target.cpp; sourceTree = "<group>"; };
+		95F78A919B3FB4ECDBE8C8E6 /* deviceException.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = deviceException.cpp; sourceTree = "<group>"; };
+		979D488CD6974C397F982E8E /* agu.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = agu.cpp; sourceTree = "<group>"; };
+		97F70BAEAD48D7355E33EA9B /* jitops_helper_aarch64.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitops_helper_aarch64.cpp; sourceTree = "<group>"; };
+		9B10C79A17F7F9D0894983F5 /* jitregtracker.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitregtracker.cpp; sourceTree = "<group>"; };
+		9B34C426BA4197AC23BDD0D7 /* jitblockchain.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitblockchain.cpp; sourceTree = "<group>"; };
+		9CC5AB4AAB0CCA1CD0CC07A8 /* dspassert.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = dspassert.cpp; sourceTree = "<group>"; };
+		9D6D5CF1CBB8CE581DA05FC5 /* a64func.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = a64func.cpp; sourceTree = "<group>"; };
+		A0B9877D6F859985B1AFD63C /* emitter.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = emitter.cpp; sourceTree = "<group>"; };
+		A0DCA5136C35435E350C1748 /* environment.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = environment.cpp; sourceTree = "<group>"; };
+		A2105A65C69BC7C02BEEA2D2 /* codeholder.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = codeholder.cpp; sourceTree = "<group>"; };
+		A307CFAF1697AFDD88AAE6DE /* midiClock.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = midiClock.cpp; sourceTree = "<group>"; };
+		A36E2647E2B23B784FE7C496 /* mutex.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mutex.cpp; sourceTree = "<group>"; };
+		A9FFA195DEF873CB95F84023 /* funcargscontext.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = funcargscontext.cpp; sourceTree = "<group>"; };
+		AC337F8E5535E6673AEAB978 /* plugin.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = plugin.cpp; sourceTree = "<group>"; };
+		AD7BE14B7948510D899261AB /* zonevector.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = zonevector.cpp; sourceTree = "<group>"; };
+		B06876D29F2C7446562EB886 /* registers.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = registers.cpp; sourceTree = "<group>"; };
+		B2BE0F82EFA5042708728297 /* string.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = string.cpp; sourceTree = "<group>"; };
+		B390F5936AE765D2A7E7B7B8 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		B3CB968230DFFE153E846E97 /* jitasmjithelpers.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitasmjithelpers.cpp; sourceTree = "<group>"; };
+		B4BA2D555615E223E3E74105 /* jithelper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jithelper.cpp; sourceTree = "<group>"; };
+		B7CF15379DD653D0F66E70B9 /* constpool.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = constpool.cpp; sourceTree = "<group>"; };
+		B7F7EF613C78E1F0EEA863D5 /* jitruntimedata.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitruntimedata.cpp; sourceTree = "<group>"; };
+		BA2175B63F0768F5AB0EF2B3 /* realtimeInstrumentation.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = realtimeInstrumentation.cpp; sourceTree = "<group>"; };
+		BE9EE878A2825199D5F0F2E4 /* m68kfpu.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = m68kfpu.c; sourceTree = "<group>"; };
+		C15827D732642F65A7545399 /* filterkit.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = filterkit.c; sourceTree = "<group>"; };
+		C1FA3157F28E592B7B7E9C1C /* dsp.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = dsp.cpp; sourceTree = "<group>"; };
+		C242B0B14C349754785E2664 /* x86emithelper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = x86emithelper.cpp; sourceTree = "<group>"; };
+		C2914136403554A56D057A31 /* MDEngineTest.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MDEngineTest.mm; sourceTree = "<group>"; };
+		C2DD2B2BAC0F35A345DE48A8 /* jitblock.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitblock.cpp; sourceTree = "<group>"; };
+		C3F6F5CB20708DC82E12B730 /* esxi.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = esxi.cpp; sourceTree = "<group>"; };
+		C417691D207D7BAFA1B28308 /* esai.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = esai.cpp; sourceTree = "<group>"; };
+		C4F83F184F1588B6EDC6231A /* cpuinfo.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = cpuinfo.cpp; sourceTree = "<group>"; };
+		C543AB0B30956F9B151C898A /* jitops_ccr_x64.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitops_ccr_x64.cpp; sourceTree = "<group>"; };
+		C8128CE83AE158D186B2170B /* errorhandler.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = errorhandler.cpp; sourceTree = "<group>"; };
+		C8210EC5CE2AF709385C2751 /* a64compiler.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = a64compiler.cpp; sourceTree = "<group>"; };
+		CA8ACBCF11005D616E6F812B /* midiBufferParser.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = midiBufferParser.cpp; sourceTree = "<group>"; };
+		CD332E671C2660715B7726BB /* mdsysexautomation.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mdsysexautomation.cpp; sourceTree = "<group>"; };
+		CDCDB06EE0B9D4F8F9BEC607 /* codewriter.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = codewriter.cpp; sourceTree = "<group>"; };
+		CE926932880E667A2EA9C3BA /* osutils.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = osutils.cpp; sourceTree = "<group>"; };
+		D141DC25D4B29FA136590827 /* timers.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = timers.cpp; sourceTree = "<group>"; };
+		D1C2EB69DE17F0B72A98BFB6 /* globals.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = globals.cpp; sourceTree = "<group>"; };
+		D1E4E433ABD60A14FE65E2BE /* jitemitter.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitemitter.cpp; sourceTree = "<group>"; };
+		D3042FA46F1B69DB500D9E10 /* opcodecycles.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = opcodecycles.cpp; sourceTree = "<group>"; };
+		D40A983F5D7D31AA6C0D3BB0 /* virtmem.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = virtmem.cpp; sourceTree = "<group>"; };
+		D5C57BDD802D8A372FF0709B /* emitterutils.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = emitterutils.cpp; sourceTree = "<group>"; };
+		D5CF72A2AAF001AB5AF9D1F3 /* jitdspmode.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitdspmode.cpp; sourceTree = "<group>"; };
+		D5E337B8DD28F884ACA04457 /* compiler.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = compiler.cpp; sourceTree = "<group>"; };
+		D6066CDED136700EAB918D0A /* jit.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jit.cpp; sourceTree = "<group>"; };
+		D7158F49FE76B7304B9E9049 /* jitoptimizertests.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitoptimizertests.cpp; sourceTree = "<group>"; };
+		D74EA7EC665DD3437A551D8A /* resampler.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = resampler.cpp; sourceTree = "<group>"; };
+		D808B3570DC34130EF7131D2 /* mdpanel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mdpanel.cpp; sourceTree = "<group>"; };
+		D80CDC536365CE733F538912 /* i2c.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = i2c.cpp; sourceTree = "<group>"; };
+		D87ADC9B750A5732D62D500C /* ralocal.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ralocal.cpp; sourceTree = "<group>"; };
+		DE25D55A857D87F7B402BD42 /* memory.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = memory.cpp; sourceTree = "<group>"; };
+		DF7A69D123F1CF4BC1CF8132 /* mdautomation.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mdautomation.cpp; sourceTree = "<group>"; };
+		E0D0FC03CD3AE5801BAC0232 /* a64operand.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = a64operand.cpp; sourceTree = "<group>"; };
+		E3C0DFF53902CF3EFC7F6976 /* gpt.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = gpt.cpp; sourceTree = "<group>"; };
+		E43E7E83A7477C67FC291DF9 /* jitops_ccr.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitops_ccr.cpp; sourceTree = "<group>"; };
+		E54B3E6A5916CEF39F0A2C0A /* jitops_move.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitops_move.cpp; sourceTree = "<group>"; };
+		E5AC71EF4EB13710E228B2C2 /* a64rapass.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = a64rapass.cpp; sourceTree = "<group>"; };
+		E5CCF0BDCC298E20DAAA7E21 /* jitops_agu_x64.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitops_agu_x64.cpp; sourceTree = "<group>"; };
+		E5F23678A8C45D9805F5C1BD /* assembler.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = assembler.cpp; sourceTree = "<group>"; };
+		E6A79F4FF7ECFFB5111B8D55 /* mdfrontpanel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mdfrontpanel.cpp; sourceTree = "<group>"; };
+		E7299E5F96717AB0333C1291 /* hdi08queue.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = hdi08queue.cpp; sourceTree = "<group>"; };
+		E95194FF3524872E50C64493 /* jitops_helper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitops_helper.cpp; sourceTree = "<group>"; };
+		E9526997BB48588DE3E3DAFB /* x86assembler.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = x86assembler.cpp; sourceTree = "<group>"; };
+		EB0DC59068154AAFF040F305 /* mdhardware.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mdhardware.cpp; sourceTree = "<group>"; };
+		EB41E0833C147770E6626E6F /* mdsim.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mdsim.cpp; sourceTree = "<group>"; };
+		ECC53C544247253DC1CD415C /* vstpreset.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = vstpreset.cpp; sourceTree = "<group>"; };
+		ED936A76AC5608ACBEB94FCA /* builder.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = builder.cpp; sourceTree = "<group>"; };
+		EE0A38E4A0F8A5BB0F2DB62B /* jitunittests.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitunittests.cpp; sourceTree = "<group>"; };
+		EE6DBABE03C360C097B279D6 /* lv2PresetExport.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = lv2PresetExport.cpp; sourceTree = "<group>"; };
+		EEE542B7EAF58B24649D9153 /* audiobuffer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = audiobuffer.cpp; sourceTree = "<group>"; };
+		F05B2D1C80333CB114067A63 /* logging.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = logging.cpp; sourceTree = "<group>"; };
+		F1E795A30FA835DF588ECA56 /* jittrampoline.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jittrampoline.cpp; sourceTree = "<group>"; };
+		F880FECAADA8667D06FD5B48 /* jitblockruntimedata.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitblockruntimedata.cpp; sourceTree = "<group>"; };
+		F97818EB3C1DBB75C856A90B /* rastack.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = rastack.cpp; sourceTree = "<group>"; };
+		F992A4AEA3FB8FEE7D4B7F51 /* mdflash.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mdflash.cpp; sourceTree = "<group>"; };
+		FA070E46CC8C277E4BC37FA9 /* esaiclock.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = esaiclock.cpp; sourceTree = "<group>"; };
+		FA372B44F3BE76CBDD6D0C46 /* jitops_jmp.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitops_jmp.cpp; sourceTree = "<group>"; };
+		FBCFD040297B88DCF6840A20 /* port.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = port.cpp; sourceTree = "<group>"; };
+		FC2D2F4FAEEE5A7D149215D7 /* softfloat.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = softfloat.c; sourceTree = "<group>"; };
+		FCCB4DF0768AE4F08AB826AB /* dma.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = dma.cpp; sourceTree = "<group>"; };
+		FD26625EBCC701F9817182AD /* audio.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = audio.cpp; sourceTree = "<group>"; };
+		FDB4081F830B1360EF2629BB /* MDEngineTest.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MDEngineTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FE10782E2D3AAA0267650E2D /* jitops_mem.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitops_mem.cpp; sourceTree = "<group>"; };
+		FF0537476FEDEED18FEA80A2 /* x86rapass.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = x86rapass.cpp; sourceTree = "<group>"; };
+		FF918E72BC61FA3699B3BD01 /* peripheralBase.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = peripheralBase.cpp; sourceTree = "<group>"; };
+		FFAF65E28437B51918F9D201 /* dspBootCode.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = dspBootCode.cpp; sourceTree = "<group>"; };
+		FFC93CEC5B39431247B6424D /* device.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = device.cpp; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		4B07FC58573C632CCD3FBC0B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E9966FB9691EC6CFE84B1D09 /* libMDEngine.a in Frameworks */,
+				AFB33FA4D126F77288771B63 /* AVFoundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		15D09E1B6BD879CC383D33F1 /* Engine */ = {
+			isa = PBXGroup;
+			children = (
+				376A708CC7A16BB8E6AA2680 /* source */,
+			);
+			path = Engine;
+			sourceTree = "<group>";
+		};
+		21FBC81BBABE63AEA380F6D4 /* md */ = {
+			isa = PBXGroup;
+			children = (
+				B4205D038231269F0ABF59C1 /* mdLib */,
+			);
+			path = md;
+			sourceTree = "<group>";
+		};
+		221B6578DBF93CEF3D41C57C = {
+			isa = PBXGroup;
+			children = (
+				2A12E71D408E2F63CB307ABE /* App */,
+				15D09E1B6BD879CC383D33F1 /* Engine */,
+				E3863D2920243D4AB0699814 /* Frameworks */,
+				8B22CF25D27D5F291320BDAC /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		2A12E71D408E2F63CB307ABE /* App */ = {
+			isa = PBXGroup;
+			children = (
+				56300F98BA789BA1B5C1D29C /* Info.plist */,
+				40F440F5107DBA8B95D86A83 /* MDTestApp.swift */,
+				BE7369C336B275B325DC009B /* Bridge */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		2A315B0A3BD3BE677576420D /* arm */ = {
+			isa = PBXGroup;
+			children = (
+				42AB14D501BE4E174CF78083 /* a64assembler.cpp */,
+				68B9C5CCAF0410E9F497A4E6 /* a64builder.cpp */,
+				C8210EC5CE2AF709385C2751 /* a64compiler.cpp */,
+				82526003A9E23C086BC0507B /* a64emithelper.cpp */,
+				20BD308B543511FED6AA441C /* a64formatter.cpp */,
+				9D6D5CF1CBB8CE581DA05FC5 /* a64func.cpp */,
+				1ED69E83290B00BD0CF710C9 /* a64instapi.cpp */,
+				428BDBA8D9B82D0248F9A074 /* a64instdb.cpp */,
+				E0D0FC03CD3AE5801BAC0232 /* a64operand.cpp */,
+				E5AC71EF4EB13710E228B2C2 /* a64rapass.cpp */,
+				32AEE43C9FE2F7696F7673CE /* armformatter.cpp */,
+			);
+			path = arm;
+			sourceTree = "<group>";
+		};
+		32B0177BB4C6F7D7E364B90C /* source */ = {
+			isa = PBXGroup;
+			children = (
+				6C9744B7CEBAA966F875B278 /* asmjit */,
+				3ECD11BB9D63D08E41237D5E /* dsp56kBase */,
+				AA24CB7B954F578CC04C4D21 /* dsp56kEmu */,
+			);
+			path = source;
+			sourceTree = "<group>";
+		};
+		351DF84D12F4BF7E5FBB5E48 /* hardwareLib */ = {
+			isa = PBXGroup;
+			children = (
+				758F00DB1FF2091031855456 /* am29f.cpp */,
+				D80CDC536365CE733F538912 /* i2c.cpp */,
+				742FC9E20A710C85434651FC /* i2cFlash.cpp */,
+				415EA464E772C03A90577479 /* lcd.cpp */,
+				20D56C9FA4B14EB99A6DB790 /* lcdfonts.cpp */,
+				713320591CFB562C12B5136E /* sciMidi.cpp */,
+			);
+			path = hardwareLib;
+			sourceTree = "<group>";
+		};
+		376A708CC7A16BB8E6AA2680 /* source */ = {
+			isa = PBXGroup;
+			children = (
+				79E2AFD0A12534223493568C /* baseLib */,
+				5E08C8D829054A1C40C1BE0D /* dsp56300 */,
+				57DA0BABE22BA92ACE67CA9C /* elektron */,
+				351DF84D12F4BF7E5FBB5E48 /* hardwareLib */,
+				51F4FB4236F9D88210D1A021 /* libresample */,
+				9ABCD826D53F5F031F6B0EEE /* mc68k */,
+				52C1D89B28E6BDBDD438EAA9 /* synthLib */,
+			);
+			path = source;
+			sourceTree = "<group>";
+		};
+		37F5DF582789EA7A70BF75B1 /* x86 */ = {
+			isa = PBXGroup;
+			children = (
+				E9526997BB48588DE3E3DAFB /* x86assembler.cpp */,
+				63685FCE4EA6845054F6A56C /* x86builder.cpp */,
+				674D8B04F881EFA9D89B0CA0 /* x86compiler.cpp */,
+				C242B0B14C349754785E2664 /* x86emithelper.cpp */,
+				8FB1569CD862985FBEC0D000 /* x86formatter.cpp */,
+				03424AC5ED2C91FB050FC7A2 /* x86func.cpp */,
+				2B821790DAD580CFE48491BE /* x86instapi.cpp */,
+				76BAA41A7CC1C215844E5248 /* x86instdb.cpp */,
+				791606C16E76AC97B9E3040A /* x86operand.cpp */,
+				FF0537476FEDEED18FEA80A2 /* x86rapass.cpp */,
+			);
+			path = x86;
+			sourceTree = "<group>";
+		};
+		3ECD11BB9D63D08E41237D5E /* dsp56kBase */ = {
+			isa = PBXGroup;
+			children = (
+				52BFD085AD6E13123DC1919B /* conditionvariable.cpp */,
+				4A7DED28CF94F7ECBC5740A5 /* cowmemory.cpp */,
+				9CC5AB4AAB0CCA1CD0CC07A8 /* dspassert.cpp */,
+				1960A8A29B3A712E3F52C6E7 /* logging.cpp */,
+				54885B60397FF0EBBA2762E1 /* mmuhelper.cpp */,
+				A36E2647E2B23B784FE7C496 /* mutex.cpp */,
+				28BC6043316D0B2559687B41 /* threadtools.cpp */,
+				7C9540DFF48E066AE5948B01 /* trigger.cpp */,
+				32C22C6CA90FF6962E6AC8C6 /* win8sync.cpp */,
+			);
+			path = dsp56kBase;
+			sourceTree = "<group>";
+		};
+		51F4FB4236F9D88210D1A021 /* libresample */ = {
+			isa = PBXGroup;
+			children = (
+				8EE566F5499AD9055677DDFB /* src */,
+			);
+			path = libresample;
+			sourceTree = "<group>";
+		};
+		52C1D89B28E6BDBDD438EAA9 /* synthLib */ = {
+			isa = PBXGroup;
+			children = (
+				EEE542B7EAF58B24649D9153 /* audiobuffer.cpp */,
+				1FD18A416868BDC88F647836 /* dac.cpp */,
+				FFC93CEC5B39431247B6424D /* device.cpp */,
+				95F78A919B3FB4ECDBE8C8E6 /* deviceException.cpp */,
+				EE6DBABE03C360C097B279D6 /* lv2PresetExport.cpp */,
+				7A4FA372F2697C3B6A9BD2B4 /* mameResamplers.cpp */,
+				CA8ACBCF11005D616E6F812B /* midiBufferParser.cpp */,
+				A307CFAF1697AFDD88AAE6DE /* midiClock.cpp */,
+				7B8B60E2D2751CA5FB133608 /* midiRateLimiter.cpp */,
+				48018B2B89EA07319923A143 /* midiRoutingMatrix.cpp */,
+				83B978D25CD9AF71FB317516 /* midiToSysex.cpp */,
+				70E75C688E1B3C992745DFBA /* midiTranslator.cpp */,
+				3BE72B77087F6E9555E6C239 /* os.cpp */,
+				66282F48E2993E7C957FC0CE /* performanceReport.cpp */,
+				AC337F8E5535E6673AEAB978 /* plugin.cpp */,
+				BA2175B63F0768F5AB0EF2B3 /* realtimeInstrumentation.cpp */,
+				D74EA7EC665DD3437A551D8A /* resampler.cpp */,
+				7511F1E8BF522BAD5FC00206 /* resamplerInOut.cpp */,
+				48680C1797F69807720F15AD /* romLoader.cpp */,
+				4888A84B6D2A608E7FDDBAD6 /* sounddiverLibLoader.cpp */,
+				25CA45C68441F71A4E987CDE /* sysexRemoteControl.cpp */,
+				2A5B52B314EFD508643362CD /* sysexToMidi.cpp */,
+				ECC53C544247253DC1CD415C /* vstpreset.cpp */,
+				06B77EC8AA47E9D6951B7424 /* wavReader.cpp */,
+				3EB2C9F6FE92BFD90631A7EF /* wavWriter.cpp */,
+			);
+			path = synthLib;
+			sourceTree = "<group>";
+		};
+		57DA0BABE22BA92ACE67CA9C /* elektron */ = {
+			isa = PBXGroup;
+			children = (
+				21FBC81BBABE63AEA380F6D4 /* md */,
+			);
+			path = elektron;
+			sourceTree = "<group>";
+		};
+		5E08C8D829054A1C40C1BE0D /* dsp56300 */ = {
+			isa = PBXGroup;
+			children = (
+				32B0177BB4C6F7D7E364B90C /* source */,
+			);
+			path = dsp56300;
+			sourceTree = "<group>";
+		};
+		6C9744B7CEBAA966F875B278 /* asmjit */ = {
+			isa = PBXGroup;
+			children = (
+				B7C257B73AEE72496ECC7FD7 /* src */,
+			);
+			path = asmjit;
+			sourceTree = "<group>";
+		};
+		79E2AFD0A12534223493568C /* baseLib */ = {
+			isa = PBXGroup;
+			children = (
+				8653C2AC53C2791BEECF6C47 /* binarystream.cpp */,
+				40D04ADF7D24ACC45169DC43 /* commandline.cpp */,
+				6551EB1AA1B8BADBCB45231F /* configFile.cpp */,
+				6F32814C9EA2E8B501584C35 /* event.cpp */,
+				44DA56B01F69363026ECF02E /* filesystem.cpp */,
+				F05B2D1C80333CB114067A63 /* logging.cpp */,
+				43E156DCF8196ACC4C7858B7 /* md5.cpp */,
+				25C874E2BF47EBEDE8D14718 /* os.cpp */,
+				6BC79FC41016A0C03AF7B365 /* propertyMap.cpp */,
+			);
+			path = baseLib;
+			sourceTree = "<group>";
+		};
+		7A29ADDA9278C057EE6D2812 /* core */ = {
+			isa = PBXGroup;
+			children = (
+				6F49ED3A468F0D2FABF07348 /* archtraits.cpp */,
+				92246618F16F079A764D86D4 /* assembler.cpp */,
+				ED936A76AC5608ACBEB94FCA /* builder.cpp */,
+				A2105A65C69BC7C02BEEA2D2 /* codeholder.cpp */,
+				CDCDB06EE0B9D4F8F9BEC607 /* codewriter.cpp */,
+				D5E337B8DD28F884ACA04457 /* compiler.cpp */,
+				B7CF15379DD653D0F66E70B9 /* constpool.cpp */,
+				C4F83F184F1588B6EDC6231A /* cpuinfo.cpp */,
+				2EDCC7B3DD59C70DFD3F6E2F /* emithelper.cpp */,
+				A0B9877D6F859985B1AFD63C /* emitter.cpp */,
+				D5C57BDD802D8A372FF0709B /* emitterutils.cpp */,
+				A0DCA5136C35435E350C1748 /* environment.cpp */,
+				C8128CE83AE158D186B2170B /* errorhandler.cpp */,
+				446C75AEDEC2B8EC101B7CE2 /* formatter.cpp */,
+				247C37ACC09D2167785D566A /* func.cpp */,
+				A9FFA195DEF873CB95F84023 /* funcargscontext.cpp */,
+				D1C2EB69DE17F0B72A98BFB6 /* globals.cpp */,
+				754D91247CB0EEBC7E1B406B /* inst.cpp */,
+				51D9CF48CC88E776192838D3 /* jitallocator.cpp */,
+				32F583A7AECFEFAD3E704A15 /* jitruntime.cpp */,
+				25D748EBF7BFD32C4117CD27 /* logger.cpp */,
+				2CDBDEEE5BDC084C8DE5FEE2 /* operand.cpp */,
+				CE926932880E667A2EA9C3BA /* osutils.cpp */,
+				D87ADC9B750A5732D62D500C /* ralocal.cpp */,
+				1E65DFF72232E093B7EBB51D /* rapass.cpp */,
+				F97818EB3C1DBB75C856A90B /* rastack.cpp */,
+				B2BE0F82EFA5042708728297 /* string.cpp */,
+				6942278AC47D415045908FB3 /* support.cpp */,
+				938C1E5609C92B76229113A5 /* target.cpp */,
+				2B15E13B61A1A76B65197D1A /* type.cpp */,
+				D40A983F5D7D31AA6C0D3BB0 /* virtmem.cpp */,
+				64C313CFF24251F28A07E674 /* zone.cpp */,
+				7C3C394CB63DD7307BFE07DB /* zonehash.cpp */,
+				080D843C6DBE496383396F6F /* zonelist.cpp */,
+				66825ED41B2E09E00957D331 /* zonestack.cpp */,
+				30E6661352935D902C7CA103 /* zonetree.cpp */,
+				AD7BE14B7948510D899261AB /* zonevector.cpp */,
+			);
+			path = core;
+			sourceTree = "<group>";
+		};
+		8B22CF25D27D5F291320BDAC /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				3C7DB4B9CB90FDCD4913B0E8 /* libMDEngine.a */,
+				FDB4081F830B1360EF2629BB /* MDEngineTest.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		8EE566F5499AD9055677DDFB /* src */ = {
+			isa = PBXGroup;
+			children = (
+				C15827D732642F65A7545399 /* filterkit.c */,
+				384FA2E5CA29B5EA8AF83961 /* resample.c */,
+				25D9BC9D1742B084B253CA2C /* resamplesubs.c */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+		8EEF7A1A993C4DFAC39341FE /* Musashi */ = {
+			isa = PBXGroup;
+			children = (
+				517965993D8D0A689736AAA5 /* m68kcpu.c */,
+				4F3B9AA746FF32C1E36A199C /* m68kdasm.c */,
+				BE9EE878A2825199D5F0F2E4 /* m68kfpu.c */,
+				0530FC20E48CD0ECE9D104FA /* m68kops.c */,
+				D1E8D55DE8B49311197B6E30 /* softfloat */,
+			);
+			path = Musashi;
+			sourceTree = "<group>";
+		};
+		9ABCD826D53F5F031F6B0EEE /* mc68k */ = {
+			isa = PBXGroup;
+			children = (
+				E3C0DFF53902CF3EFC7F6976 /* gpt.cpp */,
+				722E3D2AC58528DEC0FBA608 /* hdi08.cpp */,
+				6A7977CFBA33695D07AC5ED1 /* logging.cpp */,
+				7C5B58CBC71BC8A3AD1BCC04 /* mc68k.cpp */,
+				FF918E72BC61FA3699B3BD01 /* peripheralBase.cpp */,
+				FBCFD040297B88DCF6840A20 /* port.cpp */,
+				36899CCF6E77C1FF145CBAA7 /* qsm.cpp */,
+				3EA91589A98BA25AC4875D72 /* qspi.cpp */,
+				49123F5E474ED8331CBD3422 /* sim.cpp */,
+				8EEF7A1A993C4DFAC39341FE /* Musashi */,
+			);
+			path = mc68k;
+			sourceTree = "<group>";
+		};
+		AA24CB7B954F578CC04C4D21 /* dsp56kEmu */ = {
+			isa = PBXGroup;
+			children = (
+				979D488CD6974C397F982E8E /* agu.cpp */,
+				E5F23678A8C45D9805F5C1BD /* assembler.cpp */,
+				492E0A19DB4CBCC7E175596B /* assemblertest.cpp */,
+				FD26625EBCC701F9817182AD /* audio.cpp */,
+				1739B15F41E7A1C0B909FBE5 /* debuggerinterface.cpp */,
+				8A1D9EA52BB420F1ADB88383 /* disasm.cpp */,
+				FCCB4DF0768AE4F08AB826AB /* dma.cpp */,
+				C1FA3157F28E592B7B7E9C1C /* dsp.cpp */,
+				FFAF65E28437B51918F9D201 /* dspBootCode.cpp */,
+				8E2CEA0E5F7C578F9F5DAB31 /* dspthread.cpp */,
+				12B67D0FF12D500D1AC0AEB4 /* error.cpp */,
+				C417691D207D7BAFA1B28308 /* esai.cpp */,
+				FA070E46CC8C277E4BC37FA9 /* esaiclock.cpp */,
+				53F05322FC5DFEA7462A01AF /* essi.cpp */,
+				C3F6F5CB20708DC82E12B730 /* esxi.cpp */,
+				8D1104183FE1955B7A24CD1E /* gpio.cpp */,
+				5AD8BF88827CD1B9F565CAF4 /* haltDSP.cpp */,
+				785ABFFB4ED54AD7AC682E82 /* hdi08.cpp */,
+				E7299E5F96717AB0333C1291 /* hdi08queue.cpp */,
+				171CA7DCAA9181FF25B8DF96 /* instructioncache.cpp */,
+				7A9A212E199D8DC810094306 /* interpreterunittests.cpp */,
+				D6066CDED136700EAB918D0A /* jit.cpp */,
+				B3CB968230DFFE153E846E97 /* jitasmjithelpers.cpp */,
+				C2DD2B2BAC0F35A345DE48A8 /* jitblock.cpp */,
+				9B34C426BA4197AC23BDD0D7 /* jitblockchain.cpp */,
+				7108949A0F3C942A6038D6FE /* jitblockinfo.cpp */,
+				F880FECAADA8667D06FD5B48 /* jitblockruntimedata.cpp */,
+				D5CF72A2AAF001AB5AF9D1F3 /* jitdspmode.cpp */,
+				75833CE6351FC1B65E7353BE /* jitdspregpool.cpp */,
+				92D5775EA9350AC7EDB94557 /* jitdspregpoolregpair.cpp */,
+				6751AD5C1081B46891721304 /* jitdspregs.cpp */,
+				089C0F4604979810C41CA2C7 /* jitdspvalue.cpp */,
+				D1E4E433ABD60A14FE65E2BE /* jitemitter.cpp */,
+				B4BA2D555615E223E3E74105 /* jithelper.cpp */,
+				476267C7873D38243F2590A7 /* jitmem.cpp */,
+				69B50F3A7238D4FAB7620DF6 /* jitops_agu_aarch64.cpp */,
+				E5CCF0BDCC298E20DAAA7E21 /* jitops_agu_x64.cpp */,
+				1C358087D35787A536485972 /* jitops_agu.cpp */,
+				333B12FDDA45EBA8CC8D8AF2 /* jitops_alu_aarch64.cpp */,
+				7A4E44875310049DC376CD9D /* jitops_alu_x64.cpp */,
+				11A7989C970DB3095E978EA3 /* jitops_alu.cpp */,
+				91C984316D6BC718804CF9A8 /* jitops_ccr_aarch64.cpp */,
+				C543AB0B30956F9B151C898A /* jitops_ccr_x64.cpp */,
+				E43E7E83A7477C67FC291DF9 /* jitops_ccr.cpp */,
+				7396C717F201ACF1E9EA77BA /* jitops_decode_aarch64.cpp */,
+				08BE8D430BDF96E65DE579C3 /* jitops_decode_x64.cpp */,
+				1FB1C646350F82B85167574B /* jitops_decode.cpp */,
+				97F70BAEAD48D7355E33EA9B /* jitops_helper_aarch64.cpp */,
+				6B60E4053F71F68A9638A14F /* jitops_helper_x64.cpp */,
+				E95194FF3524872E50C64493 /* jitops_helper.cpp */,
+				FA372B44F3BE76CBDD6D0C46 /* jitops_jmp.cpp */,
+				FE10782E2D3AAA0267650E2D /* jitops_mem.cpp */,
+				E54B3E6A5916CEF39F0A2C0A /* jitops_move.cpp */,
+				1CBF536CDCA1B6C24AAB8077 /* jitops.cpp */,
+				1B13AA9420C8F57CF6653796 /* jitoptimizer.cpp */,
+				D7158F49FE76B7304B9E9049 /* jitoptimizertests.cpp */,
+				146999BBF273021553765FB3 /* jitprofilingsupport.cpp */,
+				9B10C79A17F7F9D0894983F5 /* jitregtracker.cpp */,
+				B7F7EF613C78E1F0EEA863D5 /* jitruntimedata.cpp */,
+				2DE16B91C5FA89A836185462 /* jitstackhelper.cpp */,
+				F1E795A30FA835DF588ECA56 /* jittrampoline.cpp */,
+				EE0A38E4A0F8A5BB0F2DB62B /* jitunittests.cpp */,
+				DE25D55A857D87F7B402BD42 /* memory.cpp */,
+				4C26FD14947DDC992EA49CEE /* memorybuffer.cpp */,
+				2077620129EC8C1BD6ECB301 /* omfloader.cpp */,
+				D3042FA46F1B69DB500D9E10 /* opcodecycles.cpp */,
+				75B053B85EDE15014F311852 /* opcodes.cpp */,
+				47D71F879782DF34E644C70B /* peripherals.cpp */,
+				B06876D29F2C7446562EB886 /* registers.cpp */,
+				D141DC25D4B29FA136590827 /* timers.cpp */,
+				7973D9DC36E26D6DB195EE62 /* types.cpp */,
+				0C4993F13CFCB712AC8A8CA2 /* unittests.cpp */,
+				8239EC7A45BCFEB623FD6EBA /* utils.cpp */,
+			);
+			path = dsp56kEmu;
+			sourceTree = "<group>";
+		};
+		B4205D038231269F0ABF59C1 /* mdLib */ = {
+			isa = PBXGroup;
+			children = (
+				DF7A69D123F1CF4BC1CF8132 /* mdautomation.cpp */,
+				7410AE389DC8B8C029A0EAF8 /* mdautomationsync.cpp */,
+				14B5A238AC8C27CEBA946AAA /* mddevice.cpp */,
+				523B7B1D7E3DA139DBC3A9E9 /* mddsp.cpp */,
+				F992A4AEA3FB8FEE7D4B7F51 /* mdflash.cpp */,
+				E6A79F4FF7ECFFB5111B8D55 /* mdfrontpanel.cpp */,
+				EB0DC59068154AAFF040F305 /* mdhardware.cpp */,
+				622276175A7A43807FF366E7 /* mdmc.cpp */,
+				D808B3570DC34130EF7131D2 /* mdpanel.cpp */,
+				54455B745ACDFD64DDB45019 /* mdrom.cpp */,
+				923526CF729877A27EED91F3 /* mdromdata.cpp */,
+				6D1A7240452F2246CD888648 /* mdromloader.cpp */,
+				EB41E0833C147770E6626E6F /* mdsim.cpp */,
+				61579E285B152D2461233B1F /* mdstate.cpp */,
+				CD332E671C2660715B7726BB /* mdsysexautomation.cpp */,
+				201C1B1D3593A70F323E85D1 /* mdturbomidi.cpp */,
+			);
+			path = mdLib;
+			sourceTree = "<group>";
+		};
+		B7C257B73AEE72496ECC7FD7 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				C1ACDEDBD7DC7DEE24FE8EF4 /* asmjit */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+		BE7369C336B275B325DC009B /* Bridge */ = {
+			isa = PBXGroup;
+			children = (
+				1519FBF9ECE2903380FD753A /* MDEngineTest.h */,
+				C2914136403554A56D057A31 /* MDEngineTest.mm */,
+				7C86B850BF7137D41A4D38D6 /* MDTest-Bridging-Header.h */,
+			);
+			path = Bridge;
+			sourceTree = "<group>";
+		};
+		C1ACDEDBD7DC7DEE24FE8EF4 /* asmjit */ = {
+			isa = PBXGroup;
+			children = (
+				2A315B0A3BD3BE677576420D /* arm */,
+				7A29ADDA9278C057EE6D2812 /* core */,
+				37F5DF582789EA7A70BF75B1 /* x86 */,
+			);
+			path = asmjit;
+			sourceTree = "<group>";
+		};
+		D1E8D55DE8B49311197B6E30 /* softfloat */ = {
+			isa = PBXGroup;
+			children = (
+				FC2D2F4FAEEE5A7D149215D7 /* softfloat.c */,
+			);
+			path = softfloat;
+			sourceTree = "<group>";
+		};
+		E3863D2920243D4AB0699814 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				B390F5936AE765D2A7E7B7B8 /* AVFoundation.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		C7C61C5F0C8822D8A20AAC24 /* MDEngineTest */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E7948C88E832F93959456041 /* Build configuration list for PBXNativeTarget "MDEngineTest" */;
+			buildPhases = (
+				751A3B9A45F5B3D9DED47073 /* Sources */,
+				4B07FC58573C632CCD3FBC0B /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D5BEF7D485638D7BCE79BF74 /* PBXTargetDependency */,
+			);
+			name = MDEngineTest;
+			packageProductDependencies = (
+			);
+			productName = MDEngineTest;
+			productReference = FDB4081F830B1360EF2629BB /* MDEngineTest.app */;
+			productType = "com.apple.product-type.application";
+		};
+		D58E6E07DCA763F7AEF3E64E /* MDEngine */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E774A4EAA85905C86106A2E7 /* Build configuration list for PBXNativeTarget "MDEngine" */;
+			buildPhases = (
+				ABF6A0EC4DD7D7DE6688D03E /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MDEngine;
+			packageProductDependencies = (
+			);
+			productName = MDEngine;
+			productReference = 3C7DB4B9CB90FDCD4913B0E8 /* libMDEngine.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E143FEAE3C5E9945506AF744 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					C7C61C5F0C8822D8A20AAC24 = {
+						DevelopmentTeam = LXPC6567AX;
+						ProvisioningStyle = Automatic;
+					};
+					D58E6E07DCA763F7AEF3E64E = {
+						DevelopmentTeam = LXPC6567AX;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 0526850B93F726ECEFB6BCDE /* Build configuration list for PBXProject "MDEngineTest" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 221B6578DBF93CEF3D41C57C;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D58E6E07DCA763F7AEF3E64E /* MDEngine */,
+				C7C61C5F0C8822D8A20AAC24 /* MDEngineTest */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		751A3B9A45F5B3D9DED47073 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D5BE3E7E6340FC6B2D81BD88 /* MDEngineTest.mm in Sources */,
+				25C1BAEAB84FCF5828BFBD10 /* MDTestApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ABF6A0EC4DD7D7DE6688D03E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				70EF26AA2C6947278AA28969 /* a64assembler.cpp in Sources */,
+				064763C5945B28B47E7D8979 /* a64builder.cpp in Sources */,
+				BA47028E0AF275B7C3B771E1 /* a64compiler.cpp in Sources */,
+				05B7BBC4D97E9EA3358DBD8F /* a64emithelper.cpp in Sources */,
+				1A4862D0E7FF54555F7B8835 /* a64formatter.cpp in Sources */,
+				1EC73BE4BCE0494033AA81A1 /* a64func.cpp in Sources */,
+				672F466FA462AB69B7A4E6EE /* a64instapi.cpp in Sources */,
+				CF377C8FA705D6C421760DD1 /* a64instdb.cpp in Sources */,
+				B8FF04E516028F6116831D34 /* a64operand.cpp in Sources */,
+				14C67CEF16C4368C85FA1265 /* a64rapass.cpp in Sources */,
+				B6EF7F278100B9F46D0F0A08 /* agu.cpp in Sources */,
+				CE2A9700569138D2D9061774 /* am29f.cpp in Sources */,
+				32005B6111006BEC3A039DAE /* archtraits.cpp in Sources */,
+				C4A95E38E016BD81E8E0C258 /* armformatter.cpp in Sources */,
+				253E3FB944D6F7401968C7CB /* assembler.cpp in Sources */,
+				F6E129BDB476FB717C26E682 /* assembler.cpp in Sources */,
+				DB855E745D56A36FA0C5F614 /* assemblertest.cpp in Sources */,
+				6793A31C6D5060869AF00B87 /* audio.cpp in Sources */,
+				195ACBA89834B901043FC91A /* audiobuffer.cpp in Sources */,
+				5C890D03B3E7AEEBF609835C /* binarystream.cpp in Sources */,
+				E9C86B80354B19E486BEC191 /* builder.cpp in Sources */,
+				95363B69F6616DB058093512 /* codeholder.cpp in Sources */,
+				60F59AAB2E9AA12FF99A128D /* codewriter.cpp in Sources */,
+				083678C6E7ED13A96CE9CC36 /* commandline.cpp in Sources */,
+				33FEDF4B42ADF6E148B50A33 /* compiler.cpp in Sources */,
+				BE715130731A0FB40822A1F9 /* conditionvariable.cpp in Sources */,
+				C31201CBD5D99D87FEA784F5 /* configFile.cpp in Sources */,
+				1E9FA8873BDAF68BC803E746 /* constpool.cpp in Sources */,
+				FD4B127EDFBCC838C32DA8EE /* cowmemory.cpp in Sources */,
+				40974335DE74AB7528774EFE /* cpuinfo.cpp in Sources */,
+				A051C710184B5A06FACCC1B2 /* dac.cpp in Sources */,
+				02341C148A70AECC06CE0543 /* debuggerinterface.cpp in Sources */,
+				11FC045EAA7D0354821DD81E /* device.cpp in Sources */,
+				357B2166D65D77FB6EB28DCD /* deviceException.cpp in Sources */,
+				B33D8561571CA785737544F4 /* disasm.cpp in Sources */,
+				09B88699DBDA51925E86D8D4 /* dma.cpp in Sources */,
+				7AB2A41E2543E57D6B3DA06B /* dsp.cpp in Sources */,
+				4E350F985C708571A1662C00 /* dspBootCode.cpp in Sources */,
+				0C77402DF2AF4396EBC75586 /* dspassert.cpp in Sources */,
+				5E12FD4ADA7F9C6B91998662 /* dspthread.cpp in Sources */,
+				8D76FAA1DDE7B3C94E2F7864 /* emithelper.cpp in Sources */,
+				20534F2343E32E3D9E8EC435 /* emitter.cpp in Sources */,
+				6AEF343685B84EA5434FBFA3 /* emitterutils.cpp in Sources */,
+				2B6B6BACDC0181CC1A4E72FF /* environment.cpp in Sources */,
+				FFD6AF78BDE561A7EA1D7ED9 /* error.cpp in Sources */,
+				8A7EF115560B025DE4BC5BD8 /* errorhandler.cpp in Sources */,
+				C4D63171AA695DB062855446 /* esai.cpp in Sources */,
+				CFE7017A509BFE8A43FE9B73 /* esaiclock.cpp in Sources */,
+				F46DDDAF6EC5D0437721C803 /* essi.cpp in Sources */,
+				B4CC923043971BF0C21FEC6E /* esxi.cpp in Sources */,
+				4612B2AC4DCB4360C55C3CEE /* event.cpp in Sources */,
+				3573CAC8FF0AC4635BF8AADE /* filesystem.cpp in Sources */,
+				77D3016FEA65592DBD2BCCCF /* filterkit.c in Sources */,
+				DF47B4BC2619F1E1EA3AC98C /* formatter.cpp in Sources */,
+				4CEF21388F03DBA343263724 /* func.cpp in Sources */,
+				868806FFCB7C7E88AEAC15EE /* funcargscontext.cpp in Sources */,
+				4C317A783FB77B8A540CB23E /* globals.cpp in Sources */,
+				B7B883A5A19BC97578D70191 /* gpio.cpp in Sources */,
+				ECFA9C93BBC0DF632214C934 /* gpt.cpp in Sources */,
+				D7266ADEEAC6BD4C172015CF /* haltDSP.cpp in Sources */,
+				38AF42C59677D79575B795C8 /* hdi08.cpp in Sources */,
+				E074A63F8BB5EDA1A1DCE404 /* hdi08.cpp in Sources */,
+				C02BD3B39A6D3F24A9021446 /* hdi08queue.cpp in Sources */,
+				5D2CA7F68EA1553F247C8049 /* i2c.cpp in Sources */,
+				D502C0E9772DAEA51C89C4CA /* i2cFlash.cpp in Sources */,
+				76E39BEA00D7364E34B607C1 /* inst.cpp in Sources */,
+				0B3BCDDFDB3F3E542A35DE9A /* instructioncache.cpp in Sources */,
+				573A7BC62CE5ED3734046DF5 /* interpreterunittests.cpp in Sources */,
+				A468AA841E608AC4C4926127 /* jit.cpp in Sources */,
+				6466AD29FFF3050F2D47EE5E /* jitallocator.cpp in Sources */,
+				21A3433EB1127673893879FB /* jitasmjithelpers.cpp in Sources */,
+				1E8B1CCCC006A732E1FFC48B /* jitblock.cpp in Sources */,
+				3AA97E86B8209F68C6B39DDB /* jitblockchain.cpp in Sources */,
+				A83990EE7B908FE89BECCDB3 /* jitblockinfo.cpp in Sources */,
+				13BF44183457B526B92EFBD3 /* jitblockruntimedata.cpp in Sources */,
+				23994CBD8A521AADDE5B56CC /* jitdspmode.cpp in Sources */,
+				F0C3B4450687F09675668538 /* jitdspregpool.cpp in Sources */,
+				F61F84277839B935EBEFE3A7 /* jitdspregpoolregpair.cpp in Sources */,
+				801FFB600A62BDAA35A119E5 /* jitdspregs.cpp in Sources */,
+				B52DC449A9CE00DA248BD044 /* jitdspvalue.cpp in Sources */,
+				728D6EA1DCCA567C5B9DEB9A /* jitemitter.cpp in Sources */,
+				C071F02CA515DB7CA2751CFD /* jithelper.cpp in Sources */,
+				DD88708778DA477F1B815873 /* jitmem.cpp in Sources */,
+				3E55E7B407ACA445CC0931B3 /* jitops.cpp in Sources */,
+				99E8BC9B06CEFE8FA82EB94C /* jitops_agu.cpp in Sources */,
+				903D403C5E47DA6EA53C4BFB /* jitops_agu_aarch64.cpp in Sources */,
+				89758403D7EABE477BD4B783 /* jitops_agu_x64.cpp in Sources */,
+				144D8949501C7B616FA67086 /* jitops_alu.cpp in Sources */,
+				91E7C3BB91FD144A54D97B22 /* jitops_alu_aarch64.cpp in Sources */,
+				63A9D93FF4A66995E1A29EB6 /* jitops_alu_x64.cpp in Sources */,
+				4C7C52C576C55E75663393B6 /* jitops_ccr.cpp in Sources */,
+				6EFE6E5E693B85DB43CB3AE1 /* jitops_ccr_aarch64.cpp in Sources */,
+				A10A0F722550B22203CF8EBA /* jitops_ccr_x64.cpp in Sources */,
+				8E64EFF516D34A80BF15912D /* jitops_decode.cpp in Sources */,
+				3CF4329CFBDC1FF16F09E8F2 /* jitops_decode_aarch64.cpp in Sources */,
+				4B928EB7A19F126B33714B24 /* jitops_decode_x64.cpp in Sources */,
+				8A3F25F4C2C8B533331155A9 /* jitops_helper.cpp in Sources */,
+				0BB3C080C1DE6131047A0D64 /* jitops_helper_aarch64.cpp in Sources */,
+				C32E564BE9B227AA03A244ED /* jitops_helper_x64.cpp in Sources */,
+				32E1FF4BFD8E6A07216D8E49 /* jitops_jmp.cpp in Sources */,
+				B8276C105F30F0625417DD0B /* jitops_mem.cpp in Sources */,
+				95E7766536D8A9E8575FBC04 /* jitops_move.cpp in Sources */,
+				1E71A7779C31BAA971D4E25A /* jitoptimizer.cpp in Sources */,
+				89D362CED9A8178364E2BAE6 /* jitoptimizertests.cpp in Sources */,
+				0E07F8CECFD31579F7C1ADC4 /* jitprofilingsupport.cpp in Sources */,
+				EB86D1CA6DFC6E799C668E8D /* jitregtracker.cpp in Sources */,
+				DA0258D2057ADAD99719CFCA /* jitruntime.cpp in Sources */,
+				B7958DDEB89E5F1803CC9DAC /* jitruntimedata.cpp in Sources */,
+				741540C99A91FD2157A8C334 /* jitstackhelper.cpp in Sources */,
+				D64DEFCCA3EF0D7CB5C524E8 /* jittrampoline.cpp in Sources */,
+				6919A0429F6109279981CD2B /* jitunittests.cpp in Sources */,
+				36500E0AF84E1EBEDCAE0A67 /* lcd.cpp in Sources */,
+				153DAA8BCDC982F17D69D972 /* lcdfonts.cpp in Sources */,
+				5FC216E2E866D5FAEE428E53 /* logger.cpp in Sources */,
+				D270BAE29878F518F8DA3E66 /* logging.cpp in Sources */,
+				42DD83989A074CC6709C0D2F /* logging.cpp in Sources */,
+				7C52F334E6F26E0402F23F56 /* logging.cpp in Sources */,
+				ED122A6BB29FA4EB8F34B69F /* lv2PresetExport.cpp in Sources */,
+				030F5AA61CF2CC9AD9948408 /* m68kcpu.c in Sources */,
+				136FE0BC1B7A375DF7001ED0 /* m68kdasm.c in Sources */,
+				6FFCDC1FE6F23687E6231406 /* m68kfpu.c in Sources */,
+				B6D519117966EBE33F669DD0 /* m68kops.c in Sources */,
+				402263A0479158798E7E5A55 /* mameResamplers.cpp in Sources */,
+				A31F6898DA2F1825882142BB /* mc68k.cpp in Sources */,
+				5C518DE56D7B81A5687DD8FF /* md5.cpp in Sources */,
+				DFD0974B89A3BE85B0FDA2C6 /* mdautomation.cpp in Sources */,
+				EE850098B2D6620E3094CD45 /* mdautomationsync.cpp in Sources */,
+				115529311443259CD0ACC960 /* mddevice.cpp in Sources */,
+				D98B7932FCE4E26782A2B479 /* mddsp.cpp in Sources */,
+				5CF93DBBB5B93C6012C0ACDE /* mdflash.cpp in Sources */,
+				D1F8F4E2DA4E1A31D85F3605 /* mdfrontpanel.cpp in Sources */,
+				E687CF37E54C20C3CC7F5CFF /* mdhardware.cpp in Sources */,
+				21D41E31D224E141F0755813 /* mdmc.cpp in Sources */,
+				5BA0D01CFA57F8EC9EA36234 /* mdpanel.cpp in Sources */,
+				8CA7169050D46C45FB0F6CF0 /* mdrom.cpp in Sources */,
+				D8290AB1A8C0EC4A7D3C96B9 /* mdromdata.cpp in Sources */,
+				DB9BFC8F86C9EFF4B239E3FC /* mdromloader.cpp in Sources */,
+				3B706765A0C6DAA084375950 /* mdsim.cpp in Sources */,
+				039B547507246F11F8E2F573 /* mdstate.cpp in Sources */,
+				E4D3036084BE62BBF0E52B27 /* mdsysexautomation.cpp in Sources */,
+				C077641DB10F2B75F0BE9A0E /* mdturbomidi.cpp in Sources */,
+				B802E91CCCF6B4C9AF827CEA /* memory.cpp in Sources */,
+				EAB926E67D7F0AC74CE7C55F /* memorybuffer.cpp in Sources */,
+				ABD7C4FF3F81EF313C205BF8 /* midiBufferParser.cpp in Sources */,
+				699C86CD4F7B738B1537C27E /* midiClock.cpp in Sources */,
+				4C3B35ED9969BA3707F1412A /* midiRateLimiter.cpp in Sources */,
+				78AA9A417EFD089247C5D0EE /* midiRoutingMatrix.cpp in Sources */,
+				16AE01A95757E4DF599B949E /* midiToSysex.cpp in Sources */,
+				8408F9DEE3111205716DA9CF /* midiTranslator.cpp in Sources */,
+				05CCFFDAE2EF37EAA230A0DA /* mmuhelper.cpp in Sources */,
+				6FBD839C57DF213384AF4AD1 /* mutex.cpp in Sources */,
+				FC9FAEEFCBD8D3971C2EA1F2 /* omfloader.cpp in Sources */,
+				227B58021620C3FE83B1956D /* opcodecycles.cpp in Sources */,
+				FAA55D3951108D86CB8CC6B6 /* opcodes.cpp in Sources */,
+				B291A21BB57A57A8617C8301 /* operand.cpp in Sources */,
+				195413C3CD54D32315457328 /* os.cpp in Sources */,
+				0A767077233CE917F004E62A /* os.cpp in Sources */,
+				790F7F736D2DEAEA586EE985 /* osutils.cpp in Sources */,
+				B72A9C193FE3D038E6C6E68F /* performanceReport.cpp in Sources */,
+				244050E80426728D39771FBD /* peripheralBase.cpp in Sources */,
+				928FE82A2D4A6673DB43FFA5 /* peripherals.cpp in Sources */,
+				8D9A7B60F90A6745A6E31D0F /* plugin.cpp in Sources */,
+				6670E1EFC967317BB69E0988 /* port.cpp in Sources */,
+				753C59AC95A30B945980C0FC /* propertyMap.cpp in Sources */,
+				9E6F9220A616FCDA526A91A2 /* qsm.cpp in Sources */,
+				9CA9C0DA3E8A0792724EEB53 /* qspi.cpp in Sources */,
+				69D2852E692AB48F413C7F4A /* ralocal.cpp in Sources */,
+				A223618EF9538A3566E6D70F /* rapass.cpp in Sources */,
+				8FB4234708D8EA81860EA86E /* rastack.cpp in Sources */,
+				6CD569BF080EA7FCD431D681 /* realtimeInstrumentation.cpp in Sources */,
+				7FEA3A078758B93B46C0F96F /* registers.cpp in Sources */,
+				8CA704A8D9AD18467A334215 /* resample.c in Sources */,
+				E761590028EA2E2E27C40F84 /* resampler.cpp in Sources */,
+				4FBBE40FF5A012A0D6C8504E /* resamplerInOut.cpp in Sources */,
+				A1780F18C730509C3FCF1B02 /* resamplesubs.c in Sources */,
+				62E2ADD5E94C1608195FCC9D /* romLoader.cpp in Sources */,
+				C2BF7018B78340D5286D5951 /* sciMidi.cpp in Sources */,
+				2DCC2AFB50E6E643C66D99C3 /* sim.cpp in Sources */,
+				9004AB4BB4BF44982D879572 /* softfloat.c in Sources */,
+				660E7FB19F2D082EE9ADE969 /* sounddiverLibLoader.cpp in Sources */,
+				6E32F08F8AB71836B26E37E0 /* string.cpp in Sources */,
+				06F76B143B84738DB2857FBA /* support.cpp in Sources */,
+				655BBEC52C0B6E525CC9E774 /* sysexRemoteControl.cpp in Sources */,
+				411CF1D93BC8B0BE49A09859 /* sysexToMidi.cpp in Sources */,
+				FD6814A0C6D30EB70C1D02B2 /* target.cpp in Sources */,
+				645B84D45AD9681D0BDA767B /* threadtools.cpp in Sources */,
+				29E683FFC36ED54F0C128162 /* timers.cpp in Sources */,
+				EE379FFDE9E6CF0CF523E8E8 /* trigger.cpp in Sources */,
+				5271D62F2E45F199C50DA479 /* type.cpp in Sources */,
+				7724D9EADBDB70386904C5F0 /* types.cpp in Sources */,
+				B89C91A9994C92DC8C34C127 /* unittests.cpp in Sources */,
+				6CB7BF32135597609E3E92B1 /* utils.cpp in Sources */,
+				09F83B25F31D4EE4C583472B /* virtmem.cpp in Sources */,
+				DE5132BE89946A6C88236599 /* vstpreset.cpp in Sources */,
+				1A9AD608CB701CB1064B3C3D /* wavReader.cpp in Sources */,
+				0B43B0BDD8B75DAB4AF8D6B6 /* wavWriter.cpp in Sources */,
+				41EB98257D4C5CE7A0DCD045 /* win8sync.cpp in Sources */,
+				0092C89296C994860EF05642 /* x86assembler.cpp in Sources */,
+				FF01D73FA7B0815DB8DE66BF /* x86builder.cpp in Sources */,
+				75F44F2FA760AF22263DE721 /* x86compiler.cpp in Sources */,
+				7B3E92FC9A00A2C78702F7D3 /* x86emithelper.cpp in Sources */,
+				DB9EE8BFD605CC8E3CBD98D6 /* x86formatter.cpp in Sources */,
+				24CCC892AC3ED3EAF49E916E /* x86func.cpp in Sources */,
+				1A7BE0CD30C71E83FB30E8AF /* x86instapi.cpp in Sources */,
+				40D2694D09D9929DC5353E60 /* x86instdb.cpp in Sources */,
+				EBFD9B07F79A54208008A50D /* x86operand.cpp in Sources */,
+				8E6B2DFF64EF4AED896BB3E0 /* x86rapass.cpp in Sources */,
+				11D4EF16EBEC7465BACC2938 /* zone.cpp in Sources */,
+				8FB7C28CD84ED5D413007FCD /* zonehash.cpp in Sources */,
+				A4D5BCD1934B0B56ADE4FAF9 /* zonelist.cpp in Sources */,
+				D95EA4D09EF4CC0C0DBF4635 /* zonestack.cpp in Sources */,
+				CEB65EB570423E9CB8AF1898 /* zonetree.cpp in Sources */,
+				F3862E44581DFA778C1C812A /* zonevector.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D5BEF7D485638D7BCE79BF74 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D58E6E07DCA763F7AEF3E64E /* MDEngine */;
+			targetProxy = C66B2B00891B06733438EA13 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		08799558FEBFB79FFAB952C0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				OTHER_LDFLAGS = (
+					"-lc++",
+					"-ObjC",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.modularmayhem.mdenginetest;
+				PRODUCT_NAME = "MD Engine Test";
+				SDKROOT = iphoneos;
+				SWIFT_OBJC_BRIDGING_HEADER = "App/Bridge/MDTest-Bridging-Header.h";
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		359882DA135F012EF39B373B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_WARN_INHIBIT_ALL_WARNINGS = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				OTHER_CFLAGS = (
+					"-fno-strict-aliasing",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.modularmayhem.MDEngine;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		4061DCB664CDB1822C4F2D0C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				OTHER_LDFLAGS = (
+					"-lc++",
+					"-ObjC",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.modularmayhem.mdenginetest;
+				PRODUCT_NAME = "MD Engine Test";
+				SDKROOT = iphoneos;
+				SWIFT_OBJC_BRIDGING_HEADER = "App/Bridge/MDTest-Bridging-Header.h";
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
+		41493B7DD103E8EEA44F9EC9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_WARN_INHIBIT_ALL_WARNINGS = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				OTHER_CFLAGS = (
+					"-fno-strict-aliasing",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.modularmayhem.MDEngine;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		6B8074957AFF7985B0A23C95 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = LXPC6567AX;
+				ENABLE_BITCODE = NO;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					DSP56K_FORCE_INTERPRETER,
+					ASMJIT_STATIC,
+					"DSP56300_DEBUGGER=0",
+					"MD_TRANSPORT_DIAGNOSTICS=0",
+					NDEBUG,
+					RELEASE,
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/Engine/source",
+					"$(SRCROOT)/Engine/source/dsp56300/source",
+					"$(SRCROOT)/Engine/source/dsp56300/source/asmjit/src",
+					"$(SRCROOT)/Engine/source/elektron/md",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		CC30D1B90242CDCA2580416D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = LXPC6567AX;
+				ENABLE_BITCODE = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					DSP56K_FORCE_INTERPRETER,
+					ASMJIT_STATIC,
+					"DSP56300_DEBUGGER=0",
+					"MD_TRANSPORT_DIAGNOSTICS=0",
+					NDEBUG,
+					RELEASE,
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/Engine/source",
+					"$(SRCROOT)/Engine/source/dsp56300/source",
+					"$(SRCROOT)/Engine/source/dsp56300/source/asmjit/src",
+					"$(SRCROOT)/Engine/source/elektron/md",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0526850B93F726ECEFB6BCDE /* Build configuration list for PBXProject "MDEngineTest" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CC30D1B90242CDCA2580416D /* Debug */,
+				6B8074957AFF7985B0A23C95 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E774A4EAA85905C86106A2E7 /* Build configuration list for PBXNativeTarget "MDEngine" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				359882DA135F012EF39B373B /* Debug */,
+				41493B7DD103E8EEA44F9EC9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E7948C88E832F93959456041 /* Build configuration list for PBXNativeTarget "MDEngineTest" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				08799558FEBFB79FFAB952C0 /* Debug */,
+				4061DCB664CDB1822C4F2D0C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = E143FEAE3C5E9945506AF744 /* Project object */;
+}

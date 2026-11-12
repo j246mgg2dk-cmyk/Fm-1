@@ -1,0 +1,284 @@
+# Machinedrum engine test for iPad. Generate the Xcode project with: xcodegen
+# (the generated MDEngineTest.xcodeproj is committed, so Xcode alone is enough).
+name: MDEngineTest
+options:
+  bundleIdPrefix: com.modularmayhem
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    DEVELOPMENT_TEAM: LXPC6567AX            # Joe Rodriguez-Griesel (Personal Team)
+    CODE_SIGN_STYLE: Automatic
+    CLANG_CXX_LANGUAGE_STANDARD: gnu++17
+    GCC_C_LANGUAGE_STANDARD: gnu11
+    # No JIT on iPadOS: build the DSP56300 emulator's interpreter.
+    GCC_PREPROCESSOR_DEFINITIONS: ["$(inherited)", "DSP56K_FORCE_INTERPRETER", "ASMJIT_STATIC", "DSP56300_DEBUGGER=0", "MD_TRANSPORT_DIAGNOSTICS=0", "NDEBUG", "RELEASE"]
+    HEADER_SEARCH_PATHS:
+      - "$(SRCROOT)/Engine/source"
+      - "$(SRCROOT)/Engine/source/dsp56300/source"
+      - "$(SRCROOT)/Engine/source/dsp56300/source/asmjit/src"
+      - "$(SRCROOT)/Engine/source/elektron/md"
+    # The emulator is useless unoptimised; optimise even in Debug.
+    GCC_OPTIMIZATION_LEVEL: "3"
+    SWIFT_OPTIMIZATION_LEVEL: "-O"
+    ENABLE_BITCODE: NO
+
+targets:
+  MDEngine:
+    type: library.static
+    platform: iOS
+    settings:
+      base:
+        GCC_WARN_INHIBIT_ALL_WARNINGS: YES
+        OTHER_CFLAGS: ["-fno-strict-aliasing"]
+    sources:
+      - path: Engine/source/baseLib/binarystream.cpp
+      - path: Engine/source/baseLib/commandline.cpp
+      - path: Engine/source/baseLib/configFile.cpp
+      - path: Engine/source/baseLib/event.cpp
+      - path: Engine/source/baseLib/filesystem.cpp
+      - path: Engine/source/baseLib/logging.cpp
+      - path: Engine/source/baseLib/md5.cpp
+      - path: Engine/source/baseLib/os.cpp
+      - path: Engine/source/baseLib/propertyMap.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/arm/a64assembler.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/arm/a64builder.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/arm/a64compiler.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/arm/a64emithelper.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/arm/a64formatter.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/arm/a64func.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/arm/a64instapi.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/arm/a64instdb.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/arm/a64operand.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/arm/a64rapass.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/arm/armformatter.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/archtraits.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/assembler.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/builder.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/codeholder.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/codewriter.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/compiler.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/constpool.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/cpuinfo.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/emithelper.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/emitter.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/emitterutils.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/environment.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/errorhandler.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/formatter.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/func.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/funcargscontext.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/globals.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/inst.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/jitallocator.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/jitruntime.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/logger.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/operand.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/osutils.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/ralocal.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/rapass.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/rastack.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/string.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/support.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/target.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/type.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/virtmem.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/zone.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/zonehash.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/zonelist.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/zonestack.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/zonetree.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/core/zonevector.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/x86/x86assembler.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/x86/x86builder.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/x86/x86compiler.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/x86/x86emithelper.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/x86/x86formatter.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/x86/x86func.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/x86/x86instapi.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/x86/x86instdb.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/x86/x86operand.cpp
+      - path: Engine/source/dsp56300/source/asmjit/src/asmjit/x86/x86rapass.cpp
+      - path: Engine/source/dsp56300/source/dsp56kBase/conditionvariable.cpp
+      - path: Engine/source/dsp56300/source/dsp56kBase/cowmemory.cpp
+      - path: Engine/source/dsp56300/source/dsp56kBase/dspassert.cpp
+      - path: Engine/source/dsp56300/source/dsp56kBase/logging.cpp
+      - path: Engine/source/dsp56300/source/dsp56kBase/mmuhelper.cpp
+      - path: Engine/source/dsp56300/source/dsp56kBase/mutex.cpp
+      - path: Engine/source/dsp56300/source/dsp56kBase/threadtools.cpp
+      - path: Engine/source/dsp56300/source/dsp56kBase/trigger.cpp
+      - path: Engine/source/dsp56300/source/dsp56kBase/win8sync.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/agu.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/assembler.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/assemblertest.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/audio.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/debuggerinterface.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/disasm.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/dma.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/dsp.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/dspBootCode.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/dspthread.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/error.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/esai.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/esaiclock.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/essi.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/esxi.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/gpio.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/haltDSP.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/hdi08.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/hdi08queue.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/instructioncache.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/interpreterunittests.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jit.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitasmjithelpers.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitblock.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitblockchain.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitblockinfo.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitblockruntimedata.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitdspmode.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitdspregpool.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitdspregpoolregpair.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitdspregs.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitdspvalue.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitemitter.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jithelper.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitmem.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitops.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitops_agu.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitops_agu_aarch64.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitops_agu_x64.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitops_alu.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitops_alu_aarch64.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitops_alu_x64.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitops_ccr.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitops_ccr_aarch64.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitops_ccr_x64.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitops_decode.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitops_decode_aarch64.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitops_decode_x64.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitops_helper.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitops_helper_aarch64.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitops_helper_x64.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitops_jmp.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitops_mem.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitops_move.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitoptimizer.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitoptimizertests.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitprofilingsupport.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitregtracker.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitruntimedata.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitstackhelper.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jittrampoline.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/jitunittests.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/memory.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/memorybuffer.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/omfloader.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/opcodecycles.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/opcodes.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/peripherals.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/registers.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/timers.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/types.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/unittests.cpp
+      - path: Engine/source/dsp56300/source/dsp56kEmu/utils.cpp
+      - path: Engine/source/elektron/md/mdLib/mdautomation.cpp
+      - path: Engine/source/elektron/md/mdLib/mdautomationsync.cpp
+      - path: Engine/source/elektron/md/mdLib/mddevice.cpp
+      - path: Engine/source/elektron/md/mdLib/mddsp.cpp
+      - path: Engine/source/elektron/md/mdLib/mdflash.cpp
+      - path: Engine/source/elektron/md/mdLib/mdfrontpanel.cpp
+      - path: Engine/source/elektron/md/mdLib/mdhardware.cpp
+        compilerFlags: ["-fno-fast-math", "-ffp-contract=off"]
+      - path: Engine/source/elektron/md/mdLib/mdmc.cpp
+      - path: Engine/source/elektron/md/mdLib/mdpanel.cpp
+      - path: Engine/source/elektron/md/mdLib/mdrom.cpp
+      - path: Engine/source/elektron/md/mdLib/mdromdata.cpp
+      - path: Engine/source/elektron/md/mdLib/mdromloader.cpp
+      - path: Engine/source/elektron/md/mdLib/mdsim.cpp
+      - path: Engine/source/elektron/md/mdLib/mdstate.cpp
+      - path: Engine/source/elektron/md/mdLib/mdsysexautomation.cpp
+      - path: Engine/source/elektron/md/mdLib/mdturbomidi.cpp
+      - path: Engine/source/hardwareLib/am29f.cpp
+      - path: Engine/source/hardwareLib/i2c.cpp
+      - path: Engine/source/hardwareLib/i2cFlash.cpp
+      - path: Engine/source/hardwareLib/lcd.cpp
+      - path: Engine/source/hardwareLib/lcdfonts.cpp
+      - path: Engine/source/hardwareLib/sciMidi.cpp
+      - path: Engine/source/libresample/src/filterkit.c
+      - path: Engine/source/libresample/src/resample.c
+      - path: Engine/source/libresample/src/resamplesubs.c
+      - path: Engine/source/mc68k/Musashi/m68kcpu.c
+      - path: Engine/source/mc68k/Musashi/m68kdasm.c
+      - path: Engine/source/mc68k/Musashi/m68kfpu.c
+      - path: Engine/source/mc68k/Musashi/m68kops.c
+      - path: Engine/source/mc68k/Musashi/softfloat/softfloat.c
+      - path: Engine/source/mc68k/gpt.cpp
+      - path: Engine/source/mc68k/hdi08.cpp
+      - path: Engine/source/mc68k/logging.cpp
+      - path: Engine/source/mc68k/mc68k.cpp
+      - path: Engine/source/mc68k/peripheralBase.cpp
+      - path: Engine/source/mc68k/port.cpp
+      - path: Engine/source/mc68k/qsm.cpp
+      - path: Engine/source/mc68k/qspi.cpp
+      - path: Engine/source/mc68k/sim.cpp
+      - path: Engine/source/synthLib/audiobuffer.cpp
+      - path: Engine/source/synthLib/dac.cpp
+      - path: Engine/source/synthLib/device.cpp
+      - path: Engine/source/synthLib/deviceException.cpp
+      - path: Engine/source/synthLib/lv2PresetExport.cpp
+      - path: Engine/source/synthLib/mameResamplers.cpp
+      - path: Engine/source/synthLib/midiBufferParser.cpp
+      - path: Engine/source/synthLib/midiClock.cpp
+      - path: Engine/source/synthLib/midiRateLimiter.cpp
+      - path: Engine/source/synthLib/midiRoutingMatrix.cpp
+      - path: Engine/source/synthLib/midiToSysex.cpp
+      - path: Engine/source/synthLib/midiTranslator.cpp
+      - path: Engine/source/synthLib/os.cpp
+      - path: Engine/source/synthLib/performanceReport.cpp
+      - path: Engine/source/synthLib/plugin.cpp
+      - path: Engine/source/synthLib/realtimeInstrumentation.cpp
+      - path: Engine/source/synthLib/resampler.cpp
+      - path: Engine/source/synthLib/resamplerInOut.cpp
+      - path: Engine/source/synthLib/romLoader.cpp
+      - path: Engine/source/synthLib/sounddiverLibLoader.cpp
+      - path: Engine/source/synthLib/sysexRemoteControl.cpp
+      - path: Engine/source/synthLib/sysexToMidi.cpp
+      - path: Engine/source/synthLib/vstpreset.cpp
+      - path: Engine/source/synthLib/wavReader.cpp
+      - path: Engine/source/synthLib/wavWriter.cpp
+
+  MDEngineTest:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+    dependencies:
+      - target: MDEngine
+      - sdk: AVFoundation.framework
+    settings:
+      base:
+        PRODUCT_NAME: MD Engine Test
+        PRODUCT_BUNDLE_IDENTIFIER: com.modularmayhem.mdenginetest
+        TARGETED_DEVICE_FAMILY: "2"
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_OBJC_BRIDGING_HEADER: App/Bridge/MDTest-Bridging-Header.h
+        OTHER_LDFLAGS: ["-lc++"]
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: MD Engine Test
+        UILaunchScreen: {}
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight, UIInterfaceOrientationPortraitUpsideDown]
+
+schemes:
+  MDEngineTest:
+    build:
+      targets:
+        MDEngineTest: all
+    run:
+      config: Release
