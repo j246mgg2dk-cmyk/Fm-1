@@ -31,6 +31,7 @@
 		D440DB71605DE45FCF9EC8E0 /* MIDIManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E14C9F44344E1BD046A8457A /* MIDIManager.swift */; };
 		D457E6380AB89ABD5F83BC25 /* RoutingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7EA297807CCCB4AF7BE1660 /* RoutingView.swift */; };
 		DA72411D449376C1113F794C /* HostedPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 473E63A71EA2346E07336384 /* HostedPlugin.swift */; };
+		ECF79ECE5091534ED2A010E6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DA0156649F1E2D15C252F2F5 /* Assets.xcassets */; };
 		F184A8B2D6157D1B6F6A097E /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6774F8CC2D8972CB1F06D7E7 /* AudioToolbox.framework */; };
 		F7348B75508FE67F7B04645F /* PluginBrowser.swift in Sources */ = {isa = PBXBuildFile; fileRef = E02196FDE5037EB35CBD1302 /* PluginBrowser.swift */; };
 		F9FBCBCA8E9351BC83F28BD3 /* ModLabApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B369C70CBA7846147A3C8FD8 /* ModLabApp.swift */; };
@@ -62,6 +63,7 @@
 		C5F55E2EE10D7A033750C318 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		CC88DFE934561D350D5B3221 /* SetupViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupViews.swift; sourceTree = "<group>"; };
 		D6F885C7357A5DDB7E933896 /* ModLab.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ModLab.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DA0156649F1E2D15C252F2F5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E02196FDE5037EB35CBD1302 /* PluginBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginBrowser.swift; sourceTree = "<group>"; };
 		E14C9F44344E1BD046A8457A /* MIDIManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MIDIManager.swift; sourceTree = "<group>"; };
 		E970A75488C454A3EEED32AD /* RenderGraph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderGraph.swift; sourceTree = "<group>"; };
@@ -100,6 +102,7 @@
 		12BEF5C3249D4788AEA88D4B /* App */ = {
 			isa = PBXGroup;
 			children = (
+				DA0156649F1E2D15C252F2F5 /* Assets.xcassets */,
 				B7EB7A5B84B2F906403DD3C8 /* Info.plist */,
 				FEC3CE6A02F3FBD3546C7FBA /* ModLab.entitlements */,
 				B369C70CBA7846147A3C8FD8 /* ModLabApp.swift */,
@@ -204,6 +207,7 @@
 			buildConfigurationList = 2459003FFEF91CA7672A37C2 /* Build configuration list for PBXNativeTarget "ModLab" */;
 			buildPhases = (
 				ECDA830D9077139D68C1567D /* Sources */,
+				0430CA7E4914A384478F1BF2 /* Resources */,
 				3E9B72EAB8DA90973F572D02 /* Frameworks */,
 			);
 			buildRules = (
@@ -254,6 +258,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		0430CA7E4914A384478F1BF2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ECF79ECE5091534ED2A010E6 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		ECDA830D9077139D68C1567D /* Sources */ = {
