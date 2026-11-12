@@ -361,6 +361,13 @@ final class AudioEngine {
             }
         case .stopAllClips:
             for t in g.tracks { queueLaunch(t.node, slot: -2, g) }
+        case let .liveMIDI(track, raw):
+            guard track >= 0, track < g.tracks.count else { return }
+            let t = g.tracks[track]
+            dispatch(raw, t, frame: 0, ts: ts)
+            if isRecording.value && t.node.armed.value && transport.isPlaying {
+                recordedMIDI.push(RecordedMIDI(track: Int32(track), raw: raw, beat: transport.beatPosition))
+            }
         case .panic:
             for t in g.tracks {
                 sendAllNotesOff(t, ts: ts)

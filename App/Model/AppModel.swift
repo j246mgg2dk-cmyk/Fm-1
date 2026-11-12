@@ -36,6 +36,14 @@ final class AppModel: ObservableObject {
     @Published var ioConfig = AudioIO.Configuration()
     @Published var learningMacro: UUID?
 
+    /// The track the device strip, keyboard and clip editor work on.
+    @Published private(set) var selectedTrackID: UUID?
+    /// Manual "Audio input" switch on the I/O page. Never persisted: the app always opens with input off.
+    @Published private(set) var inputSwitch = false
+    @Published private(set) var availableInputs: [AudioIO.InputPort] = []
+    @Published private(set) var preferredInputUID: String? = UserDefaults.standard.string(forKey: "preferredInputUID")
+    private var inputRequestPending = false
+
     let live = LiveState()
     let catalog = PluginCatalog()
     let engine = AudioEngine()
@@ -70,7 +78,9 @@ final class AppModel: ObservableObject {
     // MARK: Startup
 
     func start() async {
-        _ = await AudioIO.requestMicrophoneAccess()
+        // No microphone permission request here: input is off until an input feature is switched on.
+        engine.io.inputEnabled = false
+        engine.io.preferredInputUID = preferredInputUID
         engine.io.configuration = ioConfig
         engine.io.onRouteChange = { [weak self] status in
             Task { @MainActor in self?.hardwareChanged(status) }
@@ -98,6 +108,7 @@ final class AppModel: ObservableObject {
     private func hardwareChanged(_ status: AudioIO.Status) {
         let rateChanged = status.sampleRate != audioStatus.sampleRate
         audioStatus = status
+        availableInputs = engine.io.availableInputs()
         engine.syncFromIO()
         if rateChanged {
             // Plugins must be re-prepared at the new rate, off the audio thread.
@@ -121,7 +132,133 @@ final class AppModel: ObservableObject {
     private func midiSetupChanged() {
         midiSources = midi.sources
         midiDestinations = midi.destinations
+        ensureDefaultMIDIRoutes()   // a keyboard plugged in later still plays the armed track
         rebuild() // output port table may have changed
+    }
+
+    /// Every MIDI input can reach every instrument/MIDI track; only the armed
+    /// track's routes are enabled (Ableton-style). Adds routes for sources that
+    /// appeared after the track was made.
+    private func ensureDefaultMIDIRoutes() {
+        for t in project.tracks where t.kind != .audio && t.kind != .group {
+            for src in midiSources where !project.midiRoutes.contains(where: { $0.source == src.id && $0.destination == t.endpoint }) {
+                var f = MIDIFilter()
+                f.clock = false
+                f.transport = false
+                project.midiRoutes.append(MIDIRoute(source: src.id, destination: t.endpoint, isEnabled: t.isArmed, filter: f))
+            }
+        }
+    }
+
+    // MARK: Audio input (microphone / interface inputs)
+
+    /// Input runs only for an explicit input feature: the I/O page's input switch,
+    /// an audio/external-synth track armed for recording, or input monitoring set to On.
+    /// Playing instruments, effects, clips and MIDI never needs it.
+    var inputNeeded: Bool {
+        inputSwitch || project.tracks.contains { t in
+            (t.kind == .audio || t.kind == .externalInstrument) && (t.isArmed || t.monitor == .on)
+        }
+    }
+
+    func setInputSwitch(_ on: Bool) {
+        inputSwitch = on
+        updateInputState()
+    }
+
+    func selectInput(_ uid: String?) {
+        preferredInputUID = uid
+        UserDefaults.standard.set(uid, forKey: "preferredInputUID")
+        engine.io.preferredInputUID = uid
+        if engine.io.inputEnabled { engine.io.restart() }
+    }
+
+    /// Starts or releases the hardware input to match `inputNeeded`.
+    /// Microphone permission is requested here, the first time input is actually needed.
+    private func updateInputState() {
+        let need = inputNeeded
+        guard need != engine.io.inputEnabled, !inputRequestPending else { return }
+        guard need else {
+            setHardwareInput(false)
+            return
+        }
+        switch AVAudioApplication.shared.recordPermission {
+        case .granted:
+            setHardwareInput(true)
+        case .undetermined:
+            inputRequestPending = true
+            Task { @MainActor in
+                let ok = await AudioIO.requestMicrophoneAccess()
+                self.inputRequestPending = false
+                if ok { self.updateInputState() } else { self.inputDenied() }
+            }
+        default:
+            inputDenied()
+        }
+    }
+
+    private func setHardwareInput(_ on: Bool) {
+        engine.io.inputEnabled = on
+        engine.io.preferredInputUID = preferredInputUID
+        engine.io.restart()   // -> onRouteChange -> hardwareChanged -> rebuild
+    }
+
+    private func inputDenied() {
+        inputSwitch = false
+        for i in project.tracks.indices where project.tracks[i].kind == .audio || project.tracks[i].kind == .externalInstrument {
+            project.tracks[i].isArmed = false
+            if project.tracks[i].monitor == .on { project.tracks[i].monitor = .auto }
+        }
+        errorMessage = "Mod-Lab isn't allowed to use audio input. To record or monitor, allow it in Settings › Privacy & Security › Microphone."
+        rebuild()
+    }
+
+    func setMonitor(_ trackID: UUID, _ mode: MonitorMode) {
+        updateTrack(trackID) { $0.monitor = mode }
+    }
+
+    // MARK: Selection & playing
+
+    /// Selecting an instrument/MIDI track arms it (exclusive), so every MIDI
+    /// keyboard and the on-screen keys play it, like Ableton's auto-arm.
+    func selectTrack(_ id: UUID?) {
+        selectedTrackID = id
+        guard let id, let t = project.track(id), t.kind == .instrument || t.kind == .midi else { return }
+        if !t.isArmed { setArmed(id, true) }
+    }
+
+    var selectedTrack: Track? { selectedTrackID.flatMap { project.track($0) } }
+
+    /// Note from the on-screen keyboard to the selected track.
+    func playNote(_ note: Int, on: Bool, velocity: Int = 100) {
+        guard let id = selectedTrackID, let ti = project.tracks.firstIndex(where: { $0.id == id }),
+              (0...127).contains(note) else { return }
+        let raw = on
+            ? RawMIDI(b0: 0x90, b1: UInt8(note), b2: UInt8(max(1, min(velocity, 127))), length: 3)
+            : RawMIDI(b0: 0x80, b1: UInt8(note), b2: 0, length: 3)
+        engine.send(.liveMIDI(track: ti, raw: raw))
+    }
+
+    // MARK: Clip editing
+
+    func createMIDIClip(trackID: UUID, slot: Int, bars: Double = 1) {
+        guard let t = project.track(trackID), slot < t.clipSlots.count else { return }
+        let len = project.timeSignature.quarterNotesPerBar * bars
+        updateTrack(trackID) {
+            $0.clipSlots[slot] = Clip(name: "Clip \(slot + 1)", content: .midi(MIDIClipData(lengthBeats: len)), colorIndex: t.colorIndex)
+        }
+    }
+
+    /// Replaces a clip's notes. A playing clip is relaunched so the edit is heard
+    /// (it restarts on the next launch-quantize boundary).
+    func setClipData(trackID: UUID, slot: Int, _ data: MIDIClipData) {
+        updateTrack(trackID) { t in
+            guard slot < t.clipSlots.count, t.clipSlots[slot] != nil else { return }
+            t.clipSlots[slot]?.content = .midi(data)
+        }
+        if live.playingSlots[trackID] == slot, let ti = project.tracks.firstIndex(where: { $0.id == trackID }) {
+            launch(track: ti, slot: slot)
+        }
     }
 
     // MARK: MIDI monitor, clock follow, macro learn
@@ -245,7 +382,7 @@ final class AppModel: ObservableObject {
                 node: node,
                 kind: track.kind,
                 inputs: track.audioInputs,
-                monitorAlways: track.monitor == .on || (track.kind == .externalInstrument && track.monitor != .off),
+                monitorAlways: track.monitor == .on,
                 monitorWhenArmed: track.monitor == .auto,
                 outLeft: outs?.first ?? -1,
                 outRight: outs.map { $0.count > 1 ? $0[1] : ($0.first ?? -1) } ?? -1,
@@ -351,6 +488,7 @@ final class AppModel: ObservableObject {
         midi.setTrackInboxes(Dictionary(uniqueKeysWithValues: p.tracks.compactMap { t in inboxes[t.id].map { (t.endpoint, $0) } }))
         for r in midi.router.setRoutes(p.midiRoutes) { midi.deliver(r) }
         engine.publish(graph)
+        updateInputState()
     }
 
     private func audioClip(named name: String, sampleRate: Double) -> AudioClipBuffer? {
@@ -363,37 +501,32 @@ final class AppModel: ObservableObject {
 
     // MARK: Tracks
 
-    func addTrack(_ kind: TrackKind) {
+    /// Adds a track and selects it. Audio/external-synth tracks are created
+    /// unarmed so adding one never switches the input on by itself.
+    @discardableResult
+    func addTrack(_ kind: TrackKind) -> UUID {
         var t = project.addTrack(kind)
         let idx = project.tracks.count - 1
         switch kind {
         case .audio:
-            t.audioInputs = [0, 1].filter { $0 < audioStatus.inputChannels }
-            t.isArmed = true
+            t.audioInputs = [0, 1]          // first stereo pair; change per track
         case .externalInstrument:
-            t.audioInputs = [0, 1].filter { $0 < audioStatus.inputChannels }
+            t.audioInputs = [0, 1]
             t.midiOutput = midiDestinations.first?.id
-        case .instrument, .midi:
-            t.isArmed = true
-        case .group:
+        case .instrument, .midi, .group:
             break
         }
         project.tracks[idx] = t
-        // Every MIDI input plays the armed track by default, like Live.
-        if kind != .audio && kind != .group {
-            for src in midiSources {
-                var f = MIDIFilter()
-                f.clock = false
-                f.transport = false
-                project.midiRoutes.append(MIDIRoute(source: src.id, destination: t.endpoint, isEnabled: t.isArmed, filter: f))
-            }
-        }
+        ensureDefaultMIDIRoutes()
         rebuild()
+        selectTrack(t.id)
+        return t.id
     }
 
     func removeTrack(_ id: UUID) {
         if let t = project.track(id) { for d in t.devices { plugins[d.id] = nil } }
         project.removeTrack(id)
+        if selectedTrackID == id { selectedTrackID = project.tracks.first?.id }
         project.cvOutputs.removeAll { cv in
             switch cv.source {
             case let .pitch(t, _), let .gate(t), let .trigger(t), let .velocity(t): return t == id
@@ -704,10 +837,20 @@ final class AppModel: ObservableObject {
         plugins.removeAll()
         audioClipCache.removeAll()
         macroValues.removeAll()
+        var p = p
+        // Opening a project never starts the input: recording arm and input
+        // monitoring on audio tracks are not restored.
+        for i in p.tracks.indices where p.tracks[i].kind == .audio || p.tracks[i].kind == .externalInstrument {
+            p.tracks[i].isArmed = false
+            if p.tracks[i].monitor == .on { p.tracks[i].monitor = .auto }
+        }
         project = p
+        inputSwitch = false
+        ensureDefaultMIDIRoutes()
         engine.send(.setTempo(p.tempo))
         rebuild()
         for t in p.tracks { for d in t.devices { Task { await load(d) } } }
+        selectTrack(p.tracks.first { $0.kind == .instrument }?.id ?? p.tracks.first?.id)
     }
 
     private func loadLastProjectOrDefault() {
@@ -716,7 +859,6 @@ final class AppModel: ObservableObject {
         } else {
             var p = Project(name: "First Jam")
             p.addTrack(.instrument)
-            p.addTrack(.audio)
             replaceProject(p)
         }
     }

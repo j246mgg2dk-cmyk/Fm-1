@@ -200,42 +200,163 @@ struct AudioIOView: View {
     @EnvironmentObject var live: LiveState
 
     var body: some View {
-        Form {
-            SwiftUI.Section("Interface") {
-                LabeledContent("Input", value: model.audioStatus.inputName)
-                LabeledContent("Output", value: model.audioStatus.outputName)
-                LabeledContent("Channels", value: "\(model.audioStatus.inputChannels) in / \(model.audioStatus.outputChannels) out")
-                LabeledContent("Sample rate", value: String(format: "%.0f Hz", model.audioStatus.sampleRate))
-                LabeledContent("Buffer", value: "\(model.audioStatus.bufferFrames) frames")
-                LabeledContent("Round-trip latency",
-                               value: String(format: "%.1f ms", Double(model.engine.roundTripLatencyFrames) / model.audioStatus.sampleRate * 1000))
-            }
-            SwiftUI.Section("Settings") {
-                Picker("Buffer size", selection: $model.ioConfig.preferredBufferFrames) {
-                    ForEach([32, 64, 128, 256, 512, 1024], id: \.self) { Text("\($0)").tag($0) }
-                }
-                Picker("Sample rate", selection: $model.ioConfig.preferredSampleRate) {
-                    Text("44.1 kHz").tag(44_100.0); Text("48 kHz").tag(48_000.0); Text("96 kHz").tag(96_000.0)
-                }
-                Toggle("Run alongside other audio apps (AUM, Koala…)", isOn: $model.ioConfig.mixWithOthers)
-                Toggle("Allow Bluetooth headphones (high latency)", isOn: $model.ioConfig.allowBluetoothOutput)
-                Button("Apply") { model.applyIOConfig() }
-            }
-            SwiftUI.Section("Input levels") {
-                ForEach(Array(live.inputPeaks.enumerated()), id: \.offset) { i, v in
-                    HStack {
-                        Text("In \(i + 1)").frame(width: 50, alignment: .leading)
-                        MeterBar(left: v, right: v).frame(height: 10)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                PageHeader(title: "Audio I/O", subtitle: model.audioStatus.outputName)
+                HStack(alignment: .top, spacing: 14) {
+                    VStack(spacing: 14) {
+                        inputPanel
+                        recordingPanel
+                    }
+                    VStack(spacing: 14) {
+                        outputPanel
+                        settingsPanel
                     }
                 }
-                if live.inputPeaks.isEmpty { Text("No inputs (check microphone permission in Settings)").foregroundStyle(.secondary) }
+                .padding(.horizontal, 20)
             }
-            SwiftUI.Section("Recording") {
-                Toggle("Also record the master mix (jam capture)", isOn: $model.project.recordMasterMix)
-                Text("Recordings land in Files › On My iPad › Mod-Lab › <project> › Audio, ready for Koala, AUM, AudioShare or your desktop DAW.")
-                    .font(.caption).foregroundStyle(.secondary)
+            .padding(.bottom, 20)
+        }
+        .background(Theme.bg)
+    }
+
+    // MARK: Input
+
+    private var inputPanel: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Caps("Input")
+                Spacer()
+                Circle().fill(model.audioStatus.inputActive ? Theme.record : Theme.faint).frame(width: 8, height: 8)
+                Text(model.audioStatus.inputActive ? "Running" : "Off").font(Theme.mono(11))
+                    .foregroundStyle(model.audioStatus.inputActive ? Theme.text : Theme.dim)
+            }
+            Toggle(isOn: Binding(get: { model.inputSwitch }, set: { model.setInputSwitch($0) })) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Audio input").font(Theme.title(14))
+                    Text("Off by default. Mod-Lab also turns input on while an Audio or External Synth track is armed or set to monitor On, and releases it afterwards. Instruments, effects, clips and MIDI never use it.")
+                        .font(.system(size: 11)).foregroundStyle(Theme.dim)
+                }
+            }
+            .toggleStyle(.switch)
+            if model.audioStatus.inputActive {
+                VStack(alignment: .leading, spacing: 8) {
+                    Caps("Device", size: 8.5)
+                    ForEach(model.availableInputs) { port in
+                        let current = (model.preferredInputUID ?? model.engine.io.currentInputUID) == port.uid
+                        Button {
+                            Haptics.tick()
+                            model.selectInput(port.uid)
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: port.isBuiltInMic ? "mic" : "cable.connector").frame(width: 18)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(port.name).font(.system(size: 13, weight: current ? .semibold : .regular))
+                                    if port.isBuiltInMic { Caps("Built-in microphone", color: Theme.faint, size: 8) }
+                                }
+                                Spacer()
+                                if port.channels > 0 { Text("\(port.channels) ch").font(Theme.mono(10)).foregroundStyle(Theme.dim) }
+                                if current { Image(systemName: "checkmark").foregroundStyle(Theme.accent) }
+                            }
+                            .foregroundStyle(Theme.text)
+                            .padding(10)
+                            .background(RoundedRectangle(cornerRadius: 8).fill(current ? Theme.raisedHi : Theme.raised))
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(PressStyle(scale: 0.98))
+                    }
+                    if model.availableInputs.isEmpty {
+                        Text("No selectable inputs reported.").font(.system(size: 11)).foregroundStyle(Theme.dim)
+                    }
+                    Caps("Channels · \(model.audioStatus.inputChannels)", size: 8.5).padding(.top, 4)
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 8)], spacing: 6) {
+                        ForEach(Array(live.inputPeaks.enumerated()), id: \.offset) { i, v in
+                            HStack(spacing: 6) {
+                                Text("In \(i + 1)").font(Theme.mono(10)).frame(width: 38, alignment: .leading)
+                                LEDMeter(level: v, segments: 16, vertical: false).frame(height: 8)
+                            }
+                        }
+                    }
+                }
+                .transition(.opacity)
+            } else {
+                Text("Plug in a USB interface any time; choose it here once input is on. Each track then picks its own input channels.")
+                    .font(.system(size: 11)).foregroundStyle(Theme.faint)
             }
         }
+        .padding(14)
+        .panel(Theme.surface, radius: 12)
+        .animation(.snappy(duration: 0.2), value: model.audioStatus.inputActive)
+    }
+
+    // MARK: Output
+
+    private var outputPanel: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Caps("Output")
+            row("Device", model.audioStatus.outputName)
+            row("Channels", "\(model.audioStatus.outputChannels)")
+            row("Sample rate", String(format: "%.0f Hz", model.audioStatus.sampleRate))
+            row("Buffer", "\(model.audioStatus.bufferFrames) frames")
+            row("Latency", String(format: "%.1f ms", Double(model.engine.roundTripLatencyFrames) / max(model.audioStatus.sampleRate, 1) * 1000))
+            row("Session", model.audioStatus.inputActive ? "Play + record" : "Playback only")
+        }
+        .padding(14)
+        .panel(Theme.surface, radius: 12)
+    }
+
+    private func row(_ k: String, _ v: String) -> some View {
+        HStack {
+            Text(k).font(.system(size: 13)).foregroundStyle(Theme.dim)
+            Spacer()
+            Text(v).font(Theme.mono(12)).foregroundStyle(Theme.text).lineLimit(1)
+        }
+    }
+
+    // MARK: Settings
+
+    private var settingsPanel: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Caps("Engine")
+            HStack {
+                Text("Buffer").font(.system(size: 13)).foregroundStyle(Theme.dim)
+                Spacer()
+                Segmented(selection: $model.ioConfig.preferredBufferFrames,
+                          options: [64, 128, 256, 512].map { ($0, "\($0)") })
+                    .frame(width: 240)
+            }
+            HStack {
+                Text("Sample rate").font(.system(size: 13)).foregroundStyle(Theme.dim)
+                Spacer()
+                Segmented(selection: $model.ioConfig.preferredSampleRate,
+                          options: [(44_100.0, "44.1k"), (48_000.0, "48k"), (96_000.0, "96k")])
+                    .frame(width: 240)
+            }
+            Toggle("Run alongside AUM, Koala and other audio apps", isOn: $model.ioConfig.mixWithOthers)
+                .font(.system(size: 13))
+            Toggle("Bluetooth headphones while input is on (adds latency)", isOn: $model.ioConfig.allowBluetoothOutput)
+                .font(.system(size: 13))
+            HStack {
+                Spacer()
+                SlabButton(title: "Apply", systemImage: "checkmark", prominent: true) { model.applyIOConfig() }
+            }
+        }
+        .toggleStyle(.switch)
+        .padding(14)
+        .panel(Theme.surface, radius: 12)
+    }
+
+    private var recordingPanel: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Caps("Recording")
+            Toggle("Also record the master mix (needs no input)", isOn: $model.project.recordMasterMix)
+                .font(.system(size: 13))
+                .toggleStyle(.switch)
+            Text("Recordings go to Files › On My iPad › Mod-Lab › <project> › Audio.")
+                .font(.system(size: 11)).foregroundStyle(Theme.dim)
+        }
+        .padding(14)
+        .panel(Theme.surface, radius: 12)
     }
 }
 

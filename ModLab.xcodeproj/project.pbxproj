@@ -7,27 +7,32 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0265A17E2217C258002931B9 /* DeviceStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 254BE2DF4EC0A1AAAF8AFE79 /* DeviceStrip.swift */; };
 		0669871BFF96F01DA63516F9 /* Recorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117D8299962D70046E02278B /* Recorder.swift */; };
 		1DECAD29D8B6DA992F836219 /* MixerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33C09583DDB7EF1AE94D62CB /* MixerView.swift */; };
+		243C8CB36F826C7C1097A85E /* KeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7E1548C40BC1558ABF9E966 /* KeyboardView.swift */; };
 		2962EC9E23BE18A3BB6682F7 /* FM1Core in Frameworks */ = {isa = PBXBuildFile; productRef = C001947EA8F3F93D4F865128 /* FM1Core */; };
 		30FC5C3DCB0D301E843D1893 /* CoreMIDI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6151803449F66F398D444ABC /* CoreMIDI.framework */; };
 		32818FFE0CFFA388DF69124E /* ModulatorsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5286D322393C0789C74EE791 /* ModulatorsView.swift */; };
 		4343772C5C7C7C87AA0C9F6F /* SessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DDE17A16A5D7A9F43AE37C5 /* SessionView.swift */; };
 		448FA7063E01E0DAF4EE8BA6 /* SetupViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC88DFE934561D350D5B3221 /* SetupViews.swift */; };
+		5568F3436467586F693AA6B4 /* ClipEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F53EE90D2834D71EEA4CC91D /* ClipEditor.swift */; };
 		65B5F95C3CA4228DB84DCD51 /* LinkSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 069537D7F873331AA8F4C96E /* LinkSync.swift */; };
 		6CA5F61E316451687DE58D69 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EAA31A88BF62453C6BCB6AE /* AppModel.swift */; };
-		75A1F048145B9FBAE88D8437 /* TrackDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF95C378968BCC8230EE230B /* TrackDetailView.swift */; };
 		7F69A33945CCA85D558F95A6 /* PluginCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47E4BDFC2A04D0511FC233A9 /* PluginCatalog.swift */; };
 		8E653A48D9FEB064EB189159 /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFC86731F1EF68AD41E0950 /* AudioEngine.swift */; };
+		96A6424D33AA66E0B3E33350 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A321865E7A15587EB3DB5E84 /* Theme.swift */; };
 		97B2DA6CB4F137EAC5AEF1E1 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C5F55E2EE10D7A033750C318 /* AVFoundation.framework */; };
 		9D49C75D3172F919501111CF /* BluetoothMIDI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 267E8CEAC257789F450826CE /* BluetoothMIDI.swift */; };
 		A57D96879BDA58FDC4213A0E /* AudioIO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FFF86832694656EB29A7647 /* AudioIO.swift */; };
 		A5C0739C9DC98AA6ED3BE3E4 /* RenderGraph.swift in Sources */ = {isa = PBXBuildFile; fileRef = E970A75488C454A3EEED32AD /* RenderGraph.swift */; };
+		B9FCA7FA2242CDF1888FC9FB /* Controls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21C57B232A712F7A5710CE0E /* Controls.swift */; };
 		C9FC232F92FB6F17BB09B8B0 /* CoreAudioKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EF923F05A603BE804A928CB3 /* CoreAudioKit.framework */; };
 		D440DB71605DE45FCF9EC8E0 /* MIDIManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E14C9F44344E1BD046A8457A /* MIDIManager.swift */; };
 		D457E6380AB89ABD5F83BC25 /* RoutingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7EA297807CCCB4AF7BE1660 /* RoutingView.swift */; };
 		DA72411D449376C1113F794C /* HostedPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 473E63A71EA2346E07336384 /* HostedPlugin.swift */; };
 		F184A8B2D6157D1B6F6A097E /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6774F8CC2D8972CB1F06D7E7 /* AudioToolbox.framework */; };
+		F7348B75508FE67F7B04645F /* PluginBrowser.swift in Sources */ = {isa = PBXBuildFile; fileRef = E02196FDE5037EB35CBD1302 /* PluginBrowser.swift */; };
 		F9FBCBCA8E9351BC83F28BD3 /* ModLabApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B369C70CBA7846147A3C8FD8 /* ModLabApp.swift */; };
 		FB21EF207813C167AECF322F /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76F813C8A7E97C0151054244 /* RootView.swift */; };
 /* End PBXBuildFile section */
@@ -36,6 +41,8 @@
 		069537D7F873331AA8F4C96E /* LinkSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkSync.swift; sourceTree = "<group>"; };
 		117D8299962D70046E02278B /* Recorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Recorder.swift; sourceTree = "<group>"; };
 		1EAA31A88BF62453C6BCB6AE /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		21C57B232A712F7A5710CE0E /* Controls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Controls.swift; sourceTree = "<group>"; };
+		254BE2DF4EC0A1AAAF8AFE79 /* DeviceStrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceStrip.swift; sourceTree = "<group>"; };
 		267E8CEAC257789F450826CE /* BluetoothMIDI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothMIDI.swift; sourceTree = "<group>"; };
 		33C09583DDB7EF1AE94D62CB /* MixerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MixerView.swift; sourceTree = "<group>"; };
 		473E63A71EA2346E07336384 /* HostedPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostedPlugin.swift; sourceTree = "<group>"; };
@@ -48,16 +55,19 @@
 		6774F8CC2D8972CB1F06D7E7 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		76F813C8A7E97C0151054244 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		A2742B4210B047CE0B6E8281 /* fm-1 */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "fm-1"; path = .; sourceTree = SOURCE_ROOT; };
+		A321865E7A15587EB3DB5E84 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		A7EA297807CCCB4AF7BE1660 /* RoutingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutingView.swift; sourceTree = "<group>"; };
 		B369C70CBA7846147A3C8FD8 /* ModLabApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModLabApp.swift; sourceTree = "<group>"; };
 		B7EB7A5B84B2F906403DD3C8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		C5F55E2EE10D7A033750C318 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		CC88DFE934561D350D5B3221 /* SetupViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupViews.swift; sourceTree = "<group>"; };
 		D6F885C7357A5DDB7E933896 /* ModLab.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ModLab.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E02196FDE5037EB35CBD1302 /* PluginBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginBrowser.swift; sourceTree = "<group>"; };
 		E14C9F44344E1BD046A8457A /* MIDIManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MIDIManager.swift; sourceTree = "<group>"; };
 		E970A75488C454A3EEED32AD /* RenderGraph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderGraph.swift; sourceTree = "<group>"; };
 		EF923F05A603BE804A928CB3 /* CoreAudioKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudioKit.framework; path = System/Library/Frameworks/CoreAudioKit.framework; sourceTree = SDKROOT; };
-		EF95C378968BCC8230EE230B /* TrackDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackDetailView.swift; sourceTree = "<group>"; };
+		F53EE90D2834D71EEA4CC91D /* ClipEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipEditor.swift; sourceTree = "<group>"; };
+		F7E1548C40BC1558ABF9E966 /* KeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardView.swift; sourceTree = "<group>"; };
 		FEC3CE6A02F3FBD3546C7FBA /* ModLab.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ModLab.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -170,13 +180,18 @@
 		DC57E5AEC519CCDA501B5F3F /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				F53EE90D2834D71EEA4CC91D /* ClipEditor.swift */,
+				21C57B232A712F7A5710CE0E /* Controls.swift */,
+				254BE2DF4EC0A1AAAF8AFE79 /* DeviceStrip.swift */,
+				F7E1548C40BC1558ABF9E966 /* KeyboardView.swift */,
 				33C09583DDB7EF1AE94D62CB /* MixerView.swift */,
 				5286D322393C0789C74EE791 /* ModulatorsView.swift */,
+				E02196FDE5037EB35CBD1302 /* PluginBrowser.swift */,
 				76F813C8A7E97C0151054244 /* RootView.swift */,
 				A7EA297807CCCB4AF7BE1660 /* RoutingView.swift */,
 				4DDE17A16A5D7A9F43AE37C5 /* SessionView.swift */,
 				CC88DFE934561D350D5B3221 /* SetupViews.swift */,
-				EF95C378968BCC8230EE230B /* TrackDetailView.swift */,
+				A321865E7A15587EB3DB5E84 /* Theme.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -248,12 +263,17 @@
 				8E653A48D9FEB064EB189159 /* AudioEngine.swift in Sources */,
 				A57D96879BDA58FDC4213A0E /* AudioIO.swift in Sources */,
 				9D49C75D3172F919501111CF /* BluetoothMIDI.swift in Sources */,
+				5568F3436467586F693AA6B4 /* ClipEditor.swift in Sources */,
+				B9FCA7FA2242CDF1888FC9FB /* Controls.swift in Sources */,
+				0265A17E2217C258002931B9 /* DeviceStrip.swift in Sources */,
 				DA72411D449376C1113F794C /* HostedPlugin.swift in Sources */,
+				243C8CB36F826C7C1097A85E /* KeyboardView.swift in Sources */,
 				65B5F95C3CA4228DB84DCD51 /* LinkSync.swift in Sources */,
 				D440DB71605DE45FCF9EC8E0 /* MIDIManager.swift in Sources */,
 				1DECAD29D8B6DA992F836219 /* MixerView.swift in Sources */,
 				F9FBCBCA8E9351BC83F28BD3 /* ModLabApp.swift in Sources */,
 				32818FFE0CFFA388DF69124E /* ModulatorsView.swift in Sources */,
+				F7348B75508FE67F7B04645F /* PluginBrowser.swift in Sources */,
 				7F69A33945CCA85D558F95A6 /* PluginCatalog.swift in Sources */,
 				0669871BFF96F01DA63516F9 /* Recorder.swift in Sources */,
 				A5C0739C9DC98AA6ED3BE3E4 /* RenderGraph.swift in Sources */,
@@ -261,7 +281,7 @@
 				D457E6380AB89ABD5F83BC25 /* RoutingView.swift in Sources */,
 				4343772C5C7C7C87AA0C9F6F /* SessionView.swift in Sources */,
 				448FA7063E01E0DAF4EE8BA6 /* SetupViews.swift in Sources */,
-				75A1F048145B9FBAE88D8437 /* TrackDetailView.swift in Sources */,
+				96A6424D33AA66E0B3E33350 /* Theme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

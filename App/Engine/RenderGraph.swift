@@ -13,6 +13,8 @@ enum EngineCommand {
     case launchScene(Int)
     case stopAllClips
     case panic
+    /// A note/CC played on Mod-Lab's own keyboard, delivered to one track like hardware MIDI.
+    case liveMIDI(track: Int, raw: RawMIDI)
 }
 
 /// Commands from the MIDI thread (external clock follow).
