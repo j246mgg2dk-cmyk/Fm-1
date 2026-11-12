@@ -42,6 +42,37 @@ final class HostedPlugin {
     private let paramBlock: AUScheduleParameterBlock
     private let outList: UnsafeMutableAudioBufferListPointer
     private let maxFrames: Int
+    /// Channels on the plugin's main output bus (2 = stereo, 1 = mono, 0 = MIDI only).
+    private(set) var outChannels: Int = 0
+
+    enum LoadError: LocalizedError {
+        case unsupportedFormat(String)
+        var errorDescription: String? {
+            switch self {
+            case .unsupportedFormat(let name): return "\(name) doesn't accept a mono or stereo 32-bit float format"
+            }
+        }
+    }
+
+    /// Ask the bus for stereo, then mono. Returns the channel count it accepted.
+    private static func negotiate(_ bus: AUAudioUnitBus, sampleRate: Double) -> Int? {
+        for ch in [2, 1] {
+            if (try? bus.setFormat(AVAudioFormat.modLab(channels: ch, sampleRate: sampleRate))) != nil { return ch }
+        }
+        return nil
+    }
+
+    private static func configureBusses(_ au: AUAudioUnit, name: String, sampleRate: Double) throws -> Int {
+        var outCh = 0
+        if au.outputBusses.count > 0 {
+            guard let ch = negotiate(au.outputBusses[0], sampleRate: sampleRate) else {
+                throw LoadError.unsupportedFormat(name)
+            }
+            outCh = ch
+        }
+        if au.inputBusses.count > 0 { _ = negotiate(au.inputBusses[0], sampleRate: sampleRate) }
+        return outCh
+    }
 
     // Set right before each render call; read by the pull block.
     private var pullL: UnsafeMutablePointer<Float>?
@@ -58,9 +89,7 @@ final class HostedPlugin {
         self.role = component.role
         self.maxFrames = maxFrames
 
-        let fmt = AVAudioFormat.modLab(channels: 2, sampleRate: sampleRate)
-        if au.outputBusses.count > 0 { try au.outputBusses[0].setFormat(fmt) }
-        if au.inputBusses.count > 0 { try? au.inputBusses[0].setFormat(fmt) }
+        outChannels = try Self.configureBusses(au, name: component.name, sampleRate: sampleRate)
         au.maximumFramesToRender = AUAudioFrameCount(maxFrames)
 
         // Tempo/transport sync for the plugin.
@@ -157,9 +186,12 @@ final class HostedPlugin {
                 frames: Int, timestamp: UnsafePointer<AudioTimeStamp>) {
         if bypassed.value { return }
         let bytes = UInt32(frames * MemoryLayout<Float>.size)
+        let n = outChannels == 1 ? 1 : 2
+        outList.count = n
         outList[0] = AudioBuffer(mNumberChannels: 1, mDataByteSize: bytes, mData: UnsafeMutableRawPointer(scratchL))
-        outList[1] = AudioBuffer(mNumberChannels: 1, mDataByteSize: bytes, mData: UnsafeMutableRawPointer(scratchR))
-        outList.count = 2
+        if n == 2 {
+            outList[1] = AudioBuffer(mNumberChannels: 1, mDataByteSize: bytes, mData: UnsafeMutableRawPointer(scratchR))
+        }
 
         pullL = l
         pullR = r
@@ -168,6 +200,7 @@ final class HostedPlugin {
         pullL = nil
         pullR = nil
         guard status == noErr else { return } // leave dry signal untouched on error
+        guard outChannels > 0 else { return }  // MIDI-only plugin: the track's audio passes through
 
         let wet = mix.value
         let dry = 1 - wet
@@ -189,9 +222,7 @@ final class HostedPlugin {
     /// After the interface's sample rate changes. Only call while no graph references this plugin.
     func reconfigure(sampleRate: Double) throws {
         au.deallocateRenderResources()
-        let fmt = AVAudioFormat.modLab(channels: 2, sampleRate: sampleRate)
-        if au.outputBusses.count > 0 { try au.outputBusses[0].setFormat(fmt) }
-        if au.inputBusses.count > 0 { try? au.inputBusses[0].setFormat(fmt) }
+        outChannels = try Self.configureBusses(au, name: component.name, sampleRate: sampleRate)
         try au.allocateRenderResources()
     }
 

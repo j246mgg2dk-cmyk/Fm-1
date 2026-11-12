@@ -21,6 +21,12 @@ targets:
     platform: iOS
     sources:
       - path: App
+    # Required for hosting: without the Inter-App Audio entitlement iPadOS hides
+    # every third-party AUv3 from this app and only lists Apple's built-in units.
+    entitlements:
+      path: App/ModLab.entitlements
+      properties:
+        inter-app-audio: true
     dependencies:
       - package: FM1Core
         product: FM1Core

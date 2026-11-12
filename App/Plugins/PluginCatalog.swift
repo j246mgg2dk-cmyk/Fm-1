@@ -13,22 +13,36 @@ final class PluginCatalog: ObservableObject {
         let component: PluginComponentID
         let description: AudioComponentDescription
         let hasCustomView: Bool
+        /// Apple's own units (AUSampler, AUReverb2, ...) — listed after third-party plugins.
+        let isApple: Bool
+        /// Full AUv3 app extension (as opposed to an in-process system unit).
+        let isAUv3: Bool
+        let version: Int
 
         static func == (a: Entry, b: Entry) -> Bool { a.component == b.component }
         func hash(into h: inout Hasher) { h.combine(component) }
     }
 
     @Published private(set) var entries: [Entry] = []
-    private var observer: NSObjectProtocol?
+    private var observers: [NSObjectProtocol] = []
+
+    /// True when only Apple's units are visible: on iPadOS that almost always
+    /// means the app was signed without the Inter-App Audio entitlement.
+    var onlyAppleUnits: Bool { !entries.isEmpty && entries.allSatisfy(\.isApple) }
 
     init() {
         refresh()
+        let nc = NotificationCenter.default
         // Fires when a plugin app is installed/removed/updated.
-        observer = NotificationCenter.default.addObserver(
-            forName: AVAudioUnitComponentManager.registrationsChangedNotification,
-            object: nil, queue: .main) { [weak self] _ in
-                Task { @MainActor in self?.refresh() }
-            }
+        observers.append(nc.addObserver(forName: AVAudioUnitComponentManager.registrationsChangedNotification,
+                                        object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.refresh() }
+        })
+        // Plugins installed while Mod-Lab was in the background show up when you come back.
+        observers.append(nc.addObserver(forName: UIApplication.didBecomeActiveNotification,
+                                        object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.refresh() }
+        })
     }
 
     func refresh() {
@@ -40,15 +54,28 @@ final class PluginCatalog: ObservableObject {
             .filter { wanted.contains($0.audioComponentDescription.componentType) }
             .map { c in
                 let d = c.audioComponentDescription
+                let isApple = d.componentManufacturer == kAudioUnitManufacturer_Apple
+                var isV3 = false
+                if let ac = AudioComponentFindNext(nil, [d]) {
+                    isV3 = (AudioComponentGetFlags(ac) & AudioComponentFlags.isV3AudioUnit.rawValue) != 0
+                }
                 return Entry(
                     component: PluginComponentID(type: d.componentType, subtype: d.componentSubType,
                                                  manufacturer: d.componentManufacturer,
                                                  name: c.name, manufacturerName: c.manufacturerName),
                     description: d,
                     // iOS has no hasCustomView; requestViewController returns nil when there is no UI.
-                    hasCustomView: true)
+                    hasCustomView: true,
+                    isApple: isApple,
+                    isAUv3: isV3,
+                    version: c.version)
             }
-            .sorted { ($0.component.manufacturerName, $0.component.name) < ($1.component.manufacturerName, $1.component.name) }
+            .sorted {
+                // Your plugins first, Apple's built-ins last; then by maker and name.
+                if $0.isApple != $1.isApple { return !$0.isApple }
+                return ($0.component.manufacturerName.lowercased(), $0.component.name.lowercased())
+                    < ($1.component.manufacturerName.lowercased(), $1.component.name.lowercased())
+            }
     }
 
     func entries(for role: PluginRole?) -> [Entry] {

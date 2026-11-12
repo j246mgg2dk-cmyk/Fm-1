@@ -188,14 +188,17 @@ struct PluginBrowser: View {
                     Text("MIDI FX").tag(PluginRole?.some(.midiProcessor))
                 }
                 .pickerStyle(.segmented)
-                ForEach(filtered) { e in
-                    Button { onPick(e) } label: {
-                        VStack(alignment: .leading) {
-                            Text(e.component.name)
-                            Text("\(e.component.manufacturerName) · \(PluginComponentID.fourCCString(e.component.type))")
-                                .font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
+                if catalog.onlyAppleUnits {
+                    Text("Only Apple's built-in units are visible. iPadOS hides other apps' plugins unless Mod-Lab is signed with the Inter-App Audio capability: in Xcode, open Signing & Capabilities and check that Inter-App Audio is listed, then run again.")
+                        .font(.callout).foregroundStyle(.orange)
+                }
+                let mine = filtered.filter { !$0.isApple }
+                let apple = filtered.filter(\.isApple)
+                if !mine.isEmpty {
+                    SwiftUI.Section("Your plugins") { ForEach(mine) { row($0) } }
+                }
+                if !apple.isEmpty {
+                    SwiftUI.Section("Apple built-in") { ForEach(apple) { row($0) } }
                 }
                 if catalog.entries.isEmpty {
                     Text("No AUv3 plugins found. Install some from the App Store (anything that loads in AUM or GarageBand works here).")
@@ -208,6 +211,27 @@ struct PluginBrowser: View {
                 Button("Refresh") { catalog.refresh() }
                 Button("Close") { dismiss() }
             }
+        }
+    }
+
+    private func row(_ e: PluginCatalog.Entry) -> some View {
+        Button { onPick(e) } label: {
+            VStack(alignment: .leading) {
+                Text(e.component.name)
+                Text("\(e.component.manufacturerName) · \(Self.kind(e.component.role))")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private static func kind(_ role: PluginRole) -> String {
+        switch role {
+        case .instrument: return "Instrument"
+        case .audioEffect: return "Effect"
+        case .musicEffect: return "Music effect (takes MIDI)"
+        case .midiProcessor: return "MIDI FX"
+        case .generator: return "Generator"
+        case .other: return "Other"
         }
     }
 

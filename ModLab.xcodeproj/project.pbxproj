@@ -58,6 +58,7 @@
 		E970A75488C454A3EEED32AD /* RenderGraph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderGraph.swift; sourceTree = "<group>"; };
 		EF923F05A603BE804A928CB3 /* CoreAudioKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudioKit.framework; path = System/Library/Frameworks/CoreAudioKit.framework; sourceTree = SDKROOT; };
 		EF95C378968BCC8230EE230B /* TrackDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackDetailView.swift; sourceTree = "<group>"; };
+		FEC3CE6A02F3FBD3546C7FBA /* ModLab.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ModLab.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -90,6 +91,7 @@
 			isa = PBXGroup;
 			children = (
 				B7EB7A5B84B2F906403DD3C8 /* Info.plist */,
+				FEC3CE6A02F3FBD3546C7FBA /* ModLab.entitlements */,
 				B369C70CBA7846147A3C8FD8 /* ModLabApp.swift */,
 				8EBE41F0A7C6EACDCBC37FE4 /* Engine */,
 				C8CBC0B55F2165B2254A8E8E /* MIDI */,
@@ -334,6 +336,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/ModLab.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
@@ -355,6 +358,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/ModLab.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
