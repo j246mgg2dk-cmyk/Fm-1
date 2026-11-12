@@ -359,16 +359,27 @@ namespace dsp56k
 
 		const TWord ea		= effectiveAddress<Movep_ppea>(op);
 
+		// The effective address may itself be a peripheral register (e.g. the
+		// Machinedrum's "movep x:<<M_HORX,x:<<M_DCO5" loads a DMA counter straight
+		// from the host port). Route it through the peripherals like the other
+		// move helpers do, otherwise the value lands in plain X/Y RAM and is lost.
+		// The JIT handles this case; the interpreter previously did not.
 		if( write )
 		{
 			// TODO: remove the if here, use helper templates instead
 			if( mmmrrr == MMMRRR_ImmediateData )
 				memWritePeriphFFFFC0( s, pp, ea );
 			else
-				memWritePeriphFFFFC0( s, pp, memRead( S, ea ) );
+				memWritePeriphFFFFC0( s, pp, isPeripheralAddress(ea) ? memReadPeriph( S, ea, Movep_ppea ) : memRead( S, ea ) );
 		}
 		else
-			memWrite( S, ea, memReadPeriphFFFFC0( s, pp, Movep_ppea) );
+		{
+			const TWord value = memReadPeriphFFFFC0( s, pp, Movep_ppea);
+			if(isPeripheralAddress(ea))
+				memWritePeriph( S, ea, value );
+			else
+				memWrite( S, ea, value );
+		}
 	}
 	inline void DSP::op_Movep_Xqqea(const TWord op)
 	{

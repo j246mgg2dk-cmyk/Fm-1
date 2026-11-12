@@ -3613,6 +3613,30 @@ namespace dsp56k
 			verify(dsp.memReadPeriph(MemArea_X, 0xffffc5, Movep_ppea) == 0xffeeff);
 		});
 
+		// op_Movep_ppea, pp -> peripheral ea (both sides peripheral, absolute ea)
+		runTest([&]()
+		{
+			peripheralsX.write(0xffffc5, 0x13);
+			peripheralsX.write(0xffff85, 0);
+			emit(0x087085, 0xffff85);	// movep x:<<$ffffc5,x:>$ffff85 (pp,ea form, absolute peripheral ea)
+		},
+			[&]()
+		{
+			verify(dsp.memReadPeriph(MemArea_X, 0xffff85, Movep_Xqqea) == 0x13);
+		});
+
+		// op_Movep_ppea, peripheral ea -> pp
+		runTest([&]()
+		{
+			peripheralsX.write(0xffff85, 0x2a);
+			peripheralsX.write(0xffffc5, 0);
+			emit(0x08f085, 0xffff85);	// movep x:>$ffff85,x:<<$ffffc5 (pp,ea form, absolute peripheral ea)
+		},
+			[&]()
+		{
+			verify(dsp.memReadPeriph(MemArea_X, 0xffffc5, Movep_ppea) == 0x2a);
+		});
+
 		// op_Movep_eapp
 		runTest([&]()
 		{
