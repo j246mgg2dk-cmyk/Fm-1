@@ -102,9 +102,9 @@ control by control.
 9. **USB interface.** With an interface plugged in, turn the input on and choose the
    interface under Audio I/O › Device. Its channel meters move, and the track card's
    "In" menu chooses channels.
-10. **Icon.** The home screen shows the new graphite and orange jack-grid icon. If the old
-    blank icon is still there, delete the old Mod-Lab app from the iPad first; your
-    projects in Files are kept only if you export them, so see the note in the install steps.
+10. **Icon.** The home screen shows the new graphite and orange jack-grid icon. If the blank
+    icon is still showing, restart the iPad. Don't delete the app to fix it: that also deletes
+    its projects.
 11. **Alongside AUM.** Run AUM at the same time; both should keep playing sound.
 
 ## Known gaps (not done yet)
