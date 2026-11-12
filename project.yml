@@ -43,7 +43,8 @@ targets:
         TARGETED_DEVICE_FAMILY: "2"                   # iPad
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
-        DEVELOPMENT_TEAM: ""                          # set your Apple team ID (free account works for your own iPad)
+        DEVELOPMENT_TEAM: LXPC6567AX                  # Joe Rodriguez-Griesel (Personal Team)
+        CODE_SIGN_STYLE: Automatic
         ENABLE_PREVIEWS: YES
     info:
       path: App/Info.plist

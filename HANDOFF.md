@@ -137,3 +137,23 @@ Realtime rules on the audio thread:
   - a missing `AudioToolbox` import.
 - CI uses `macos-15-intel`: the arm64 macOS pool never picked the jobs up.
 - Still untested on a real iPad. Next step: install Xcode on the Mac and run the app on the iPad (see section 3).
+
+## 8. Update 2026-11-11 (evening): redesign + microphone + AUv3
+
+See **TESTING.md** for the full status, the on-device test plan and the known gaps.
+
+- **Microphone:** the audio session is `.playback` by default and input is off. Input runs
+  only for an explicit input feature: the Audio I/O switch, an armed audio track, or
+  monitor On. Permission is requested on first use, not at launch. Logic is in
+  `AppModel.updateInputState()` and `AudioIO.configureSession()`.
+- **AUv3:** added the Inter-App Audio entitlement (required for iPadOS to show
+  third-party AUv3s to a host); stereo→mono bus negotiation.
+- **UI:**
+  - new `Theme.swift` / `Controls.swift` design system;
+  - rebuilt RootView (transport, mode rail), Session, Mixer, DeviceStrip (replaces
+    TrackDetailView), PluginBrowser, KeyboardView and ClipEditor.
+- **Engine:** `EngineCommand.liveMIDI` carries on-screen keyboard notes to a track on
+  the audio thread.
+- **Signing:** `DEVELOPMENT_TEAM` is set to the user's personal team (LXPC6567AX) in
+  project.yml.
+- Builds clean on CI. **Not yet run on a device.**
