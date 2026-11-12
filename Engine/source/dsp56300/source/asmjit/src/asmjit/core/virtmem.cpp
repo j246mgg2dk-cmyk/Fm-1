@@ -28,9 +28,9 @@
   #if defined(__APPLE__)
     #include <pthread.h>
     #include <TargetConditionals.h>
+    #include <libkern/OSCacheControl.h> // sys_icache_invalidate() (macOS and iOS).
     #if TARGET_OS_OSX
       #include <sys/utsname.h>
-      #include <libkern/OSCacheControl.h> // sys_icache_invalidate().
     #endif
     // Older SDK doesn't define `MAP_JIT`.
     #ifndef MAP_JIT
@@ -759,11 +759,9 @@ void flushInstructionCache(void* p, size_t size) noexcept {
 #if ASMJIT_ARCH_X86
   // X86/X86_64 architecture doesn't require to do anything to flush instruction cache.
   DebugUtils::unused(p, size);
-#elif defined(__APPLE__) && TARGET_OS_OSX
-  sys_icache_invalidate(p, size);
 #elif defined(__APPLE__)
-  // iPadOS: never reached in the no-JIT build (no code is ever generated); kept compilable.
-  __builtin___clear_cache(static_cast<char*>(p), static_cast<char*>(p) + size);
+  // iPadOS: never reached in the no-JIT build (no code is ever generated), but must link.
+  sys_icache_invalidate(p, size);
 #elif defined(_WIN32)
   // Windows has a built-in support in `kernel32.dll`.
   FlushInstructionCache(GetCurrentProcess(), p, size);
