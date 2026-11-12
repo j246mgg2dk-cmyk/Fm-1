@@ -1,5 +1,6 @@
 import AVFoundation
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 
 @main
@@ -28,9 +29,18 @@ enum Storage {
     }
 }
 
-/// Measured on the desktop JIT build with the factory pattern playing: the work a
-/// real-time Machinedrum needs from the two DSPs, in millions of instructions per second.
-let requiredDspMips = 148.4
+/// Measured with the factory pattern playing: the work a real-time Machinedrum needs
+/// from the two DSPs, in millions of instructions per second.
+let requiredDspMips = 149.8
+
+/// Runs work on a dedicated thread at the highest QoS so iPadOS schedules it on a
+/// performance core, as it would the real audio thread.
+func runOnPerformanceCore(_ work: @escaping @Sendable () -> Void) {
+    let t = Thread(block: work)
+    t.qualityOfService = .userInteractive
+    t.stackSize = 8 << 20
+    t.start()
+}
 
 @MainActor
 final class TestModel: ObservableObject {
@@ -66,9 +76,9 @@ final class TestModel: ObservableObject {
     func runRaw() {
         running = true
         log.append("Measuring raw DSP interpreter speed…")
-        Task.detached(priority: .userInitiated) {
+        runOnPerformanceCore {
             let mips = MDEngineTest.measureRawDspMips()
-            await MainActor.run {
+            Task { @MainActor in
                 self.rawMips = mips
                 self.log.append(String(format: "Raw DSP interpreter: %.1f M instructions/s", mips))
                 self.running = false
@@ -83,13 +93,15 @@ final class TestModel: ObservableObject {
         log.append("Starting full Machinedrum test…")
         let fw = Storage.firmware.path, home = Storage.root.path, wav = Storage.recording.path
         let boot = hasCache ? 12.0 : 30.0
-        Task.detached(priority: .userInitiated) {
+        UIApplication.shared.isIdleTimerDisabled = true
+        runOnPerformanceCore {
             let r = MDEngineTest.run(withFirmware: fw, homePath: home, bootSeconds: boot, seconds: 10, wavPath: wav) { line in
                 Task { @MainActor in self.log.append(line) }
             }
-            await MainActor.run {
+            Task { @MainActor in
                 self.result = r
                 self.running = false
+                UIApplication.shared.isIdleTimerDisabled = false
             }
         }
     }
@@ -156,9 +168,9 @@ struct ContentView: View {
             }
             .disabled(m.running)
             if let mips = m.rawMips {
-                Text(String(format: "Raw interpreter: %.0f M instr/s (cloud test machine: 139)", mips)).font(.callout.monospaced())
+                Text(String(format: "Raw interpreter: %.0f M instr/s (cloud test machine: 216)", mips)).font(.callout.monospaced())
             }
-            Text("The full test boots your firmware with the no-JIT engine, presses PLAY and times 10 s of audio. Keep the app open; it takes about a minute.")
+            Text("The full test boots your firmware with the no-JIT engine, presses PLAY and times 10 s of audio. Keep the app open and the iPad plugged in; it takes one to two minutes.")
                 .font(.footnote).foregroundStyle(.secondary)
         }
     }
@@ -172,12 +184,13 @@ struct ContentView: View {
                 stat("Real-time factor", String(format: "%.2f×  (1.00 = keeps up)", r.realtimeFactor))
                 stat("DSP throughput", String(format: "%.1f M instr/s", r.dspInstructionsPerWallSecond))
                 stat("Needed for real time", String(format: "%.1f M instr/s", requiredDspMips))
-                stat("Projected (correct workload)", String(format: "%.2f× real time", r.dspInstructionsPerWallSecond / requiredDspMips))
                 stat("Audio", r.peak > 0.0001 ? String(format: "sound (peak %.2f)", r.peak) : "silent")
             }
             .font(.callout.monospaced())
             if r.peak > 0.0001 { Button("Play the recording") { m.play() } }
-            Text("Known issue: the no-JIT engine still diverges from the desktop engine during boot, so it can be silent. Speed numbers are still valid measurements of this iPad.")
+            Text(r.realtimeFactor >= 1.0
+                 ? "This iPad runs the full Machinedrum (both DSPs and the ColdFire) faster than real time on one core, without JIT."
+                 : String(format: "On one core, without JIT, this iPad runs the Machinedrum at %.0f%% of real-time speed. Please send me this screen: it decides which speed-up comes next.", r.realtimeFactor * 100))
                 .font(.footnote).foregroundStyle(.secondary)
         }
     }

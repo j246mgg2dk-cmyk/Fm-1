@@ -95,6 +95,7 @@ namespace dsp56k
 		assert(_pX != _pY && "cannot use the same peripherals twice");
 
 		mem.setDSP(this);
+		m_memP = mem.getMemAreaPtr(MemArea_P);
 
 		m_disasm.addSymbols(mem);
 		
@@ -1060,11 +1061,7 @@ namespace dsp56k
 	// _____________________________________________________________________________
 	// memWrite
 	//
-	bool DSP::memWrite( EMemArea _area, TWord _offset, TWord _value )
-	{
-		aarTranslate(_area, _offset);
-		return mem.dspWrite( _area, _offset, _value );
-	}
+	// bool DSP::memWrite(): inline in dsp.h
 
 	bool DSP::memWriteP(TWord _offset, TWord _value)
 	{
@@ -1118,32 +1115,7 @@ namespace dsp56k
 	// _____________________________________________________________________________
 	// memRead
 	//
-	dsp56k::TWord DSP::memRead( EMemArea _area, TWord _offset ) const
-	{
-		// app may access the instruction cache on the DSP 56362? not sure about this, not clear for me in the docs
-
-	// 	if( _area == MemArea_P && sr_test(SR_CE) )
-	// 	{
-	// 		const bool ms = (reg.omr.var & OMR_MS) != 0;
-	// 
-	// 		if( !ms )
-	// 		{
-	// 			if( _offset >= 0x000800 && _offset < 0x000c00 )
-	// 			{
-	// 				return cache.readMemory( _offset - 0x000800 );
-	// 			}
-	// 		}
-	// 		else
-	// 		{
-	// 			if( _offset >= 0x001000 && _offset < 0x001400 )
-	// 				return cache.readMemory( _offset - 0x001000 );
-	// 		}
-	// 	}
-
-		aarTranslate(_area, _offset);
-
-		return mem.get(_area, _offset);
-	}
+	// dsp56k::TWord DSP::memRead(): inline in dsp.h
 
 	void DSP::memReadOpcode(TWord _offset, TWord& _wordA, TWord& _wordB) const
 	{

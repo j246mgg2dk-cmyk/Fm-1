@@ -102,6 +102,7 @@ namespace dsp56k
 	// _____________________________________________________________________________
 	// set
 	//
+	#if !DSP56K_MEMORY_INLINE
 	bool Memory::dspWrite( EMemArea& _area, TWord& _offset, TWord _value )
 	{
 #if MEMORY_HEAT_MAP
@@ -150,10 +151,13 @@ namespace dsp56k
 
 		return true;
 	}
+#endif
+
 
 	// _____________________________________________________________________________
 	// get
 	//
+	#if !DSP56K_MEMORY_INLINE
 	TWord Memory::get( EMemArea _area, TWord _offset ) const
 	{
 #if MEMORY_HEAT_MAP
@@ -187,6 +191,8 @@ namespace dsp56k
 
 		return res;
 	}
+#endif
+
 
 	void Memory::getOpcode(TWord _offset, TWord& _wordA, TWord& _wordB) const
 	{
@@ -379,6 +385,7 @@ namespace dsp56k
 		}
 	}
 
+	#if !DSP56K_MEMORY_INLINE
 	void Memory::memTranslateAddress(EMemArea& _area, const TWord& _addr) const
 	{
 		// A failed or unsupported MMU mapping is represented by a null buffer.
@@ -393,5 +400,11 @@ namespace dsp56k
 		o >>= 24;
 		_area = static_cast<EMemArea>(_area & o);
 //		assert(_area >= 0 && _area < MemArea_COUNT);
+	}
+#endif
+
+	void Memory::logReadOutOfRange(const TWord _offset) const
+	{
+		LOG_ERR_MEM_READ( _offset );
 	}
 }

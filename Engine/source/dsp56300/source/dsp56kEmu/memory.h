@@ -7,6 +7,14 @@
 #include "memorybuffer.h"
 #include "peripherals.h"
 
+// Release builds without heat map or debugger hooks get header-inline P/X/Y
+// accessors (the interpreter calls them for every memory operand).
+#if !defined(_DEBUG) && !(defined(MEMORY_HEAT_MAP) && MEMORY_HEAT_MAP) && !(defined(DSP56300_DEBUGGER) && DSP56300_DEBUGGER)
+#define DSP56K_MEMORY_INLINE 1
+#else
+#define DSP56K_MEMORY_INLINE 0
+#endif
+
 namespace dsp56k
 {
 	// 128 words - boostrap extension
@@ -161,7 +169,41 @@ namespace dsp56k
 	private:
 		void				fillWithInitPattern	();
 		void				memTranslateAddress	(EMemArea& _area, const TWord& _addr) const;
+		void				logReadOutOfRange	(TWord _offset) const;
 
 		std::unique_ptr<MemoryBuffer> m_mmuBuffer;
 	};
+
+#if DSP56K_MEMORY_INLINE
+	inline void Memory::memTranslateAddress(EMemArea& _area, const TWord& _addr) const
+	{
+		// A failed or unsupported MMU mapping is represented by a null buffer.
+		if(hasMmuSupport())
+			return;
+
+		// It's magic...
+		auto o = static_cast<int32_t>(_addr - m_bridgedMemoryAddress);
+		o >>= 24;
+		_area = static_cast<EMemArea>(_area & o);
+	}
+
+	inline bool Memory::dspWrite(EMemArea& _area, TWord& _offset, const TWord _value)
+	{
+		memTranslateAddress(_area, _offset);
+		if (_offset < size(_area))		// Fix the amazing "write to wrong address" bug
+			m_mem[_area][_offset] = _value & 0x00ffffff;
+		return true;
+	}
+
+	inline TWord Memory::get(EMemArea _area, TWord _offset) const
+	{
+		memTranslateAddress(_area, _offset);
+		if(_offset >= size(_area))
+		{
+			logReadOutOfRange(_offset);
+			return 0;
+		}
+		return m_mem[_area][_offset];
+	}
+#endif
 }

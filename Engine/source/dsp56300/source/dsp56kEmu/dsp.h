@@ -89,6 +89,7 @@ namespace dsp56k
 		// members
 		//
 		Memory&							mem;
+		const TWord*					m_memP = nullptr;	// P memory base, fixed for the Memory object's lifetime (interpreter fast fetch)
 		std::array<IPeripherals* const, 2>	perif;
 		
 		TWord							pcCurrentInstruction = 0;
@@ -292,9 +293,18 @@ namespace dsp56k
 			{
 				if(m_opcodeCache.empty())
 					clearOpcodeCache();
-			}
 
-			m_interruptFunc(this);
+				m_interruptFunc(this);
+			}
+			else
+			{
+				// Same inline test the JIT dispatcher uses: the default callback only
+				// services peripherals once they are due, so skip the indirect call
+				// in the common not-due case. Pending interrupts and other modes
+				// still take the callback.
+				if(m_interruptFunc != m_execPeripheralsFunc || perif[0]->isDue(m_instructions, m_cycles))
+					m_interruptFunc(this);
+			}
 
 #if DSP56300_DEBUGGER
 			if(m_debugger)
@@ -303,11 +313,42 @@ namespace dsp56k
 
 			pcCurrentInstruction = reg.pc.toWord();
 
-			const auto op = fetchPC();
-
-			execOp(op);
+			if constexpr(g_useJIT || g_useAARTranslate || DSP56300_DEBUGGER)
+			{
+				const auto op = fetchPC();
+				execOp(op);
+			}
+			else
+			{
+				execOpInterpreterFast();
+			}
 
 			checkLoopEnd();
+		}
+
+		// Interpreter-only inlined equivalent of fetchPC() + execOp(): direct P-memory
+		// fetch, cached handler, cached cycle count. Identical semantics with tracing
+		// compiled out (g_traceSupported is false in dsp.cpp).
+		ASMJIT_FORCE_INLINE void execOpInterpreterFast() noexcept
+		{
+			const TWord pc = pcCurrentInstruction;
+			const TWord* p = m_memP;
+			const TWord op = p[pc];
+			m_opWordB = p[pc + 1];
+			++reg.pc.var;
+
+			m_currentOpLen = 1;
+
+			(this->*m_opcodeCache[pc].op)(op);
+
+			if(ASMJIT_LIKELY(pcCurrentInstruction == pc))
+			{
+				++m_instructions;
+				TWord cycles = m_opcodeCycleCache[pc];
+				if(ASMJIT_UNLIKELY(!cycles))
+					cycles = getOpcodeCycles(pc);
+				m_cycles += cycles;
+			}
 		}
 
 		// Hardware DO loop end test, run after each interpreted instruction.
@@ -971,7 +1012,12 @@ namespace dsp56k
 
 	public:
 		bool	memWriteP			( TWord _offset, TWord _value );
-		bool	memWrite			( EMemArea _area, TWord _offset, TWord _value );
+		bool	memWrite			( EMemArea _area, TWord _offset, TWord _value )
+		{
+			if constexpr(g_useAARTranslate)
+				aarTranslate(_area, _offset);
+			return mem.dspWrite( _area, _offset, _value );
+		}
 		bool	memWritePeriph		( EMemArea _area, TWord _offset, TWord _value );
 		bool	memWritePeriphFFFF80( EMemArea _area, TWord _offset, TWord _value );
 		bool	memWritePeriphFFFFC0( EMemArea _area, TWord _offset, TWord _value );
@@ -979,7 +1025,12 @@ namespace dsp56k
 	private:
 		void	notifyProgramMemWrite(TWord _offset);
 		
-		TWord	memRead				( EMemArea _area, TWord _offset ) const;
+		TWord	memRead				( EMemArea _area, TWord _offset ) const
+		{
+			if constexpr(g_useAARTranslate)
+				aarTranslate(_area, _offset);
+			return mem.get(_area, _offset);
+		}
 		void	memReadOpcode		( TWord _offset, TWord& _wordA, TWord& _wordB ) const;
 		TWord	memReadPeriph		( EMemArea _area, TWord _offset, Instruction _inst) const;
 		TWord	memReadPeriphFFFF80	( EMemArea _area, TWord _offset, Instruction _inst) const;

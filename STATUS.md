@@ -16,24 +16,39 @@
 
 ## The iPad blocker: JIT
 iPadOS does not let normal apps or AUv3 extensions create executable code at run time. The desktop
-emulator relies on its JIT for speed. Without it, the engine falls back to its interpreter.
+emulator relies on its JIT for speed. On iPad the engine runs its interpreter instead
+(`DSP56K_FORCE_INTERPRETER`: the JIT is compiled in but never executed, so no executable memory is requested).
 
-### Measurements (cloud Linux x86-64 Xeon, single core, your MD UW 1.63 firmware)
-| | JIT (desktop path) | Interpreter (iPad path) |
+## Where things stand (2026-11-11)
+- **The no-JIT engine is functionally correct.** It boots your MD UW 1.63 firmware, plays the factory
+  pattern, the sequencer and LEDs run, and it produces audio (peak 0.73, the same level as the JIT).
+  The output is not sample-identical to the JIT build, because the JIT services peripherals per code block
+  and the interpreter per instruction, so their timing differs slightly. Listening comparison is still to do.
+- **The iPad build compiles and links** (GitHub Actions, `generic/platform=iOS`, arm64, Release).
+- **Speed is the open question.** It needs to be measured on your iPad with the test app.
+
+### Measurements (cloud Linux x86-64 Xeon, one core, your firmware, factory pattern playing)
+| Build | Real-time factor | DSP throughput |
 |---|---|---|
-| Raw DSP speed, synthetic loop | 1433 M instr/s | 139 M instr/s (10× slower) |
-| Full machine, factory pattern playing | **1.23× real time**, audible | 0.93× real time, but **silent** (see below) |
-| DSP work needed per second of audio | **148.4 M instructions** (79.2 M + 69.2 M) | — |
-| Emulator DSP throughput, real firmware | 181.9 M instr/s | 73.3 M instr/s (including ColdFire and scheduler) |
-| Share of time in DSP code (JIT run, sampled) | 60% | — |
+| Desktop JIT (reference, not possible on iPad) | 1.23× | 181.9 M instr/s |
+| Interpreter after the correctness fixes, gcc | 0.36× | 53.5 M instr/s |
+| + inlined interpreter fast path | 0.41× | 61.9 M instr/s |
+| + inlined memory accessors | 0.45× | 66.7 M instr/s |
+| **Same code built with clang (the iPad compiler)** | **0.48×** | **71.3 M instr/s** |
 
-**Projection for a correct interpreter:**
-- about 0.57× real time on this Xeon;
-- an M4/M5 iPad Pro core is roughly 1.6–2× faster, which gives **about 0.9–1.15×**: borderline;
-- with the two DSPs on separate cores (upstream Gearmulator does this; this fork interleaves everything on one
-  thread for determinism), **about 1.5–1.9×**.
+- Real-time needs about **150 M DSP instructions per second** (DSP1 79.2 M + DSP2 70.6 M).
+- Every optimisation so far keeps the rendered audio **bit-identical** to the unoptimised interpreter
+  (checked by comparing the 10-second WAV renders byte for byte).
+- Profile of the interpreter (gdb sampling, before the optimisations):
+  - about 48% fetch, decode, dispatch and cycle accounting;
+  - about 25% actual instruction semantics (ALU, AGU, moves);
+  - about 17% peripheral servicing (ESSI, timers, HI08 and DMA are polled about every 13 instructions);
+  - about 5% ColdFire and about 5% scheduler.
+  Most of the time is overhead, not the Machinedrum's own DSP work, which is why there is room to speed it up.
 
-**This must be confirmed on the iPad with the test app in this repository.**
+**Rough projection (unconfirmed):** an M4/M5 iPad Pro performance core is roughly 2× this Xeon core, which
+would put the current single-thread engine near 0.9–1.0× real time. **This must be confirmed on your iPad
+with the test app.**
 
 ## Engine changes made for iPad
 1. **DO-loop deadlock fixed** (`dsp56kEmu/dsp.cpp`, `dsp.h`).
@@ -42,36 +57,47 @@ emulator relies on its JIT for speed. Without it, the engine falls back to its i
      the interpreter build hung at about 1 s of boot.
    - DO now only sets up LA/LC/SS, as the real chip does, and the loop-end test runs after every
      instruction.
-   - The interpreter unit test that checked the old behaviour was updated to step the loop.
-   - The DSP interpreter test suite and all 280 assembler tests pass.
-2. The interpreter build is selected with `DSP56K_FORCE_INTERPRETER`. The JIT code is compiled in but never
-   executed, so no executable memory is requested.
+2. **MOVEP to or from a peripheral effective address fixed** (`dsp_ops_move.inl`). This was the cause of
+   the silent output.
+   - `movep x:<<M_HORX,x:<<M_DCO5` (DSP1, pc $9b1) wrote the DMA counter into plain X RAM instead of the
+     DMA peripheral, so DMA channel 5 never started and DSP1 never produced audio.
+   - Found by running the JIT and the interpreter in lockstep and diffing every instruction.
+   - New unit tests fail without the fix and pass with it, on both the JIT and the interpreter.
+3. **Interpreter speed-ups**, all bit-identical:
+   - an inlined fetch, dispatch and cycle path;
+   - the peripheral due-check inlined, as the JIT dispatcher already does;
+   - header-inline X/Y/P memory accessors in release builds.
+4. **iOS portability:**
+   - asmjit cache flush uses `sys_icache_invalidate`;
+   - `cowmemory` uses the portable path on iOS (it is only used by the JIT).
 
-## Open problems (honest list)
-- **Interpreter correctness:** with the deadlock fixed, the interpreter boots, but diverges from the JIT
-  partway through boot.
-  - DSP2 answers a ColdFire query with `03 03 02` where the JIT build answers `00 00`.
-  - The OS then takes a different path, so audio stays silent.
-  - Instruction-level unit tests pass, so this is an integration or timing difference. The suspect is
-    peripheral servicing granularity (per JIT block versus per instruction) or a remaining interpreter edge
-    case.
-  - Next step: lockstep DSP comparison (JIT versus interpreter on the same state) to find the first
-    differing instruction.
-- **Speed:** borderline single-threaded. Options, in order of effort:
-  1. ARM64-specific interpreter tuning: peripheral checks per block instead of per instruction, and
-     cached decode.
-  2. Run DSP2 on a second core, synchronised per audio frame.
-  3. Ahead-of-time translation: the DSP program code comes from the user's firmware and is deterministic. It
-     can be translated to C++ on the user's Mac at build time from their own firmware (never published) and
-     compiled into their personal app. That gives JIT-class speed with no run-time code generation.
+The interpreter test suite and all assembler tests pass, and so do the JIT unit and optimiser tests.
+
+## Next steps, in order
+1. **Measure on your iPad** with the test app (Raw DSP speed, Full Machinedrum test).
+2. **More single-thread interpreter work:**
+   - a pre-decoded instruction cache (opcode words, extension word and cycles in one entry);
+   - cheaper parallel-move dispatch;
+   - peripheral servicing per block instead of per instruction where the JIT already does the same.
+3. **DSP2 on a second core.**
+   - The two DSPs exchange data every audio frame (the ESSI link) and the ColdFire synchronises with each of
+     them on host-port access, so this needs a synchronisation design, not a switch. It is the biggest
+     remaining lever (up to about 1.6–1.9× on top of single-thread speed).
+4. **Ahead-of-time translation:**
+   - the DSP programs come from your firmware and are deterministic, so they can be translated to C++ on your
+     Mac at build time and compiled into your personal app, never published;
+   - that is JIT-class speed with no run-time code generation, at the largest effort.
+5. **The real app:** then the touch UI and the AUv3, once real time is reached.
+
+## Other notes
 - **AUv3:** possible only once the engine is real time without JIT. Memory and CPU limits in extension
   processes still need checking.
 - **Mac-powered interim version:** the fork contains Gearmulator's network "DSP bridge"
-  (`source/bridge`), which could stream a Mac-hosted engine to an iPad app or AUv3. It hasn't been started,
-  by choice: effort goes to native first.
+  (`source/bridge`), which could stream a Mac-hosted engine to an iPad app or AUv3. Not started, by your
+  priority: effort goes to native first.
 
 ## What the test app does
-- Imports your firmware, and optionally the factory cache, through Files.
-- Measures raw DSP interpreter speed.
-- Boots the real MD, presses PLAY, times 10 s of audio, and shows the emulated LCD, the real-time
-  factor, the DSP throughput and the projection, and lets you play the recording.
+- Imports your firmware, and optionally the factory cache, through Files. Nothing is bundled.
+- Measures raw DSP interpreter speed on a performance core.
+- Boots the real MD, presses PLAY, times 10 s of audio, and shows the emulated LCD, the real-time factor
+  and the DSP throughput, and lets you play the recording.
