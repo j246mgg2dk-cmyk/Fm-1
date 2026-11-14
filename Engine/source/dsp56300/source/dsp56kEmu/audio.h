@@ -273,6 +273,15 @@ namespace dsp56k
 #define DSP56K_AUDIO_RINGBUFFER_SIZE (8192 * 4)
 #endif
 		static constexpr uint32_t RingBufferSize = DSP56K_AUDIO_RINGBUFFER_SIZE;
+		// Semaphore-backed rings block a consumer on empty and a producer on full. Builds whose
+		// callers always check empty()/full() first (the Machinedrum scheduler) can define
+		// DSP56K_AUDIO_RING_LOCK=0: the rings then cost two plain atomics per frame instead of
+		// four read-modify-writes on lines both threads write, and the generic blocking paths
+		// fall back to waitNotEmpty()/waitNotFull().
+#ifndef DSP56K_AUDIO_RING_LOCK
+#define DSP56K_AUDIO_RING_LOCK 1
+#endif
+		static constexpr bool RingBufferLock = DSP56K_AUDIO_RING_LOCK != 0;
 		static_assert((RingBufferSize & (RingBufferSize - 1)) == 0, "ring size must be a power of two");
 
 	protected:
@@ -295,8 +304,8 @@ namespace dsp56k
 
 		bool m_useRingBuffers;
 
-		RingBuffer<RxFrame, RingBufferSize, true, false> m_audioInputs;
-		RingBuffer<TxFrame, RingBufferSize, true, false> m_audioOutputs;
+		RingBuffer<RxFrame, RingBufferSize, RingBufferLock, false> m_audioInputs;
+		RingBuffer<TxFrame, RingBufferSize, RingBufferLock, false> m_audioOutputs;
 		size_t m_latency = 0;
 
 		std::atomic<bool> m_terminated{false};

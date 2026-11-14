@@ -72,9 +72,11 @@ namespace md
 			{
 				m_periphX.getEssi0().setRxConsumeCallback([this]
 				{
-					const OptionalLockGuard linkGuard(m_hardware.linkLock());
+					// DMA reads (channel enabled) are the common case and touch only this DSP's
+					// own registers: decide that before taking the link lock.
 					if(m_periphX.getDMA().getDCR(4) & (1u << dsp56k::DmaChannel::De))
 						return;
+					const OptionalLockGuard linkGuard(m_hardware.linkLock());
 					auto& ring = m_periphX.getEssi0().getAudioInputs();
 #if MD_TRANSPORT_DIAGNOSTICS
 					const auto purgedFrames = ring.size();

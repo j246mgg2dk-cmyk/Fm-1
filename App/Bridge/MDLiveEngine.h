@@ -22,6 +22,10 @@ NS_ASSUME_NONNULL_BEGIN
 /// Plays the real Machinedrum emulator through the iPad's audio output in real time.
 @interface MDLiveEngine : NSObject
 
+/// Two cores only: the threads wait for each other with WFE (low power) instead of spinning.
+/// Set before starting.
+@property (nonatomic) BOOL lowPowerWait;
+
 /// Starts audio output (silence), boots the firmware off the audio thread, presses PLAY and
 /// then streams the emulator. Blocks until playing or failed: call it off the main thread.
 - (BOOL)startWithFirmware:(NSString *)firmwarePath

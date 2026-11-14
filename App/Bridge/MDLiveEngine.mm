@@ -186,6 +186,7 @@ namespace
 	// 3. Boot the Machinedrum off the audio thread.
 	setenv("GEARMULATOR_MD_DSP_WORKER", secondCore ? "1" : "0", 1);
 	setenv("GEARMULATOR_MD_DSP_SKEW", "2", 1);
+	setenv("GEARMULATOR_MD_LOW_POWER_WAIT", self.lowPowerWait ? "1" : "0", 1);
 	std::vector<uint8_t> fw;
 	if(!baseLib::filesystem::readFile(fw, firmwarePath.UTF8String))
 	{
@@ -251,6 +252,7 @@ namespace
 	md::Hardware::setDspWorkerThreadStartHook({});
 	unsetenv("GEARMULATOR_MD_DSP_WORKER");
 	unsetenv("GEARMULATOR_MD_DSP_SKEW");
+	unsetenv("GEARMULATOR_MD_LOW_POWER_WAIT");
 }
 
 - (MDLiveStats *)stats

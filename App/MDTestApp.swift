@@ -142,6 +142,7 @@ final class TestModel: ObservableObject {
     @Published var liveStats: MDLiveStats?
     @Published var liveBuffer = 256
     @Published var liveSecondCore = true
+    @Published var liveLowPowerWait = false
     private var liveTimer: Timer?
     private var player: AVAudioPlayer?
 
@@ -248,7 +249,8 @@ final class TestModel: ObservableObject {
         guard firmwareOK, !liveRunning, !liveStarting else { return }
         liveStarting = true
         liveStats = nil
-        say("Starting live playback (\(liveBuffer)-frame buffers, \(liveSecondCore ? "two cores" : "one core"))…")
+        say("Starting live playback (\(liveBuffer)-frame buffers, \(liveSecondCore ? "two cores" : "one core")\(liveSecondCore && liveLowPowerWait ? ", low-power wait" : ""))…")
+        live.lowPowerWait = liveLowPowerWait
         let fw = Storage.firmware.path, home = Storage.root.path
         let buffer = liveBuffer, secondCore = liveSecondCore, engine = live
         UIApplication.shared.isIdleTimerDisabled = true
@@ -430,6 +432,8 @@ struct ContentView: View {
                 .pickerStyle(.segmented)
                 .frame(maxWidth: 320)
                 Toggle("Second core", isOn: $m.liveSecondCore).fixedSize()
+                Toggle("Low-power wait", isOn: $m.liveLowPowerWait).fixedSize()
+                    .disabled(!m.liveSecondCore)
             }
             .disabled(m.liveRunning || m.liveStarting)
             HStack(spacing: 12) {

@@ -461,7 +461,8 @@ namespace md
 		alignas(g_cacheLine) std::atomic<uint64_t> m_statWorkerBursts{0};
 		std::atomic<uint64_t> m_statWorkerIdle{0};
 		std::atomic<uint64_t> m_statWorkerLockMiss{0};
-		bool m_idleSkipEnabled = true;		// fast-forward side-effect-free DSP waits (exact)
+		bool m_idleSkipEnabled = true;
+		bool m_lowPowerWait = false;		// WFE-based waits between the threads (64-bit ARM)		// fast-forward side-effect-free DSP waits (exact)
 		std::atomic<uint64_t> m_statWorkerSleeps{0};
 		std::atomic<uint64_t> m_statWorkerBusyNs{0};		// executing its DSP (bursts)
 		std::atomic<uint64_t> m_statWorkerInstr{0};		// instructions retired in bursts

@@ -25,6 +25,28 @@ namespace md
 #endif
 	}
 
+	// Wait until _value may have changed from _seen. With _lowPower on 64-bit ARM this arms
+	// the exclusive monitor on the value's cache line and executes WFE: the core idles until
+	// another core writes that line (or any other event arrives) instead of spinning at full
+	// power, so the busy core keeps more of the power budget. Otherwise a plain pause.
+	template<typename T> inline void waitForChange(const std::atomic<T>& _value, const T _seen, const bool _lowPower) noexcept
+	{
+#if defined(__aarch64__)
+		static_assert(sizeof(T) == 8, "64-bit values only");
+		if(_lowPower)
+		{
+			uint64_t v;
+			asm volatile("ldaxr %0, [%1]" : "=&r"(v) : "r"(&_value) : "memory");
+			if(v == static_cast<uint64_t>(_seen))
+				asm volatile("wfe" ::: "memory");
+			return;
+		}
+#else
+		(void)_value; (void)_seen; (void)_lowPower;
+#endif
+		cpuRelax();
+	}
+
 	// Small recursive spin lock used to hand ownership of DSP2 (and of the shared
 	// inter-DSP link state) between the scheduler thread and the DSP2 worker.
 	// Critical sections are short (a few dozen DSP instructions), so spinning is

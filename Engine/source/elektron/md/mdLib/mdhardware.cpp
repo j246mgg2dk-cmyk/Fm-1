@@ -135,6 +135,8 @@ namespace md
 		// established path as a field fallback and exact A/B control.
 		const auto* const boundedJit = std::getenv("GEARMULATOR_MDMM_BOUNDED_JIT");
 		m_schedBoundedJit = boundedJit == nullptr || std::strcmp(boundedJit, "0") != 0;
+		if(const auto* const lpEnv = std::getenv("GEARMULATOR_MD_LOW_POWER_WAIT"))
+			m_lowPowerWait = std::atoi(lpEnv) != 0;
 		if(const auto* const skipEnv = std::getenv("GEARMULATOR_MD_IDLE_SKIP"))
 			m_idleSkipEnabled = std::atoi(skipEnv) != 0;
 		if(m_idleSkipEnabled && !isMonomachine())
@@ -813,11 +815,14 @@ namespace md
 		const uint64_t targetCyc = framePosToCycles(m_workerDsp, _framePos);
 		if(publishedCycles(m_workerDsp).load(std::memory_order_acquire) < targetCyc)
 			schedWaitBegin();
-		while(publishedCycles(m_workerDsp).load(std::memory_order_acquire) < targetCyc)
+		for(;;)
 		{
+			const uint64_t seen = publishedCycles(m_workerDsp).load(std::memory_order_acquire);
+			if(seen >= targetCyc)
+				break;
 			if(m_workerSleeping.load(std::memory_order_relaxed))
 				wakeDspWorker();
-			cpuRelax();
+			waitForChange(publishedCycles(m_workerDsp), seen, m_lowPowerWait);
 		}
 		schedWaitEnd();
 	}
@@ -877,11 +882,19 @@ namespace md
 				|| m_workerDspWanted.load(std::memory_order_relaxed) != 0)
 			{
 				m_statWorkerIdle.fetch_add(1, std::memory_order_relaxed);
+				// Waiting for the scheduler thread's DSP to move on: sleep on its counter.
+				const bool wanted = m_workerDspWanted.load(std::memory_order_relaxed) != 0;
 				// Spin while work is imminent (the scheduler thread is mid-block). After about
 				// 200 us with nothing to do (typically between audio buffers), sleep until the
 				// scheduler wakes us. Never sched_yield: on Apple platforms it depresses this
 				// thread's priority, and every hand-off can then stall for milliseconds.
-				cpuRelax();
+				if(wanted)
+					cpuRelax();
+				else
+				{
+					const uint32_t other = m_workerDsp == 0 ? 1u : 0u;
+					waitForChange(publishedCycles(other), publishedCycles(other).load(std::memory_order_acquire), m_lowPowerWait);
+				}
 				if((++idleSpins & 1023) != 0)
 					continue;
 				const auto now = std::chrono::steady_clock::now();
@@ -1734,7 +1747,7 @@ namespace md
 					wakeDspWorker();
 				++m_statSchedWaits;
 				schedWaitBegin();
-				cpuRelax();
+				waitForChange(publishedCycles(m_workerDsp), publishedCycles(m_workerDsp).load(std::memory_order_acquire), m_lowPowerWait);
 				return true;
 			}
 		}
@@ -2080,12 +2093,15 @@ namespace md
 			const uint64_t mixerTarget = framePosToCycles(0, m_schedFramesTotal);
 			if(publishedCycles(0).load(std::memory_order_acquire) < mixerTarget)
 				schedWaitBegin();
-			while(publishedCycles(0).load(std::memory_order_acquire) < mixerTarget)
+			for(;;)
 			{
+				const uint64_t seen = publishedCycles(0).load(std::memory_order_acquire);
+				if(seen >= mixerTarget)
+					break;
 				if(m_workerSleeping.load(std::memory_order_relaxed))
 					wakeDspWorker();
 				schedDrainCodecOutput();
-				cpuRelax();
+				waitForChange(publishedCycles(0), seen, m_lowPowerWait);
 			}
 		}
 		if(m_dspThreaded)
