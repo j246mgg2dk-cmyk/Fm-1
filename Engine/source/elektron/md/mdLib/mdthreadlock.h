@@ -10,6 +10,10 @@
 
 namespace md
 {
+	// Apple silicon has 128-byte cache lines; keeping each hot shared variable on its own
+	// line stops the two threads from bouncing one line between cores.
+	constexpr size_t g_cacheLine = 128;
+
 	inline void cpuRelax() noexcept
 	{
 #if defined(__aarch64__)
@@ -25,7 +29,7 @@ namespace md
 	// inter-DSP link state) between the scheduler thread and the DSP2 worker.
 	// Critical sections are short (a few dozen DSP instructions), so spinning is
 	// cheaper than a kernel mutex and never blocks the audio thread on the OS.
-	class RecursiveSpinLock
+	class alignas(g_cacheLine) RecursiveSpinLock
 	{
 	public:
 		void lock() noexcept
@@ -36,16 +40,15 @@ namespace md
 				++m_depth;
 				return;
 			}
+			// Pure spin: the holder releases within a few dozen DSP instructions. Never call
+			// sched_yield here: on Apple platforms it depresses the caller's priority, and
+			// every hand-off can then stall for milliseconds.
 			uintptr_t expected = 0;
-			uint32_t spins = 0;
 			while(!m_owner.compare_exchange_weak(expected, me,
 				std::memory_order_acquire, std::memory_order_relaxed))
 			{
 				expected = 0;
-				if(++spins < 4096)
-					cpuRelax();
-				else
-					std::this_thread::yield();
+				cpuRelax();
 			}
 			m_depth = 1;
 		}

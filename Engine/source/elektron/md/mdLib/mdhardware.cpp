@@ -637,10 +637,7 @@ namespace md
 	Hardware::~Hardware()
 	{
 		if(m_dspThreaded && std::getenv("GEARMULATOR_MD_DSP_STATS"))
-			std::fprintf(stderr, "[MD] DSP2 thread stats: worker bursts %llu, worker idle spins %llu, lock misses %llu, scheduler waits %llu, scheduler DSP2 accesses %llu\n",
-				(unsigned long long)m_statWorkerBursts.load(), (unsigned long long)m_statWorkerIdle.load(),
-				(unsigned long long)m_statWorkerLockMiss.load(), (unsigned long long)m_statSchedWaits,
-				(unsigned long long)m_statSchedDsp2Access);
+			std::fprintf(stderr, "[MD] %s\n", dspWorkerStats().c_str());
 		stopDspWorker();
 		m_uc.setMidiTransmitTap({});
 	}
@@ -668,6 +665,17 @@ namespace md
 	//  - Shared link state (rendezvous flags, ROE, the Port C pin) is guarded by m_linkLock.
 	//    Lock order is always: worker DSP lock, then link lock.
 	// ---------------------------------------------------------------------------------------
+	std::string Hardware::dspWorkerStats() const
+	{
+		char buf[256];
+		std::snprintf(buf, sizeof(buf), "worker DSP%u %s: bursts %llu, idle spins %llu, lock misses %llu, scheduler waits %llu, scheduler accesses %llu",
+			m_workerDsp + 1, m_dspThreaded ? "running" : "not started",
+			(unsigned long long)m_statWorkerBursts.load(), (unsigned long long)m_statWorkerIdle.load(),
+			(unsigned long long)m_statWorkerLockMiss.load(), (unsigned long long)m_statSchedWaits,
+			(unsigned long long)m_statSchedDsp2Access);
+		return buf;
+	}
+
 	void Hardware::setDspWorkerEnabled(const bool _enabled, const double _maxSkewFrames, const uint32_t _workerDsp)
 	{
 		m_dspThreadRequested = _enabled;
@@ -709,19 +717,19 @@ namespace md
 		const uint64_t targetCyc = dspCatchupDeadline<g_ucClockHz,
 			g_dsp1CyclesPerEsaiFrame * g_samplerate>(m_schedDspOriginCycles[i],
 				m_schedUcCyclesDone - m_schedDspOriginUcCycles[i]);
-		return m_publishedCycles[i].load(std::memory_order_acquire) >= targetCyc;
+		return publishedCycles(i).load(std::memory_order_acquire) >= targetCyc;
 	}
 
 	void Hardware::publishDspCycles(const uint32_t _dspIndex)
 	{
 		auto& d = (_dspIndex == 0) ? m_dspMixer : m_dspProducer;
-		m_publishedCycles[_dspIndex & 1].store(d.dsp().getCycles(), std::memory_order_release);
+		publishedCycles(_dspIndex & 1).store(d.dsp().getCycles(), std::memory_order_release);
 	}
 
 	double Hardware::publishedFramePos(const uint32_t _dspIndex) const
 	{
 		const auto i = _dspIndex & 1;
-		const uint64_t cyc = m_publishedCycles[i].load(std::memory_order_acquire);
+		const uint64_t cyc = publishedCycles(i).load(std::memory_order_acquire);
 		if(cyc <= m_schedDspOriginCycles[i])
 			return m_schedDspOriginFrame[i];
 		return m_schedDspOriginFrame[i] + static_cast<double>(cyc - m_schedDspOriginCycles[i])
@@ -778,7 +786,7 @@ namespace md
 		// Publish this thread's DSP first: the worker's horizon depends on it.
 		publishDspCycles(m_workerDsp == 0 ? 1u : 0u);
 		const uint64_t targetCyc = framePosToCycles(m_workerDsp, _framePos);
-		while(m_publishedCycles[m_workerDsp].load(std::memory_order_acquire) < targetCyc)
+		while(publishedCycles(m_workerDsp).load(std::memory_order_acquire) < targetCyc)
 			cpuRelax();
 	}
 
@@ -798,7 +806,7 @@ namespace md
 		pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
 #endif
 		auto& d = (m_workerDsp == 0 ? m_dspMixer : m_dspProducer).dsp();
-		auto& published = m_publishedCycles[m_workerDsp];
+		auto& published = publishedCycles(m_workerDsp);
 		uint32_t idleSpins = 0;
 
 		while(!m_dspWorkerStop.load(std::memory_order_acquire))
@@ -808,10 +816,13 @@ namespace md
 				|| m_workerDspWanted.load(std::memory_order_relaxed) != 0)
 			{
 				m_statWorkerIdle.fetch_add(1, std::memory_order_relaxed);
-				if(++idleSpins < 4096)
+				// Spin while work is imminent (the scheduler thread is mid-block). Only after
+				// about a millisecond with nothing to do (no advance() running) sleep briefly.
+				// Never sched_yield: on Apple platforms it depresses this thread's priority.
+				if(++idleSpins < (1u << 20))
 					cpuRelax();
 				else
-					std::this_thread::yield();
+					std::this_thread::sleep_for(std::chrono::microseconds(100));
 				continue;
 			}
 			if(!m_workerDspLock.tryLock())
@@ -1958,7 +1969,7 @@ namespace md
 			// The mixer runs on the worker: wait until it has produced this block's codec
 			// frames (it leads DSP2, which is at the target now), draining as it goes.
 			const uint64_t mixerTarget = framePosToCycles(0, m_schedFramesTotal);
-			while(m_publishedCycles[0].load(std::memory_order_acquire) < mixerTarget)
+			while(publishedCycles(0).load(std::memory_order_acquire) < mixerTarget)
 			{
 				schedDrainCodecOutput();
 				cpuRelax();

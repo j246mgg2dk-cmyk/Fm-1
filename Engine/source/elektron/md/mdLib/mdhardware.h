@@ -368,7 +368,7 @@ namespace md
 #endif
 
 		// Codec frames produced by the mixer.
-		std::atomic<uint32_t> m_esaiFrameIndex{0};	// codec frames produced (the mixer may run on the worker)
+		alignas(g_cacheLine) std::atomic<uint32_t> m_esaiFrameIndex{0};	// codec frames produced (the mixer may run on the worker)
 
 		// ---------------------------------------------------------------------------------------
 		// Deterministic interleave scheduler state. advance() maintains a shared machine clock in codec
@@ -421,18 +421,26 @@ namespace md
 		std::thread m_dspWorkerThread;
 		std::atomic<bool> m_dspWorkerRun{false};
 		std::atomic<bool> m_dspWorkerStop{false};
-		std::atomic<uint32_t> m_workerDspWanted{0};	// scheduler wants the DSP2 lock
-		std::array<std::atomic<uint64_t>, 2> m_publishedCycles{};
+		alignas(g_cacheLine) std::atomic<uint32_t> m_workerDspWanted{0};	// scheduler wants the worker DSP's lock
+		// Each thread writes its own counter every 64 instructions: one cache line each.
+		struct alignas(g_cacheLine) PublishedCycles { std::atomic<uint64_t> value{0}; };
+		std::array<PublishedCycles, 2> m_publishedCyclesStore{};
+		std::atomic<uint64_t>& publishedCycles(uint32_t _i) { return m_publishedCyclesStore[_i & 1].value; }
+		const std::atomic<uint64_t>& publishedCycles(uint32_t _i) const { return m_publishedCyclesStore[_i & 1].value; }
 		RecursiveSpinLock m_workerDspLock;
 		RecursiveSpinLock m_linkLock;
 		friend class DspAccess;
 	public:
 		// Threading statistics (lab diagnostics).
-		std::atomic<uint64_t> m_statWorkerBursts{0};
+		// Written by the worker only.
+		alignas(g_cacheLine) std::atomic<uint64_t> m_statWorkerBursts{0};
 		std::atomic<uint64_t> m_statWorkerIdle{0};
 		std::atomic<uint64_t> m_statWorkerLockMiss{0};
-		uint64_t m_statSchedWaits = 0;
+		// Written by the scheduler thread only.
+		alignas(g_cacheLine) uint64_t m_statSchedWaits = 0;
 		uint64_t m_statSchedDsp2Access = 0;
+		// One-line summary for diagnostics (scheduler thread).
+		std::string dspWorkerStats() const;
 		uint64_t m_threadStartCycles2 = 0;
 	private:
 		double   m_schedFramesTotal   = 0.0;	// machine-time target, accumulated codec frames

@@ -221,6 +221,8 @@ namespace
 		writeWav(wavPath.UTF8String, capture);
 		r.wavPath = wavPath;
 	}
+	if(secondCore)
+		say([NSString stringWithUTF8String:hw.dspWorkerStats().c_str()]);
 	say([NSString stringWithFormat:@"Done (%@): %.2fx real time, %.1f M DSP instructions/s, peak %.3f",
 		r.dspWorkerActive ? @"two cores" : @"one core", r.realtimeFactor, r.dspInstructionsPerWallSecond, r.peak]);
 	r.log = log;
