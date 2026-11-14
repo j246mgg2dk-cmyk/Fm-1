@@ -2,6 +2,8 @@
 
 #include "pagedcache.h"
 #include <atomic>
+#include <array>
+#include <utility>
 
 #include "disasm.h"
 #include "dspconfig.h"
@@ -329,6 +331,9 @@ namespace dsp56k
 
 			pcCurrentInstruction = reg.pc.toWord();
 
+			if(ASMJIT_UNLIKELY(pcCurrentInstruction == m_idlePoll.pc))
+				tryIdlePoll();
+
 			if constexpr(g_useJIT || g_useAARTranslate || DSP56300_DEBUGGER)
 			{
 				const auto op = fetchPC();
@@ -392,10 +397,88 @@ namespace dsp56k
 					continue;	// the enclosing loop may end here too
 				}
 				--reg.lc.var;
-				setPC(hiword(reg.ss[ssIndex()]));
+				const TWord start = hiword(reg.ss[ssIndex()]).toWord();
+				setPC(start);
+				// Idle skipping (opt-in by the host through an IdleSkipScope): a DO loop whose
+				// body is only NOPs is a pure delay, fast-forward its iterations.
+				if(ASMJIT_UNLIKELY(m_idleSkipLimit > m_cycles) && m_memP[start] == 0 && reg.lc.var > 1)
+					skipNopLoop(start);
 				break;
 			}
 		}
+
+	public:
+		// ---- Idle skipping -------------------------------------------------------------
+		// A side-effect-free wait (a NOP delay loop, a loop polling a peripheral register)
+		// may be fast-forwarded by whole iterations as long as no instruction start inside
+		// the skipped range would have serviced the peripherals or an interrupt, and the
+		// DSP does not pass the cycle limit of the slice the host is running. The machine
+		// state afterwards is exactly what interpreting the iterations would have produced.
+		class IdleSkipScope
+		{
+		public:
+			IdleSkipScope(DSP& _dsp, const uint64_t _cycleLimit) : m_dsp(_dsp) { m_dsp.m_idleSkipLimit = _cycleLimit; }
+			~IdleSkipScope() { m_dsp.m_idleSkipLimit = 0; }
+			void setLimit(const uint64_t _cycleLimit) const { m_dsp.m_idleSkipLimit = _cycleLimit; }
+		private:
+			DSP& m_dsp;
+		};
+
+		// How many whole iterations of a loop costing _instr instructions and _cycles cycles
+		// each can be skipped right now (0 = none).
+		uint64_t idleSkipBudget(const uint32_t _instr, const uint32_t _cycles) const noexcept
+		{
+			if(m_interruptFunc != m_execPeripheralsFunc || m_cycles >= m_idleSkipLimit || !_instr || !_cycles)
+				return 0;
+			uint64_t k = (m_idleSkipLimit - m_cycles) / _cycles;
+			const auto targetClock = perif[0]->getTargetClock();
+			if(m_instructions + 1 >= targetClock)
+				return 0;
+			k = std::min(k, (targetClock - m_instructions - 1) / _instr);
+			if(perif[0]->hasCycleDeadline())
+			{
+				const auto targetCycle = perif[0]->getTargetCycle();
+				if(m_cycles + 1 >= targetCycle)
+					return 0;
+				k = std::min(k, (targetCycle - m_cycles - 1) / _cycles);
+			}
+			return k;
+		}
+		void idleSkip(const uint64_t _iterations, const uint32_t _instr, const uint32_t _cycles) noexcept
+		{
+			m_instructions += _iterations * _instr;
+			m_cycles += _iterations * _cycles;
+			m_idleSkippedInstructions += _iterations * _instr;
+		}
+		uint64_t getIdleSkippedInstructions() const { return m_idleSkippedInstructions; }
+		uint8_t opcodeCycles(const TWord _pc)
+		{
+			const auto c = m_opcodeCycleCache[_pc];
+			return c ? c : getOpcodeCycles(_pc);
+		}
+		// A host-registered polling loop: "movep x:<<periph,a" followed by compares and
+		// branches that leave the loop only for one of the exit values, ending in a branch
+		// back. The code words are verified every time, so nothing happens if the program
+		// differs. Skipped only after one iteration has run with the same value, so A and
+		// the condition codes already hold exactly what the skipped iterations produce.
+		struct IdlePoll
+		{
+			TWord pc = 0xffffffff;
+			std::vector<TWord> words;		// P words from pc on, verified
+			std::vector<TWord> path;		// PCs of the instructions one non-exiting iteration executes
+			TWord periphAddr = 0;			// X peripheral address read into A
+			std::vector<TWord> exitValues;
+		};
+		void setIdlePoll(const IdlePoll& _poll) { m_idlePoll = _poll; }
+		void clearIdlePoll() { m_idlePoll = IdlePoll(); }
+
+	private:
+		IdlePoll m_idlePoll;
+		void tryIdlePoll() noexcept;
+		uint64_t m_idleSkipLimit = 0;
+		uint64_t m_idleSkippedInstructions = 0;
+		void skipNopLoop(TWord _start) noexcept;
+	public:
 
 		template<typename Ta, typename Tb> void execPeriph() noexcept
 		{
@@ -1022,6 +1105,11 @@ namespace dsp56k
 		void	alu_rnd				( bool _ab );
 
 		bool	alu_multiply		(TWord _op);
+		// MPY/MPYR/MAC/MACR S1,S2,D specialised on the low seven opcode bits
+		// (round, accumulate, negate, destination, QQQ), selected once per address.
+		template<TWord B> void opCE_Multiply(TWord _op);
+		template<size_t... I> static std::array<TInstructionFunc, sizeof...(I)> makeMultiplyTable(std::index_sequence<I...>);
+		template<bool Ab, bool Negate, bool Accumulate> void alu_mpyT(const TReg24& _s1, const TReg24& _s2);
 
 		void	alu_abs				( bool ab );
 

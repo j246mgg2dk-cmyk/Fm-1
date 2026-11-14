@@ -276,6 +276,7 @@ final class TestModel: ObservableObject {
         if let s = liveStats {
             say(String(format: "Live playback stopped after %.0f s: load average %.0f%%, peak %.0f%%, %ld overruns in %ld callbacks.",
                        s.secondsPlayed, s.averageLoad * 100, s.peakLoad * 100, s.overruns, s.callbacks))
+            if !s.threadStats.isEmpty { say("Threads: " + s.threadStats) }
         }
         live.stop()
         liveRunning = false
@@ -429,6 +430,9 @@ struct ContentView: View {
                     stat("Memory", String(format: "%.0f MB", s.footprintMB))
                 }
                 .font(.callout.monospaced())
+                if !s.threadStats.isEmpty {
+                    Text(s.threadStats).font(.caption2.monospaced()).foregroundStyle(.secondary)
+                }
                 Text("Below 100% load the emulator keeps up. Each overrun is a callback that took longer than its buffer and may be heard as a click.")
                     .font(.footnote).foregroundStyle(.secondary)
             }

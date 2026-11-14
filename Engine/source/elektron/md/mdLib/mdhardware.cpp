@@ -135,6 +135,22 @@ namespace md
 		// established path as a field fallback and exact A/B control.
 		const auto* const boundedJit = std::getenv("GEARMULATOR_MDMM_BOUNDED_JIT");
 		m_schedBoundedJit = boundedJit == nullptr || std::strcmp(boundedJit, "0") != 0;
+		if(const auto* const skipEnv = std::getenv("GEARMULATOR_MD_IDLE_SKIP"))
+			m_idleSkipEnabled = std::atoi(skipEnv) != 0;
+		if(m_idleSkipEnabled && !isMonomachine())
+		{
+			// Machinedrum DSP1 (OS 1.63) waits for the ESSI link DMA to fill half of its
+			// ping-pong buffer by polling DMA0's destination address:
+			//   $3c movep x:<<$ffffee,a / cmp #>$13f,a / beq / cmp #>$17f,a / beq / bra $3c
+			// Verified word for word before every skip, so other programs are unaffected.
+			dsp56k::DSP::IdlePoll poll;
+			poll.pc = 0x3c;
+			poll.words = {0x084e2e, 0x0140c5, 0x00013f, 0x05a405, 0x0140c5, 0x00017f, 0x05a407, 0x050fd9};
+			poll.path = {0x3c, 0x3d, 0x3f, 0x40, 0x42, 0x43};
+			poll.periphAddr = 0xffffee;
+			poll.exitValues = {0x13f, 0x17f};
+			m_dspMixer.dsp().setIdlePoll(poll);
+		}
 		if(const auto* const workerEnv = std::getenv("GEARMULATOR_MD_DSP_WORKER"))
 		{
 			// "1" = DSP1 on the worker (default choice), "2" = DSP2 on the worker, "0" = off.
@@ -668,8 +684,14 @@ namespace md
 	// ---------------------------------------------------------------------------------------
 	std::string Hardware::dspWorkerStats() const
 	{
-		char buf[256];
-		std::snprintf(buf, sizeof(buf), "worker DSP%u %s: bursts %llu, idle spins %llu, sleeps %llu, lock misses %llu, scheduler waits %llu, scheduler accesses %llu",
+		char buf[512];
+		const double adv = std::max(1.0, double(m_statAdvanceNs.load()));
+		const double busy = std::max(1.0, double(m_statWorkerBusyNs.load()));
+		const int n0 = std::snprintf(buf, sizeof(buf), "time in advance %.2f s: scheduler thread waiting %.0f%%, worker executing %.0f%% (%.1f M DSP instructions/s, %.2f cycles/instruction). ",
+			adv * 1e-9, 100.0 * double(m_statSchedWaitNs.load()) / adv, 100.0 * busy / adv,
+			double(m_statWorkerInstr.load()) * 1e3 / busy,
+			double(m_statWorkerCycles.load()) / std::max<double>(1.0, double(m_statWorkerInstr.load())));
+		std::snprintf(buf + n0, sizeof(buf) - n0, "worker DSP%u %s: bursts %llu, idle spins %llu, sleeps %llu, lock misses %llu, scheduler waits %llu, scheduler accesses %llu",
 			m_workerDsp + 1, m_dspThreaded ? "running" : "not started",
 			(unsigned long long)m_statWorkerBursts.load(), (unsigned long long)m_statWorkerIdle.load(),
 			(unsigned long long)m_statWorkerSleeps.load(),
@@ -789,12 +811,15 @@ namespace md
 		// Publish this thread's DSP first: the worker's horizon depends on it.
 		publishDspCycles(m_workerDsp == 0 ? 1u : 0u);
 		const uint64_t targetCyc = framePosToCycles(m_workerDsp, _framePos);
+		if(publishedCycles(m_workerDsp).load(std::memory_order_acquire) < targetCyc)
+			schedWaitBegin();
 		while(publishedCycles(m_workerDsp).load(std::memory_order_acquire) < targetCyc)
 		{
 			if(m_workerSleeping.load(std::memory_order_relaxed))
 				wakeDspWorker();
 			cpuRelax();
 		}
+		schedWaitEnd();
 	}
 
 	void Hardware::wakeDspWorker()
@@ -892,10 +917,15 @@ namespace md
 			}
 			m_statWorkerBursts.fetch_add(1, std::memory_order_relaxed);
 			idleSpins = 0;
+			const auto burstStart = std::chrono::steady_clock::now();
+			const uint64_t instr0 = d.getInstructionCounter();
+			const uint64_t cyc0 = d.getCycles();
 
 			// Run in short bursts, republishing progress so the scheduler thread can keep
 			// moving, and hand the lock back promptly when the scheduler wants this DSP.
 			uint64_t limit = workerHorizonCycles();
+			{
+			const dsp56k::DSP::IdleSkipScope idleSkip(d, m_idleSkipEnabled ? limit : 0);	// ends before the unlock
 			for(uint32_t burst = 0; burst < 16 && d.getCycles() < limit; ++burst)
 			{
 				for(uint32_t i = 0; i < 64 && d.getCycles() < limit; ++i)
@@ -904,9 +934,15 @@ namespace md
 				if(m_workerDspWanted.load(std::memory_order_relaxed) != 0)
 					break;
 				limit = workerHorizonCycles();
+				idleSkip.setLimit(m_idleSkipEnabled ? limit : 0);
+			}
 			}
 			published.store(d.getCycles(), std::memory_order_release);
+			m_statWorkerInstr.fetch_add(d.getInstructionCounter() - instr0, std::memory_order_relaxed);
+			m_statWorkerCycles.fetch_add(d.getCycles() - cyc0, std::memory_order_relaxed);
 			m_workerDspLock.unlock();
+			m_statWorkerBusyNs.fetch_add(static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+				std::chrono::steady_clock::now() - burstStart).count()), std::memory_order_relaxed);
 		}
 	}
 
@@ -1697,6 +1733,7 @@ namespace md
 				if(m_workerSleeping.load(std::memory_order_relaxed))
 					wakeDspWorker();
 				++m_statSchedWaits;
+				schedWaitBegin();
 				cpuRelax();
 				return true;
 			}
@@ -1813,6 +1850,7 @@ namespace md
 			score.maximumRequestedCycles = std::max(
 				score.maximumRequestedCycles, diagnosticRequested);
 #endif
+			const dsp56k::DSP::IdleSkipScope idleSkip(d.dsp(), m_idleSkipEnabled ? stopCyc : 0);
 			if(m_dspThreaded)
 			{
 				// Publish progress every 64 instructions so the worker can follow closely.
@@ -1850,6 +1888,7 @@ namespace md
 
 		if(m_dspThreaded)
 		{
+			schedWaitEnd();
 			if(m_workerSleeping.load(std::memory_order_relaxed))
 				wakeDspWorker();								// we moved: the worker has work again
 			publishDspCycles(m_workerDsp == 0 ? 1u : 0u);	// may also have run inline (catch-ups)
@@ -1920,6 +1959,7 @@ namespace md
 		// catch-up loops are how a DSP outruns the UC by thousands of words in the first place
 		// (see the schedStep backpressure comment). MD path untouched.
 		const bool s_mmBp = isMonomachine();
+		const dsp56k::DSP::IdleSkipScope idleSkip(d.dsp(), m_idleSkipEnabled ? std::min(targetCyc, clampStop) : 0);
 		while(d.dsp().getCycles() < targetCyc && d.dsp().getCycles() < clampStop
 			&& (!s_mmBp
 				|| d.hostTxBacklog() <= policy.hostTransmitBackpressureThresholdWords))
@@ -2000,6 +2040,7 @@ namespace md
 			score.maximumRequestedCycles = std::max(score.maximumRequestedCycles, requested););
 		m_schedInLinkDelivery = true;
 		const bool bpGate = isMonomachine();
+		const dsp56k::DSP::IdleSkipScope idleSkip(d.dsp(), m_idleSkipEnabled ? std::min(targetCyc, clampStop) : 0);
 		while(d.dsp().getCycles() < targetCyc && d.dsp().getCycles() < clampStop
 			&& (!bpGate
 				|| d.hostTxBacklog() <= policy.hostTransmitBackpressureThresholdWords))
@@ -2021,6 +2062,7 @@ namespace md
 
 	void Hardware::advance(const uint32_t _machineFrames)
 	{
+		const auto advanceStart = std::chrono::steady_clock::now();
 		serviceRamRecordingMode();
 		m_schedFramesTotal += static_cast<double>(_machineFrames);
 		m_publishedTarget.store(m_schedFramesTotal, std::memory_order_release);
@@ -2036,6 +2078,8 @@ namespace md
 			// The mixer runs on the worker: wait until it has produced this block's codec
 			// frames (it leads DSP2, which is at the target now), draining as it goes.
 			const uint64_t mixerTarget = framePosToCycles(0, m_schedFramesTotal);
+			if(publishedCycles(0).load(std::memory_order_acquire) < mixerTarget)
+				schedWaitBegin();
 			while(publishedCycles(0).load(std::memory_order_acquire) < mixerTarget)
 			{
 				if(m_workerSleeping.load(std::memory_order_relaxed))
@@ -2043,6 +2087,12 @@ namespace md
 				schedDrainCodecOutput();
 				cpuRelax();
 			}
+		}
+		if(m_dspThreaded)
+		{
+			schedWaitEnd();
+			m_statAdvanceNs.store(m_statAdvanceNs.load(std::memory_order_relaxed) + static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+				std::chrono::steady_clock::now() - advanceStart).count()), std::memory_order_relaxed);
 		}
 
 		schedDrainCodecOutput();					// final drain (also covers a UC-only advance window)

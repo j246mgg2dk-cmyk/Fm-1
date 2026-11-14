@@ -16,6 +16,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) double recentPeakLoad;      // peak over the last ~second
 @property (nonatomic) double footprintMB;         // app memory footprint
 @property (nonatomic) double secondsPlayed;
+@property (nonatomic, copy) NSString *threadStats;  // two-core timing: who waits for whom
 @end
 
 /// Plays the real Machinedrum emulator through the iPad's audio output in real time.

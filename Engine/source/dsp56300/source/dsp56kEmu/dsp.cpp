@@ -1,5 +1,7 @@
 // DSP 56300 family 24-bit DSP emulator
 
+#include <utility>
+#include <array>
 #include "dsp.h"
 
 #include <atomic>
@@ -1357,6 +1359,57 @@ namespace dsp56k
 		op_ResolveCache(_op);
 	}
 
+	void DSP::tryIdlePoll() noexcept
+	{
+		if(m_idleSkipLimit <= m_cycles)
+			return;
+		const auto& ip = m_idlePoll;
+		for(size_t i = 0; i < ip.words.size(); ++i)
+			if(m_memP[ip.pc + i] != ip.words[i])
+				return;
+		// the loop must not end a hardware DO loop
+		if(sr_test_noCache(SR_LF) && reg.la.var >= ip.pc && reg.la.var < ip.pc + ip.words.size())
+			return;
+		const TWord v = perif[0]->read(ip.periphAddr, Movep_ppea) & 0xffffff;
+		for(const auto e : ip.exitValues)
+			if(v == e)
+				return;
+		// A holds the value of the previous iteration's read (movep to A: sign-extended, A0 = 0)
+		const TReg56 previous = reg.a;
+		setA(TReg24(static_cast<int32_t>(v)));		// what the movep writes
+		const bool same = reg.a.var == previous.var;
+		reg.a = previous;
+		if(!same)
+			return;
+		uint32_t cycles = 0;
+		for(const auto pc : ip.path)
+			cycles += opcodeCycles(pc);
+		const auto k = idleSkipBudget(static_cast<uint32_t>(ip.path.size()), cycles);
+		if(k)
+			idleSkip(k, static_cast<uint32_t>(ip.path.size()), cycles);
+	}
+
+	void DSP::skipNopLoop(const TWord _start) noexcept
+	{
+		const TWord la = reg.la.var;
+		if(la < _start || la - _start >= 8)
+			return;
+		uint32_t cycles = 0;
+		for(TWord a = _start; a <= la; ++a)
+		{
+			if(m_memP[a] != 0)
+				return;
+			cycles += opcodeCycles(a);
+		}
+		const uint32_t instr = la - _start + 1;
+		// keep the final iteration for the interpreter so the loop ends the normal way
+		const uint64_t k = std::min<uint64_t>(idleSkipBudget(instr, cycles), reg.lc.var - 1);
+		if(!k)
+			return;
+		reg.lc.var -= static_cast<TWord>(k);
+		idleSkip(k, instr, cycles);
+	}
+
 	uint8_t DSP::getOpcodeCycles(const TWord _pc)
 	{
 		auto& cachedCycles = m_opcodeCycleCache[_pc];
@@ -1384,8 +1437,53 @@ namespace dsp56k
 		m_jit.notifyProgramMemWrite(_address);
 	}
 	
+	template<bool Ab, bool Negate, bool Accumulate> ASMJIT_FORCE_INLINE void DSP::alu_mpyT(const TReg24& _s1, const TReg24& _s2)
+	{
+		// identical to alu_mpy with the flags known at compile time
+		auto res = _s1.signextend<int64_t>() * _s2.signextend<int64_t>();
+		res <<= (1 + g_aluShift);
+		if constexpr(Negate)
+			res = -res;
+		TReg56& d = Ab ? reg.b : reg.a;
+		if constexpr(Accumulate)
+			res += aluSignextend(d);
+		d.var = res;
+		aluMask(d);
+		sr_z_update(d);
+		sr_v_update(res,d);
+		sr_l_update_by_v();
+		setCCRDirty(Ab, d, CCR_E | CCR_U | CCR_N);
+	}
+
+	template<TWord B> void DSP::opCE_Multiply(const TWord)
+	{
+		constexpr bool round = B & 1;
+		constexpr bool accumulate = (B >> 1) & 1;
+		constexpr bool negate = (B >> 2) & 1;
+		constexpr bool ab = (B >> 3) & 1;
+		constexpr TWord qqq = (B >> 4) & 7;
+		TReg24 s1, s2;
+		decode_QQQ_read(s1, s2, qqq);
+		alu_mpyT<ab, negate, accumulate>(s1, s2);
+		if constexpr(round)
+			alu_rnd(ab);
+	}
+
+	template<size_t... I> std::array<TInstructionFunc, sizeof...(I)> DSP::makeMultiplyTable(std::index_sequence<I...>)
+	{
+		return {{ &DSP::opCE_Multiply<static_cast<TWord>(I)>... }};
+	}
+
 	TInstructionFunc DSP::resolvePermutation(const Instruction _inst, const TWord _op)
 	{
+		if constexpr(!g_useJIT)
+		{
+			if(_inst == Mac_S1S2 || _inst == Macr_S1S2 || _inst == Mpy_S1S2D || _inst == Mpyr_S1S2D)
+			{
+				static const auto table = makeMultiplyTable(std::make_index_sequence<128>());
+				return table[_op & 0x7f];
+			}
+		}
 		const auto funcIndex = g_jumptable.resolve(_inst, _op);
 		return g_jumptable.jumptable()[funcIndex];
 	}

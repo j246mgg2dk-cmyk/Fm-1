@@ -461,9 +461,25 @@ namespace md
 		alignas(g_cacheLine) std::atomic<uint64_t> m_statWorkerBursts{0};
 		std::atomic<uint64_t> m_statWorkerIdle{0};
 		std::atomic<uint64_t> m_statWorkerLockMiss{0};
+		bool m_idleSkipEnabled = true;		// fast-forward side-effect-free DSP waits (exact)
 		std::atomic<uint64_t> m_statWorkerSleeps{0};
+		std::atomic<uint64_t> m_statWorkerBusyNs{0};		// executing its DSP (bursts)
+		std::atomic<uint64_t> m_statWorkerInstr{0};		// instructions retired in bursts
+		std::atomic<uint64_t> m_statWorkerCycles{0};		// DSP cycles advanced in bursts
 		// Written by the scheduler thread only.
 		alignas(g_cacheLine) uint64_t m_statSchedWaits = 0;
+		std::atomic<uint64_t> m_statAdvanceNs{0};		// time inside advance() while threaded (single writer)
+		std::atomic<uint64_t> m_statSchedWaitNs{0};		// of which waiting for the worker (single writer)
+		bool m_schedWaiting = false;
+		std::chrono::steady_clock::time_point m_schedWaitStart;
+		void schedWaitBegin() { if(!m_schedWaiting) { m_schedWaiting = true; m_schedWaitStart = std::chrono::steady_clock::now(); } }
+		void schedWaitEnd()
+		{
+			if(!m_schedWaiting) return;
+			m_schedWaiting = false;
+			m_statSchedWaitNs.store(m_statSchedWaitNs.load(std::memory_order_relaxed) + static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+				std::chrono::steady_clock::now() - m_schedWaitStart).count()), std::memory_order_relaxed);
+		}
 		uint64_t m_statSchedDsp2Access = 0;
 		// One-line summary for diagnostics (scheduler thread).
 		std::string dspWorkerStats() const;

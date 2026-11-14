@@ -155,6 +155,42 @@ address updates, and multiply-accumulates.
 
   The emulated DSP RAM is mapped about 1,000 times (mirrors), so RSS overstates it. PSS is the real figure.
 
+### Live test on the M1 struggled; headroom work (2026-11-14)
+- **Your live test:** 512-frame buffers, two cores: 95% average load, 113% peak, 91 overruns in 4186
+  callbacks. Clean audio needs about 1.3× rather than 1.09×.
+- **Who waits for whom.** New timing in the stats line: the worker thread (DSP1, the mixer) executes 91% of
+  the time, and the main thread (ColdFire plus DSP2) waits for it 40% of the time. **DSP1 alone is the
+  ceiling.** It retires about 52 M instructions/s of its real code on the lab Xeon, against 216 M on the
+  synthetic loop.
+- **Where the DSPs spend their instructions** (per-address histogram, factory pattern playing):
+  - DSP2: 98.5% in waits. 84% is a NOP delay loop in external memory ($100090) and 12% polls Port C bit 1
+    ($bb).
+  - DSP1: 9.5% polls DMA0's destination pointer until a ping-pong half fills ($3c).
+- **Fix 1, exact ESSI deadlines (the big one).** The MD clocked its ESSIs in DSP cycles but polled them in
+  instructions, with a "half the remaining cycles" guess. Each 96-cycle link slot was serviced 5 to 7
+  times, and half of all peripheral calls came less than 4 instructions apart. The engine already had an
+  exact cycle-deadline mode, used by the Monomachine; the MD now uses it as well.
+  - Each link slot gets one service, at its exact cycle (more accurate, not less).
+  - Audio checked against the reference render: spectrum within 0.9 dB and no dropouts or clicks. That
+    matches the already-verified two-core mode (sample-exact comparison isn't meaningful here, since
+    timing changes shift trig and LFO phases).
+- **Fix 2, exact idle skipping.** Side-effect-free waits are fast-forwarded by whole iterations, never past
+  a peripheral service, a pending interrupt or the slice limit. The machine state afterwards is exactly
+  what interpreting them would give: one-core renders are byte-identical with skipping on and off.
+  - Covers DSP2's NOP delay loops (generic: any DO loop whose body is only NOPs) and DSP1's DMA poll
+    (verified word for word, so other OS versions just run normally).
+  - `GEARMULATOR_MD_IDLE_SKIP=0` turns it off.
+- **Also:** MPY/MAC with operands specialised at compile time (byte-identical, small effect), and timing
+  stats in the live panel.
+
+| Lab (2-core Xeon) | Before | Now |
+|---|---|---|
+| One core | 0.42× | 0.53× (+26%) |
+| Two cores | 0.56–0.60× | 0.66× (+13%) |
+| DSP1 throughput on the worker | 51 M instr/s | 59 M instr/s |
+
+Expected on the M1 with two cores: roughly 1.2–1.25×, up from 1.09×. To be measured.
+
 ## Engine changes made for iPad
 1. **DO-loop deadlock fixed** (`dsp56kEmu/dsp.cpp`, `dsp.h`).
    - The interpreter ran each hardware DO loop to completion inside a single step. The MD runs the

@@ -271,6 +271,8 @@ namespace
 	r.bufferFrames = s.lastFrames.load();
 	r.sampleRate = s.rate.load();
 	r.secondsPlayed = double(s.framesPlayed.load()) / g_emuRate;
+	r.threadStats = (s.device && r.secondCore)
+		? [NSString stringWithUTF8String:s.device->getHardware().dspWorkerStats().c_str()] : @"";
 	return r;
 }
 
