@@ -117,6 +117,20 @@ next speed-ups must make DSP1 itself cheaper. Inside DSP1, parallel ALU+move ins
 the whole program: 40 M per audio second at about 210 host instructions each, mostly dual X/Y reads with two
 address updates, and multiply-accumulates.
 
+### Measured on your M1 iPad Pro with two cores (2026-11-14): REAL TIME
+| | One core | Two cores (DSP1 on a worker) |
+|---|---|---|
+| Real-time factor | 0.69× | **1.09×** (+58%) |
+| DSP throughput | 108.3 M/s | 170.5 M/s (needs 149.8) |
+| Boot (12 s machine time) | 14.7 s | 10.0 s |
+| Audio | sound (peak 0.56) | sound (peak 0.55) |
+
+- **Genuine Machinedrum emulation, no JIT, faster than real time on the iPad.**
+- The first two-core build ran at 0.18× on iPadOS, because `sched_yield` in the spin fallbacks depresses
+  thread priority on Apple platforms. Pure spinning plus 128-byte cache-line padding fixed it.
+- Headroom is still thin. A real-time audio thread needs margin for OS jitter, UI and the AUv3 host, so the
+  remaining speed work still matters.
+
 ## Engine changes made for iPad
 1. **DO-loop deadlock fixed** (`dsp56kEmu/dsp.cpp`, `dsp.h`).
    - The interpreter ran each hardware DO loop to completion inside a single step. The MD runs the
@@ -142,7 +156,7 @@ The interpreter test suite and all assembler tests pass, and so do the JIT unit 
 
 ## Next steps, in order
 1. ~~Measure on your iPad~~ Done: 0.69× on an M1 iPad Pro.
-2. ~~A second core~~ Done (DSP1 on a worker thread, +28% in the lab). Measure on the M1.
+2. ~~A second core~~ Done: 1.09× real time on the M1 (+58%).
    - The two DSPs exchange data every audio frame (the ESSI link), and the ColdFire synchronises with each
      of them on host-port access. This fork models that link word by word on one thread, so this needs a
      synchronisation design, not a switch.
