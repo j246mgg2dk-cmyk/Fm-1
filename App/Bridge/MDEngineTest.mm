@@ -16,6 +16,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <memory>
 #include <string>
 #include <vector>
@@ -104,10 +105,17 @@ namespace
                       bootSeconds:(double)bootSeconds
                           seconds:(double)seconds
                           wavPath:(NSString *)wavPath
+                       secondCore:(BOOL)secondCore
                          progress:(void (^)(NSString *))progress
 {
 	MDTestResult* r = [MDTestResult new];
 	r.engineMode = dsp56k::g_jitSupported ? @"JIT" : @"INTERPRETER (no JIT)";
+	r.dspWorkerRequested = secondCore;
+	// md::Hardware reads this when it is created (Device may create more than one).
+	// "1" = DSP1 on a worker thread; the skew bound is in codec frames.
+	setenv("GEARMULATOR_MD_DSP_WORKER", secondCore ? "1" : "0", 1);
+	setenv("GEARMULATOR_MD_DSP_SKEW", "2", 1);
+	struct EnvReset { ~EnvReset() { unsetenv("GEARMULATOR_MD_DSP_WORKER"); unsetenv("GEARMULATOR_MD_DSP_SKEW"); } } envReset;
 	NSMutableString* log = [NSMutableString string];
 	auto say = [&](NSString* s) { [log appendFormat:@"%@\n", s]; progress(s); };
 
@@ -175,6 +183,8 @@ namespace
 	std::vector<float> capture;
 	capture.reserve(size_t(blocks) * block * 2);
 	double peak = 0, energy = 0;
+	if(secondCore)
+		say(hw.isDspThreaded() ? @"DSP1 is running on a second core." : @"Second core requested, but the worker has not started yet.");
 	say([NSString stringWithFormat:@"Timing %.0f s of audio…", seconds]);
 	const auto t0 = Clock::now();
 	for(int i = 0; i < blocks; ++i)
@@ -189,6 +199,7 @@ namespace
 		}
 	}
 	r.wallSeconds = since(t0);
+	r.dspWorkerActive = hw.isDspThreaded();
 	r.audioSeconds = blocks * double(block) / 44100.0;
 	r.realtimeFactor = r.audioSeconds / r.wallSeconds;
 	const uint64_t i1 = hw.getDspMixer().dsp().getInstructionCounter() + hw.getDspProducer().dsp().getInstructionCounter();
@@ -210,8 +221,8 @@ namespace
 		writeWav(wavPath.UTF8String, capture);
 		r.wavPath = wavPath;
 	}
-	say([NSString stringWithFormat:@"Done: %.2fx real time, %.1f M DSP instructions/s, peak %.3f",
-		r.realtimeFactor, r.dspInstructionsPerWallSecond, r.peak]);
+	say([NSString stringWithFormat:@"Done (%@): %.2fx real time, %.1f M DSP instructions/s, peak %.3f",
+		r.dspWorkerActive ? @"two cores" : @"one core", r.realtimeFactor, r.dspInstructionsPerWallSecond, r.peak]);
 	r.log = log;
 	return r;
 }

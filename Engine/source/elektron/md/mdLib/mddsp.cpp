@@ -67,6 +67,7 @@ namespace md
 			{
 				m_periphX.getEssi0().setRxConsumeCallback([this]
 				{
+					const OptionalLockGuard linkGuard(m_hardware.linkLock());
 					if(m_periphX.getDMA().getDCR(4) & (1u << dsp56k::DmaChannel::De))
 						return;
 					auto& ring = m_periphX.getEssi0().getAudioInputs();
@@ -158,6 +159,7 @@ namespace md
 
 		m_hdiUC.setRxEmptyCallback([this](const bool _needMoreData)
 		{
+			const Hardware::DspAccess access(m_hardware, m_index);
 			onUCRxEmpty(_needMoreData);
 		});
 
@@ -171,11 +173,18 @@ namespace md
 
 		m_hdiUC.setWriteIrqCallback([this](const uint8_t _irq)
 		{
+			const Hardware::DspAccess access(m_hardware, m_index);
 			hdiSendIrqToDSP(_irq);
 		});
 
 		m_hdiUC.setReadIsrCallback([this](const uint8_t _isr)
 		{
+			// Status polls are the most frequent host access. They only read the
+			// lock-free HI08 queues and the atomic HCR, so a DSP on the worker thread that is
+			// already at the ColdFire's time is not interrupted.
+			if(m_hardware.isDspAtHostTime(m_index))
+				return hdiUcReadIsr(_isr);
+			const Hardware::DspAccess access(m_hardware, m_index);
 			return hdiUcReadIsr(_isr);
 		});
 
@@ -197,6 +206,7 @@ namespace md
 		// After boot, further host words are input to the DSP program.
 		m_hdiUC.setWriteTxCallback([this](const uint32_t _word)
 		{
+			const Hardware::DspAccess access(m_hardware, m_index);
 			hdiTransferUCtoDSP(_word);
 		});
 
@@ -215,12 +225,15 @@ namespace md
 
 	size_t Dsp::hostTxBacklog()
 	{
+		const Hardware::DspAccess access(m_hardware, m_index);
 		return hdi08().txData().size() + m_hdiUC.rxDataSize()
 			+ (m_timedHostRx.pending() ? 1 : 0);
 	}
 
 	uint32_t Dsp::pumpHostRx(const size_t _maxUcWords)
 	{
+		// HOTX is a lock-free single-producer/single-consumer queue (the DSP produces,
+		// the scheduler thread consumes), so this needs no exclusive DSP access.
 		if(m_hardware.isMonomachine())
 			return hdiTransferDSPtoUC() ? 1 : 0;
 

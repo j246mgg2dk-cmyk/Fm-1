@@ -6,6 +6,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "mddsp.h"
@@ -21,6 +22,7 @@
 #include "mdturbomidi.h"
 #include "mdtransportdiagnostics.h"
 #include "mdtypes.h"
+#include "mdthreadlock.h"
 
 #include "synthLib/audioTypes.h"
 #include "synthLib/midiTypes.h"
@@ -190,6 +192,32 @@ namespace md
 		// bridge so that every ColdFire read/write/CVR sees the target DSP at the same machine time,
 		// which is what makes the boot handshake (UC poll <-> DSP reply) converge deterministically.
 		void schedCatchUpDsp(uint32_t _dspIndex);
+
+		// ---- Optional DSP worker thread (see "DSP worker thread" in mdhardware.cpp) ----
+		// Requests that one DSP (_workerDsp: 0 = DSP1/mixer, the default and the heavier
+		// one; 1 = DSP2/producer) runs on its own thread once the machine reaches its
+		// steady-state link protocol. Must be called before the first advance().
+		void setDspWorkerEnabled(bool _enabled, double _maxSkewFrames = 1.0, uint32_t _workerDsp = 0);
+		bool isDspThreaded() const { return m_dspThreaded; }
+		// True when the DSP is not threaded, or when threaded DSP2 has already
+		// reached the ColdFire's current machine time (no catch-up needed).
+		bool isDspAtHostTime(uint32_t _dspIndex) const;
+		// Exclusive access to a DSP from the scheduler thread. Only DSP2 needs a
+		// lock (while threaded); the guard also republishes DSP2's progress when
+		// the scheduler ran it inline.
+		class DspAccess
+		{
+		public:
+			DspAccess(Hardware& _hw, uint32_t _dspIndex) noexcept;
+			~DspAccess();
+			DspAccess(const DspAccess&) = delete;
+			DspAccess& operator=(const DspAccess&) = delete;
+		private:
+			Hardware* m_hw = nullptr;
+		};
+		// Shared inter-DSP link state (rendezvous flags, ROE, Port C pin) guard.
+		RecursiveSpinLock* linkLock() noexcept { return m_dspThreaded ? &m_linkLock : nullptr; }
+
 		void notifyHostPumpStateChanged();
 		uint64_t hostRxReadyCycle(uint32_t _dspIndex, uint64_t _dspCycle) const;
 		uint64_t hostCurrentCycle() const { return m_schedUcCyclesDone; }
@@ -340,7 +368,7 @@ namespace md
 #endif
 
 		// Codec frames produced by the mixer.
-		uint32_t m_esaiFrameIndex = 0;			// codec frames produced
+		std::atomic<uint32_t> m_esaiFrameIndex{0};	// codec frames produced (the mixer may run on the worker)
 
 		// ---------------------------------------------------------------------------------------
 		// Deterministic interleave scheduler state. advance() maintains a shared machine clock in codec
@@ -372,6 +400,41 @@ namespace md
 		uint32_t m_hostAudioInputLatency = 0;
 		bool m_hostAudioInputLatencyInitialized = false;
 		bool     m_schedInLinkDelivery = false;	// reentrancy guard for cross-DSP catch-up
+
+		// DSP2 worker thread. DSP1 (with the ColdFire) stays on the scheduler thread
+		// and leads; DSP2 runs on the worker, never past DSP1's published time, and
+		// the scheduler never lets DSP1 or the ColdFire get more than
+		// m_dspMaxSkewFrames ahead of DSP2's published time.
+		void     dspWorkerMain();
+		bool     tryStartDspWorker();
+		void     stopDspWorker();
+		void     publishDspCycles(uint32_t _dspIndex);
+		uint64_t workerHorizonCycles() const;
+		void     waitForWorkerDsp(double _framePos);	// scheduler thread: until the worker's DSP reaches _framePos
+		double   publishedFramePos(uint32_t _dspIndex) const;
+		uint64_t framePosToCycles(uint32_t _dspIndex, double _framePos) const;
+		uint32_t m_workerDsp = 0;				// index of the DSP the worker owns
+		std::atomic<double> m_publishedTarget{0.0};	// advance() target, for a leading worker
+		bool     m_dspThreadRequested = false;
+		bool     m_dspThreaded = false;			// scheduler-thread view
+		double   m_dspMaxSkewFrames = 1.0;
+		std::thread m_dspWorkerThread;
+		std::atomic<bool> m_dspWorkerRun{false};
+		std::atomic<bool> m_dspWorkerStop{false};
+		std::atomic<uint32_t> m_workerDspWanted{0};	// scheduler wants the DSP2 lock
+		std::array<std::atomic<uint64_t>, 2> m_publishedCycles{};
+		RecursiveSpinLock m_workerDspLock;
+		RecursiveSpinLock m_linkLock;
+		friend class DspAccess;
+	public:
+		// Threading statistics (lab diagnostics).
+		std::atomic<uint64_t> m_statWorkerBursts{0};
+		std::atomic<uint64_t> m_statWorkerIdle{0};
+		std::atomic<uint64_t> m_statWorkerLockMiss{0};
+		uint64_t m_statSchedWaits = 0;
+		uint64_t m_statSchedDsp2Access = 0;
+		uint64_t m_threadStartCycles2 = 0;
+	private:
 		double   m_schedFramesTotal   = 0.0;	// machine-time target, accumulated codec frames
 		uint64_t m_schedUcCyclesDone  = 0;		// UC cycles executed under the scheduler (processUC)
 		uint64_t m_mmBpSinceUcCycles[2] = {0,0};// MM backpressure: UC cycle+1 when a DSP's stall began (0 = none)

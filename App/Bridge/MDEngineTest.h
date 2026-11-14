@@ -8,6 +8,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL deviceValid;
 @property (nonatomic) BOOL usedFactoryCache;
 @property (nonatomic, copy) NSString *engineMode;          // "INTERPRETER (no JIT)"
+@property (nonatomic) BOOL dspWorkerRequested;              // run DSP1 on a second core
+@property (nonatomic) BOOL dspWorkerActive;                 // the second-core worker actually started
 @property (nonatomic) double bootSeconds;                   // wall time to boot
 @property (nonatomic) double audioSeconds;                  // audio rendered in the timed part
 @property (nonatomic) double wallSeconds;                   // wall time for that audio
@@ -35,12 +37,14 @@ NS_ASSUME_NONNULL_BEGIN
 + (NSString *)describeFirmware:(NSString *)path;
 
 /// Boots the firmware (home folder may contain nvram/md-uw-1.63-factory-v2.cache),
-/// presses PLAY, renders `seconds` of audio and measures speed.
+/// presses PLAY, renders `seconds` of audio and measures speed. With `secondCore`,
+/// DSP1 (the mixer) runs on its own thread once the machine reaches steady state.
 + (MDTestResult *)runWithFirmware:(NSString *)firmwarePath
                          homePath:(NSString *)homePath
                       bootSeconds:(double)bootSeconds
                           seconds:(double)seconds
                           wavPath:(nullable NSString *)wavPath
+                       secondCore:(BOOL)secondCore
                          progress:(void (^)(NSString *line))progress;
 
 @end

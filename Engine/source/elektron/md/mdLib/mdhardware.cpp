@@ -17,6 +17,11 @@
 #include <mutex>
 #include <utility>
 
+#if defined(__APPLE__)
+#include <pthread.h>
+#include <sys/qos.h>
+#endif
+
 #include "mdromloader.h"
 #include "mdtypes.h"
 
@@ -30,6 +35,12 @@
 
 namespace md
 {
+	namespace
+	{
+		// Set on the DSP worker thread (see "DSP worker thread").
+		thread_local bool t_isDspWorker = false;
+	}
+
 	// The current 40 MHz ColdFire clock is consistent with the firmware's timer
 	// and UART divisors. It converts mixer-DSP execution into a UC cycle budget.
 
@@ -124,6 +135,15 @@ namespace md
 		// established path as a field fallback and exact A/B control.
 		const auto* const boundedJit = std::getenv("GEARMULATOR_MDMM_BOUNDED_JIT");
 		m_schedBoundedJit = boundedJit == nullptr || std::strcmp(boundedJit, "0") != 0;
+		if(const auto* const workerEnv = std::getenv("GEARMULATOR_MD_DSP_WORKER"))
+		{
+			// "1" = DSP1 on the worker (default choice), "2" = DSP2 on the worker, "0" = off.
+			double skew = 1.0;
+			if(const auto* const skewEnv = std::getenv("GEARMULATOR_MD_DSP_SKEW"))
+				skew = std::atof(skewEnv);
+			const int which = std::atoi(workerEnv);
+			setDspWorkerEnabled(which != 0, skew, which == 2 ? 1u : 0u);
+		}
 
 		if(!m_rom.isValid())
 			return;
@@ -175,6 +195,16 @@ namespace md
 		{
 			return [txToRx, this, &_consumer, _selfDsp](uint64_t& _frameIndex, const dsp56k::Audio::TxFrame& _values)
 			{
+				// DSP2 run inline here (for a ColdFire host access) may pass a worker-owned
+				// DSP1: let DSP1 reach this word's time first, as the single-thread catch-up
+				// would. Wait before taking the link lock so the worker can never block on it.
+				if(_selfDsp == 1 && m_dspThreaded && m_workerDsp == 0 && !t_isDspWorker)
+					waitForWorkerDsp(schedDspFramePos(1));
+				// Only DSP2's words share mutable link state (rendezvous flags, epochs) with
+				// DSP1's Port C and receive-window callbacks. DSP1's back-channel words read
+				// state that is fixed once the rendezvous is active, and the rings themselves
+				// are lock-free single-producer/single-consumer queues.
+				const OptionalLockGuard linkGuard(_selfDsp == 1 ? linkLock() : nullptr);
 				MD_TRANSPORT_RECORD(++m_transportScorecard.link[_selfDsp].transmitFrames;);
 				dsp56k::Audio::RxFrame rx;
 				txToRx(_values, rx);
@@ -345,6 +375,8 @@ namespace md
 		{
 			return [this, &_self, _selfDsp](uint64_t& _frameIndex, dsp56k::Audio::RxFrame& _frame)
 			{
+				// Receive needs no link lock: it only pops this DSP's own input ring (the
+				// consumer side of an SPSC queue) and touches this DSP's own bookkeeping.
 				MD_TRANSPORT_RECORD(++m_transportScorecard.link[1u - _selfDsp]
 					.receiveCallbacks;);
 				auto& ring = _self.getAudioInputs();
@@ -370,7 +402,7 @@ namespace md
 						const bool preserveRendezvousFutureEdges =
 							m_mdOnDemandRendezvousActive
 							&& !isMonomachine();
-						const uint64_t esaiNow = m_esaiFrameIndex;
+						const uint64_t esaiNow = m_esaiFrameIndex.load(std::memory_order_relaxed);
 						auto& lastShallow = m_linkLastShallow[_selfDsp];
 						if(ring.size() <= 16)
 							lastShallow = esaiNow;
@@ -524,6 +556,7 @@ namespace md
 			// opens its corresponding DMA receive window.
 			m_dspMixer.getPeriph().getPortC().setCallbackDspWrite([this]
 			{
+				const OptionalLockGuard linkGuard(linkLock());
 				const dsp56k::TWord level = m_dspMixer.getPeriph().getPortC().hostRead() & (1u << 1);
 				if(!isMonomachine() && m_mdOnDemandRendezvousActive)
 				{
@@ -603,7 +636,208 @@ namespace md
 
 	Hardware::~Hardware()
 	{
+		if(m_dspThreaded && std::getenv("GEARMULATOR_MD_DSP_STATS"))
+			std::fprintf(stderr, "[MD] DSP2 thread stats: worker bursts %llu, worker idle spins %llu, lock misses %llu, scheduler waits %llu, scheduler DSP2 accesses %llu\n",
+				(unsigned long long)m_statWorkerBursts.load(), (unsigned long long)m_statWorkerIdle.load(),
+				(unsigned long long)m_statWorkerLockMiss.load(), (unsigned long long)m_statSchedWaits,
+				(unsigned long long)m_statSchedDsp2Access);
+		stopDspWorker();
 		m_uc.setMidiTransmitTap({});
+	}
+
+	// ---------------------------------------------------------------------------------------
+	// DSP worker thread
+	//
+	// The deterministic scheduler interleaves the ColdFire and both DSPs on one thread. To
+	// use a second core, one DSP (by default DSP1, the mixer, which costs most) runs on a
+	// worker thread once the Machinedrum has reached its steady-state link protocol (the
+	// on-demand rendezvous). Boot and the loader handshake stay single-threaded.
+	//
+	// The clocks are kept in a fixed order:   ColdFire <= DSP2 <= DSP1 <= DSP2 + skew
+	//  - DSP1 leads DSP2, as the single-thread rendezvous already arranged: a DSP2 link word
+	//    then never needs DSP1 advanced first, and DSP1 never has to run DSP2 for its own
+	//    link traffic. The skew bound (default one codec frame) stays far inside the
+	//    32-sample block the link protocol tolerates.
+	//  - The ColdFire stays behind both DSPs, so its frequent host-port status polls find the
+	//    DSP already at the ColdFire's time and need no exclusive access.
+	//  - Each thread publishes its DSP's cycle counter every 64 instructions; the other side
+	//    only ever compares against published values.
+	//  - Whoever runs the worker's DSP holds m_workerDspLock. ColdFire host accesses that must
+	//    run that DSP (word writes, host commands, blocking reads) take it via DspAccess and
+	//    execute the existing inline code unchanged.
+	//  - Shared link state (rendezvous flags, ROE, the Port C pin) is guarded by m_linkLock.
+	//    Lock order is always: worker DSP lock, then link lock.
+	// ---------------------------------------------------------------------------------------
+	void Hardware::setDspWorkerEnabled(const bool _enabled, const double _maxSkewFrames, const uint32_t _workerDsp)
+	{
+		m_dspThreadRequested = _enabled;
+		m_dspMaxSkewFrames = std::max(0.05, _maxSkewFrames);
+		m_workerDsp = _workerDsp & 1;
+	}
+
+	Hardware::DspAccess::DspAccess(Hardware& _hw, const uint32_t _dspIndex) noexcept
+	{
+		if(!_hw.m_dspThreaded || (_dspIndex & 1) != _hw.m_workerDsp)
+			return;
+		m_hw = &_hw;
+		if(t_isDspWorker)
+		{
+			_hw.m_workerDspLock.lock();		// already held by the worker; recursion only
+			return;
+		}
+		++_hw.m_statSchedDsp2Access;
+		_hw.m_workerDspWanted.fetch_add(1, std::memory_order_relaxed);
+		_hw.m_workerDspLock.lock();
+		_hw.m_workerDspWanted.fetch_sub(1, std::memory_order_relaxed);
+	}
+
+	Hardware::DspAccess::~DspAccess()
+	{
+		if(!m_hw)
+			return;
+		m_hw->publishDspCycles(m_hw->m_workerDsp);
+		m_hw->m_workerDspLock.unlock();
+	}
+
+	bool Hardware::isDspAtHostTime(const uint32_t _dspIndex) const
+	{
+		const auto i = _dspIndex & 1;
+		if(!m_dspThreaded || i != m_workerDsp || t_isDspWorker)
+			return false;
+		if(m_schedUcCyclesDone <= m_schedDspOriginUcCycles[i])
+			return true;
+		const uint64_t targetCyc = dspCatchupDeadline<g_ucClockHz,
+			g_dsp1CyclesPerEsaiFrame * g_samplerate>(m_schedDspOriginCycles[i],
+				m_schedUcCyclesDone - m_schedDspOriginUcCycles[i]);
+		return m_publishedCycles[i].load(std::memory_order_acquire) >= targetCyc;
+	}
+
+	void Hardware::publishDspCycles(const uint32_t _dspIndex)
+	{
+		auto& d = (_dspIndex == 0) ? m_dspMixer : m_dspProducer;
+		m_publishedCycles[_dspIndex & 1].store(d.dsp().getCycles(), std::memory_order_release);
+	}
+
+	double Hardware::publishedFramePos(const uint32_t _dspIndex) const
+	{
+		const auto i = _dspIndex & 1;
+		const uint64_t cyc = m_publishedCycles[i].load(std::memory_order_acquire);
+		if(cyc <= m_schedDspOriginCycles[i])
+			return m_schedDspOriginFrame[i];
+		return m_schedDspOriginFrame[i] + static_cast<double>(cyc - m_schedDspOriginCycles[i])
+			/ static_cast<double>(g_dsp1CyclesPerEsaiFrame);
+	}
+
+	uint64_t Hardware::framePosToCycles(const uint32_t _dspIndex, const double _framePos) const
+	{
+		const auto i = _dspIndex & 1;
+		const double delta = _framePos - m_schedDspOriginFrame[i];
+		if(delta <= 0.0)
+			return m_schedDspOriginCycles[i];
+		// Round up: a horizon one cycle short of the leader's time could otherwise
+		// stall a follower a fraction of a cycle before an advance() target.
+		return m_schedDspOriginCycles[i] + static_cast<uint64_t>(std::ceil(delta
+			* static_cast<double>(g_dsp1CyclesPerEsaiFrame)));
+	}
+
+	bool Hardware::tryStartDspWorker()
+	{
+		if(!m_dspThreadRequested || m_dspThreaded || isMonomachine())
+			return false;
+		// Wait for the steady-state link protocol; boot and the loader handshake stay on the
+		// deterministic single-thread path.
+		if(!m_schedDspOriginLatched[0] || !m_schedDspOriginLatched[1]
+			|| !m_dspMixer.booted() || !m_dspProducer.booted()
+			|| !m_mdOnDemandRendezvousActive || m_mdOnDemandRendezvousArmPending)
+			return false;
+
+		publishDspCycles(0);
+		publishDspCycles(1);
+		m_publishedTarget.store(m_schedFramesTotal, std::memory_order_release);
+		std::fprintf(stderr, "[MD] DSP%u worker thread started (max skew %.2f frames)\n",
+			m_workerDsp + 1, m_dspMaxSkewFrames);
+		m_dspThreaded = true;
+		m_dspWorkerStop.store(false, std::memory_order_release);
+		m_dspWorkerRun.store(true, std::memory_order_release);
+		m_dspWorkerThread = std::thread([this] { dspWorkerMain(); });
+		return true;
+	}
+
+	void Hardware::stopDspWorker()
+	{
+		if(!m_dspWorkerThread.joinable())
+			return;
+		m_dspWorkerStop.store(true, std::memory_order_release);
+		m_dspWorkerThread.join();
+		m_dspWorkerRun.store(false, std::memory_order_release);
+		m_dspThreaded = false;
+	}
+
+	void Hardware::waitForWorkerDsp(const double _framePos)
+	{
+		// Publish this thread's DSP first: the worker's horizon depends on it.
+		publishDspCycles(m_workerDsp == 0 ? 1u : 0u);
+		const uint64_t targetCyc = framePosToCycles(m_workerDsp, _framePos);
+		while(m_publishedCycles[m_workerDsp].load(std::memory_order_acquire) < targetCyc)
+			cpuRelax();
+	}
+
+	uint64_t Hardware::workerHorizonCycles() const
+	{
+		// DSP2 (follower) may advance to DSP1's published time; DSP1 (leader) may run up to
+		// the skew bound ahead of DSP2's published time.
+		if(m_workerDsp == 1)
+			return framePosToCycles(1, publishedFramePos(0));
+		return framePosToCycles(0, publishedFramePos(1) + m_dspMaxSkewFrames);
+	}
+
+	void Hardware::dspWorkerMain()
+	{
+		t_isDspWorker = true;
+#if defined(__APPLE__)
+		pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
+#endif
+		auto& d = (m_workerDsp == 0 ? m_dspMixer : m_dspProducer).dsp();
+		auto& published = m_publishedCycles[m_workerDsp];
+		uint32_t idleSpins = 0;
+
+		while(!m_dspWorkerStop.load(std::memory_order_acquire))
+		{
+			const uint64_t horizon = workerHorizonCycles();
+			if(published.load(std::memory_order_acquire) >= horizon
+				|| m_workerDspWanted.load(std::memory_order_relaxed) != 0)
+			{
+				m_statWorkerIdle.fetch_add(1, std::memory_order_relaxed);
+				if(++idleSpins < 4096)
+					cpuRelax();
+				else
+					std::this_thread::yield();
+				continue;
+			}
+			if(!m_workerDspLock.tryLock())
+			{
+				m_statWorkerLockMiss.fetch_add(1, std::memory_order_relaxed);
+				cpuRelax();
+				continue;
+			}
+			m_statWorkerBursts.fetch_add(1, std::memory_order_relaxed);
+			idleSpins = 0;
+
+			// Run in short bursts, republishing progress so the scheduler thread can keep
+			// moving, and hand the lock back promptly when the scheduler wants this DSP.
+			uint64_t limit = workerHorizonCycles();
+			for(uint32_t burst = 0; burst < 16 && d.getCycles() < limit; ++burst)
+			{
+				for(uint32_t i = 0; i < 64 && d.getCycles() < limit; ++i)
+					d.exec();
+				published.store(d.getCycles(), std::memory_order_release);
+				if(m_workerDspWanted.load(std::memory_order_relaxed) != 0)
+					break;
+				limit = workerHorizonCycles();
+			}
+			published.store(d.getCycles(), std::memory_order_release);
+			m_workerDspLock.unlock();
+		}
 	}
 
 	bool Hardware::isValid() const
@@ -930,6 +1164,7 @@ namespace md
 				m_dspProducer.getPeriph().getPortC().setHostInputSource([this]()
 					-> dsp56k::TWord
 				{
+					const OptionalLockGuard linkGuard(linkLock());
 					if(m_mdProducerPortCPending)
 					{
 						auto& activeDma4 = m_dspMixer.getPeriph().getDMA();
@@ -1101,7 +1336,12 @@ namespace md
 
 	void Hardware::onEssiCallbackMixer()
 	{
-		++m_esaiFrameIndex;
+		m_esaiFrameIndex.fetch_add(1, std::memory_order_relaxed);
+
+		// A mixer on the worker thread leaves draining to the scheduler thread (the codec
+		// ring is a single-producer/single-consumer queue and the host queue is not shared).
+		if(m_dspThreaded && m_workerDsp == 0)
+			return;
 
 		// The callback runs inside the mixer on the scheduler thread. Drain the
 		// codec ring immediately so its blocking producer can never park that thread.
@@ -1290,9 +1530,37 @@ namespace md
 				m_schedDspOriginCycles[i]   = d.dsp().getCycles();
 			}
 		}
+		if(m_dspThreadRequested && !m_dspThreaded)
+			tryStartDspWorker();
+
 		// A DSP that is not yet runnable is parked at the target so it is never chosen as the laggard.
-		double dsp1Pos = m_schedDspOriginLatched[0] ? schedDspFramePos(0) : target;
-		double dsp2Pos = m_schedDspOriginLatched[1] ? schedDspFramePos(1) : target;
+		// A DSP owned by the worker thread is never stepped here either.
+		const bool dsp1Here = !m_dspThreaded || m_workerDsp != 0;
+		const bool dsp2Here = !m_dspThreaded || m_workerDsp != 1;
+		double dsp1Pos = (m_schedDspOriginLatched[0] && dsp1Here) ? schedDspFramePos(0) : target;
+		double dsp2Pos = (m_schedDspOriginLatched[1] && dsp2Here) ? schedDspFramePos(1) : target;
+
+		// Threaded: keep the clocks ordered ColdFire <= DSP2 <= DSP1 <= DSP2 + skew (see
+		// "DSP worker thread"). Caps for what this thread may advance:
+		double ucCap = std::numeric_limits<double>::infinity();
+		double dspCap = std::numeric_limits<double>::infinity();	// for the DSP stepped here
+		if(m_dspThreaded)
+		{
+			// A few cycles of slack keep rounding from stalling the ColdFire at a block end.
+			constexpr double slack = 16.0 / g_dsp1CyclesPerEsaiFrame;
+			if(m_workerDsp == 1)
+			{
+				const double dsp2Published = publishedFramePos(1);
+				ucCap = dsp2Published + slack;
+				dspCap = dsp2Published + m_dspMaxSkewFrames;	// DSP1 leads DSP2 by at most the skew
+			}
+			else
+			{
+				const double dsp1Published = publishedFramePos(0);
+				dspCap = dsp1Published;						// DSP2 never passes DSP1
+				ucCap = std::min(dsp1Published, dsp2Pos) + slack;
+			}
+		}
 
 		// MM host traffic is a flow-controlled lossless stream. Park a backlogged
 		// DSP slice until the UC drains below
@@ -1329,7 +1597,38 @@ namespace md
 		if(minPos >= target)
 			return false;							// everything has reached the shared clock
 
-		const double subTarget = std::min(minPos + quantumFrames, target);
+		double cap = std::numeric_limits<double>::infinity();
+		if(m_dspThreaded)
+		{
+			// Pick the laggard among the components that are allowed to move.
+			// Only take a slice that can move a meaningful distance (or finish the
+			// block): tiny slices cost more in scheduling than they gain.
+			constexpr double minStep = 0.125;		// codec frames (288 DSP cycles)
+			const auto may = [&](const double _pos, const double _cap)
+			{
+				const double end = std::min(_cap, target);
+				return _pos < end && (end - _pos >= minStep || _cap >= target);
+			};
+			const uint32_t hereIdx = m_workerDsp == 0 ? 1u : 0u;			// the DSP stepped on this thread
+			const double dspPos = hereIdx == 0 ? dsp1Pos : dsp2Pos;
+			const bool ucMay = may(ucPos, ucCap);
+			const bool dspMay = may(dspPos, dspCap);
+			if(ucMay && (!dspMay || ucPos <= dspPos))		{ who = 0; minPos = ucPos; cap = ucCap; }
+			else if(dspMay)									{ who = static_cast<int>(hereIdx) + 1; minPos = dspPos; cap = dspCap; }
+			else
+			{
+				// Everything here is as far ahead as the ordering allows: let the worker
+				// catch up (its horizon is ahead of it).
+				publishDspCycles(hereIdx);
+				if(m_workerDsp == 0)
+					schedDrainCodecOutput();
+				++m_statSchedWaits;
+				cpuRelax();
+				return true;
+			}
+		}
+
+		const double subTarget = std::min({minPos + quantumFrames, target, cap});
 
 		if(who == 0)
 		{
@@ -1440,7 +1739,18 @@ namespace md
 			score.maximumRequestedCycles = std::max(
 				score.maximumRequestedCycles, diagnosticRequested);
 #endif
-			if(m_schedBoundedJit)
+			if(m_dspThreaded)
+			{
+				// Publish progress every 64 instructions so the worker can follow closely.
+				do
+				{
+					for(uint32_t k = 0; k < 64 && d.dsp().getCycles() < stopCyc; ++k)
+						d.dsp().exec();
+					publishDspCycles(idx);
+				}
+				while(d.dsp().getCycles() < stopCyc);
+			}
+			else if(m_schedBoundedJit)
 				d.dsp().execUntilCycles(stopCyc);
 			else
 			{
@@ -1462,6 +1772,13 @@ namespace md
 #endif
 			if(who == 1)
 				schedDrainCodecOutput();			// keep the mixer ESSI1 output ring shallow
+		}
+
+		if(m_dspThreaded)
+		{
+			publishDspCycles(m_workerDsp == 0 ? 1u : 0u);	// may also have run inline (catch-ups)
+			if(m_workerDsp == 0)
+				schedDrainCodecOutput();					// the mixer on the worker leaves draining to us
 		}
 
 
@@ -1490,6 +1807,9 @@ namespace md
 		// of spinning while the DSP is frozen for the UC's whole background quantum. Bounded by the
 		// catch-up clamp; monotone (never runs the DSP backwards or past the UC).
 		const uint32_t i = _dspIndex & 1;
+		if(isDspAtHostTime(i))
+			return;									// threaded DSP2 is already at the ColdFire's time
+		const DspAccess access(*this, i);
 #if MD_TRANSPORT_DIAGNOSTICS
 		auto& score = m_transportScorecard.coldFireToDsp[i];
 		++score.calls;
@@ -1552,6 +1872,17 @@ namespace md
 		// or by the scheduler). Bounded by the catch-up clamp; only ever runs a DSP forward.
 		const uint32_t c = _consumer & 1;
 		const uint32_t p = _producer & 1;
+		if(m_dspThreaded)
+		{
+			// The ordering DSP2 <= DSP1 <= DSP2 + skew replaces both catch-ups:
+			//  - DSP1's words to DSP2 (and its idle-slot clock coupling) never run DSP2;
+			//    DSP2 trails by at most the skew bound;
+			//  - DSP2's words find DSP1 already ahead (DSP2 never passes DSP1's published
+			//    time), except when the scheduler runs a worker-owned DSP2 inline for the
+			//    ColdFire: then DSP1 is stepped here exactly as in the single-thread path.
+			if(c == 1 || t_isDspWorker || m_workerDsp == 0)
+				return;
+		}
 #if MD_TRANSPORT_DIAGNOSTICS
 		auto& score = m_transportScorecard.dspToDsp[c];
 		++score.calls;
@@ -1616,9 +1947,22 @@ namespace md
 	{
 		serviceRamRecordingMode();
 		m_schedFramesTotal += static_cast<double>(_machineFrames);
+		m_publishedTarget.store(m_schedFramesTotal, std::memory_order_release);
 
 		while(schedStep())
 		{
+		}
+
+		if(m_dspThreaded && m_workerDsp == 0)
+		{
+			// The mixer runs on the worker: wait until it has produced this block's codec
+			// frames (it leads DSP2, which is at the target now), draining as it goes.
+			const uint64_t mixerTarget = framePosToCycles(0, m_schedFramesTotal);
+			while(m_publishedCycles[0].load(std::memory_order_acquire) < mixerTarget)
+			{
+				schedDrainCodecOutput();
+				cpuRelax();
+			}
 		}
 
 		schedDrainCodecOutput();					// final drain (also covers a UC-only advance window)
@@ -1638,6 +1982,7 @@ namespace md
 	{
 		if(!m_ramRecordingModePending || !isFirmwareMidiReady())
 			return;
+		const DspAccess producerAccess(*this, 1);	// patches DSP2's program
 		switch(setRamPackingMode(m_dspProducer.dsp(), m_ramRecordingMode))
 		{
 		case RamPackingUpdate::Busy:

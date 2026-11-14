@@ -19,6 +19,7 @@ enum Storage {
     static var firmware: URL { root.appendingPathComponent("roms/elektron_sps1-1uw_os1.63.bin") }
     static var cache: URL { root.appendingPathComponent("nvram/md-uw-1.63-factory-v2.cache") }
     static var recording: URL { root.appendingPathComponent("test-recording.wav") }
+    static var recording2: URL { root.appendingPathComponent("test-recording-2core.wav") }
     static var logFile: URL { root.appendingPathComponent("test-log.txt") }
 
     static func size(_ url: URL) -> Int64? {
@@ -129,7 +130,8 @@ final class TestModel: ObservableObject {
     @Published var running = false
     @Published var log: [String] = []
     @Published var rawMips: Double?
-    @Published var result: MDTestResult?
+    @Published var result: MDTestResult?        // one core
+    @Published var result2: MDTestResult?       // two cores (DSP1 on a worker thread)
     @Published var error: String?
     @Published var importing = false
     private var player: AVAudioPlayer?
@@ -205,28 +207,36 @@ final class TestModel: ObservableObject {
         }
     }
 
+    /// Runs the full test twice: everything on one core, then with DSP1 on a second core.
     func runFull() {
         guard firmwareOK else { return }
         running = true
         result = nil
-        say("Starting full Machinedrum test…")
-        let fw = Storage.firmware.path, home = Storage.root.path, wav = Storage.recording.path
+        result2 = nil
+        say("Starting full Machinedrum test (one core, then two cores)…")
+        let fw = Storage.firmware.path, home = Storage.root.path
+        let wav1 = Storage.recording.path, wav2 = Storage.recording2.path
         let boot = hasCache ? 12.0 : 30.0
         UIApplication.shared.isIdleTimerDisabled = true
         runOnPerformanceCore {
-            let r = MDEngineTest.run(withFirmware: fw, homePath: home, bootSeconds: boot, seconds: 10, wavPath: wav) { line in
-                Task { @MainActor in self.say(line) }
-            }
+            let log: (String) -> Void = { line in Task { @MainActor in self.say(line) } }
+            log("— Run 1 of 2: one core —")
+            let r1 = MDEngineTest.run(withFirmware: fw, homePath: home, bootSeconds: boot, seconds: 10,
+                                      wavPath: wav1, secondCore: false, progress: log)
+            Task { @MainActor in self.result = r1 }
+            log("— Run 2 of 2: two cores (DSP1 on its own core) —")
+            let r2 = MDEngineTest.run(withFirmware: fw, homePath: home, bootSeconds: boot, seconds: 10,
+                                      wavPath: wav2, secondCore: true, progress: log)
             Task { @MainActor in
-                self.result = r
+                self.result2 = r2
                 self.running = false
                 UIApplication.shared.isIdleTimerDisabled = false
             }
         }
     }
 
-    func play() {
-        player = try? AVAudioPlayer(contentsOf: Storage.recording)
+    func play(_ url: URL = Storage.recording) {
+        player = try? AVAudioPlayer(contentsOf: url)
         try? AVAudioSession.sharedInstance().setCategory(.playback)
         player?.play()
     }
@@ -245,7 +255,7 @@ struct ContentView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     filesPanel
                     testsPanel
-                    if let r = m.result { resultPanel(r) }
+                    if m.result != nil || m.result2 != nil { resultPanel }
                     logPanel
                 }
                 .padding(20)
@@ -291,28 +301,50 @@ struct ContentView: View {
             if let mips = m.rawMips {
                 Text(String(format: "Raw interpreter: %.0f M instr/s (cloud test machine: 216)", mips)).font(.callout.monospaced())
             }
-            Text("The full test boots your firmware with the no-JIT engine, presses PLAY and times 10 s of audio. Keep the app open and the iPad plugged in; it takes one to two minutes.")
+            Text("The full test boots your firmware with the no-JIT engine, presses PLAY and times 10 s of audio, first on one core, then with DSP1 on a second core. Keep the app open and the iPad plugged in; it takes about three minutes.")
                 .font(.footnote).foregroundStyle(.secondary)
         }
     }
 
-    private func resultPanel(_ r: MDTestResult) -> some View {
+    private var resultPanel: some View {
         panel("3 · Result on this iPad") {
-            LCDView(data: r.lcd).frame(height: 160)
+            if let lcd = (m.result2 ?? m.result)?.lcd { LCDView(data: lcd).frame(height: 160) }
             Grid(alignment: .leading, verticalSpacing: 6) {
-                stat("Engine", r.engineMode)
-                stat("Boot time", String(format: "%.1f s", r.bootSeconds))
-                stat("Real-time factor", String(format: "%.2f×  (1.00 = keeps up)", r.realtimeFactor))
-                stat("DSP throughput", String(format: "%.1f M instr/s", r.dspInstructionsPerWallSecond))
-                stat("Needed for real time", String(format: "%.1f M instr/s", requiredDspMips))
-                stat("Audio", r.peak > 0.0001 ? String(format: "sound (peak %.2f)", r.peak) : "silent")
+                GridRow {
+                    Text("").foregroundStyle(.secondary)
+                    Text("One core").bold()
+                    Text("Two cores").bold()
+                }
+                compare("Real-time factor", { String(format: "%.2f×", $0.realtimeFactor) })
+                compare("DSP throughput", { String(format: "%.1f M/s", $0.dspInstructionsPerWallSecond) })
+                compare("Boot time", { String(format: "%.1f s", $0.bootSeconds) })
+                compare("Second core used", { $0.dspWorkerActive ? "yes" : "no" })
+                compare("Audio", { $0.peak > 0.0001 ? String(format: "sound (%.2f)", $0.peak) : "silent" })
+                GridRow {
+                    Text("Needed").foregroundStyle(.secondary)
+                    Text(String(format: "%.1f M/s", requiredDspMips))
+                    Text("1.00× = keeps up")
+                }
             }
             .font(.callout.monospaced())
-            if r.peak > 0.0001 { Button("Play the recording") { m.play() } }
-            Text(r.realtimeFactor >= 1.0
-                 ? "This iPad runs the full Machinedrum (both DSPs and the ColdFire) faster than real time on one core, without JIT."
-                 : String(format: "On one core, without JIT, this iPad runs the Machinedrum at %.0f%% of real-time speed. Please send me this screen: it decides which speed-up comes next.", r.realtimeFactor * 100))
-                .font(.footnote).foregroundStyle(.secondary)
+            HStack {
+                if let r = m.result, r.peak > 0.0001 { Button("Play one-core recording") { m.play(Storage.recording) } }
+                if let r = m.result2, r.peak > 0.0001 { Button("Play two-core recording") { m.play(Storage.recording2) } }
+            }
+            if let r1 = m.result, let r2 = m.result2 {
+                Text(String(format: "Second core: %.2f× → %.2f× (%+.0f%%). %@", r1.realtimeFactor, r2.realtimeFactor,
+                            (r2.realtimeFactor / max(0.001, r1.realtimeFactor) - 1) * 100,
+                            r2.realtimeFactor >= 1.0 ? "This iPad keeps up with real time without JIT." : "Please send me this screen."))
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func compare(_ label: String, _ value: (MDTestResult) -> String) -> some View {
+        GridRow {
+            Text(label).foregroundStyle(.secondary)
+            Text(m.result.map(value) ?? "…")
+            Text(m.result2.map(value) ?? "…")
         }
     }
 
