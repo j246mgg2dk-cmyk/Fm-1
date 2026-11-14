@@ -6,6 +6,10 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <chrono>
+#include <condition_variable>
+#include <functional>
+#include <mutex>
 #include <thread>
 #include <vector>
 
@@ -198,6 +202,9 @@ namespace md
 		// one; 1 = DSP2/producer) runs on its own thread once the machine reaches its
 		// steady-state link protocol. Must be called before the first advance().
 		void setDspWorkerEnabled(bool _enabled, double _maxSkewFrames = 1.0, uint32_t _workerDsp = 0);
+		// Called on the DSP worker thread when it starts (e.g. to join the host's audio
+		// workgroup on Apple platforms). Process-wide; set before the worker starts.
+		static void setDspWorkerThreadStartHook(std::function<void()> _hook);
 		bool isDspThreaded() const { return m_dspThreaded; }
 		// True when the DSP is not threaded, or when threaded DSP2 has already
 		// reached the ColdFire's current machine time (no catch-up needed).
@@ -388,6 +395,13 @@ namespace md
 		bool     m_schedHostAudioActive = false;	// retain drained frames for a host callback
 		bool     m_schedBoundedJit = true;		// cycle-bounded DSP background slices
 		std::array<RealtimeHostAudioInputTimeline, 2> m_hostAudioInput;
+		// The input timeline of a DSP on the worker is appended here (scheduler thread) and
+		// read by that DSP's codec-input callback (worker thread).
+		std::array<RecursiveSpinLock, 2> m_hostAudioInputLock;
+		RecursiveSpinLock* hostAudioInputLock(size_t _receiver) noexcept
+		{
+			return (m_dspThreaded && _receiver == m_workerDsp) ? &m_hostAudioInputLock[_receiver & 1] : nullptr;
+		}
 		std::array<int64_t, 2> m_hostAudioInputClockOrigin{};
 		std::array<uint64_t, 2> m_hostAudioInputNextRxIndex{};
 		std::array<bool, 2> m_hostAudioInputClockInitialized{};
@@ -410,6 +424,17 @@ namespace md
 		void     stopDspWorker();
 		void     publishDspCycles(uint32_t _dspIndex);
 		uint64_t workerHorizonCycles() const;
+		void     wakeDspWorker();						// scheduler thread: wake a sleeping worker
+		// Worker sleep: it spins while work is imminent and sleeps once idle for a while
+		// (between audio buffers); advance() and every scheduler-side wait wake it.
+		alignas(g_cacheLine) std::atomic<uint32_t> m_workerWakeGeneration{0};
+		std::atomic<bool> m_workerSleeping{false};
+		std::mutex m_workerSleepMutex;
+		std::condition_variable m_workerWakeCv;
+		// Idle spin before sleeping. Long enough to stay awake across the gap between audio
+		// callbacks while playing (sleeping there cost ~12% of the buffer budget in tests),
+		// short enough to stop burning a core when audio stops.
+		std::chrono::microseconds m_workerSpinBeforeSleep{2000};
 		void     waitForWorkerDsp(double _framePos);	// scheduler thread: until the worker's DSP reaches _framePos
 		double   publishedFramePos(uint32_t _dspIndex) const;
 		uint64_t framePosToCycles(uint32_t _dspIndex, double _framePos) const;
@@ -436,6 +461,7 @@ namespace md
 		alignas(g_cacheLine) std::atomic<uint64_t> m_statWorkerBursts{0};
 		std::atomic<uint64_t> m_statWorkerIdle{0};
 		std::atomic<uint64_t> m_statWorkerLockMiss{0};
+		std::atomic<uint64_t> m_statWorkerSleeps{0};
 		// Written by the scheduler thread only.
 		alignas(g_cacheLine) uint64_t m_statSchedWaits = 0;
 		uint64_t m_statSchedDsp2Access = 0;

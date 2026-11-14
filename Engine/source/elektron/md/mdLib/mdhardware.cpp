@@ -442,6 +442,7 @@ namespace md
 				dsp56k::Audio::RxFrame& _frame)
 			{
 				RealtimeHostAudioInputQueue::Frame input{};
+				const OptionalLockGuard inputGuard(hostAudioInputLock(_dspIndex));
 				auto& queue = m_hostAudioInput[_dspIndex];
 				const bool hasSource = m_hostAudioInputSource[0] || m_hostAudioInputSource[1];
 				if((hasSource || queue.size()!=0) && m_hostAudioInputLatencyInitialized
@@ -668,9 +669,10 @@ namespace md
 	std::string Hardware::dspWorkerStats() const
 	{
 		char buf[256];
-		std::snprintf(buf, sizeof(buf), "worker DSP%u %s: bursts %llu, idle spins %llu, lock misses %llu, scheduler waits %llu, scheduler accesses %llu",
+		std::snprintf(buf, sizeof(buf), "worker DSP%u %s: bursts %llu, idle spins %llu, sleeps %llu, lock misses %llu, scheduler waits %llu, scheduler accesses %llu",
 			m_workerDsp + 1, m_dspThreaded ? "running" : "not started",
 			(unsigned long long)m_statWorkerBursts.load(), (unsigned long long)m_statWorkerIdle.load(),
+			(unsigned long long)m_statWorkerSleeps.load(),
 			(unsigned long long)m_statWorkerLockMiss.load(), (unsigned long long)m_statSchedWaits,
 			(unsigned long long)m_statSchedDsp2Access);
 		return buf;
@@ -776,6 +778,7 @@ namespace md
 		if(!m_dspWorkerThread.joinable())
 			return;
 		m_dspWorkerStop.store(true, std::memory_order_release);
+		wakeDspWorker();
 		m_dspWorkerThread.join();
 		m_dspWorkerRun.store(false, std::memory_order_release);
 		m_dspThreaded = false;
@@ -787,7 +790,21 @@ namespace md
 		publishDspCycles(m_workerDsp == 0 ? 1u : 0u);
 		const uint64_t targetCyc = framePosToCycles(m_workerDsp, _framePos);
 		while(publishedCycles(m_workerDsp).load(std::memory_order_acquire) < targetCyc)
+		{
+			if(m_workerSleeping.load(std::memory_order_relaxed))
+				wakeDspWorker();
 			cpuRelax();
+		}
+	}
+
+	void Hardware::wakeDspWorker()
+	{
+		m_workerWakeGeneration.fetch_add(1, std::memory_order_acq_rel);
+		if(m_workerSleeping.load(std::memory_order_seq_cst))
+		{
+			const std::lock_guard<std::mutex> lock(m_workerSleepMutex);
+			m_workerWakeCv.notify_one();
+		}
 	}
 
 	uint64_t Hardware::workerHorizonCycles() const
@@ -799,15 +816,34 @@ namespace md
 		return framePosToCycles(0, publishedFramePos(1) + m_dspMaxSkewFrames);
 	}
 
+	namespace
+	{
+		std::function<void()>& dspWorkerThreadStartHook()
+		{
+			static std::function<void()> hook;
+			return hook;
+		}
+	}
+
+	void Hardware::setDspWorkerThreadStartHook(std::function<void()> _hook)
+	{
+		dspWorkerThreadStartHook() = std::move(_hook);
+	}
+
 	void Hardware::dspWorkerMain()
 	{
 		t_isDspWorker = true;
+		if(const auto& hook = dspWorkerThreadStartHook())
+			hook();
 #if defined(__APPLE__)
 		pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
 #endif
 		auto& d = (m_workerDsp == 0 ? m_dspMixer : m_dspProducer).dsp();
 		auto& published = publishedCycles(m_workerDsp);
+		if(const char* spinUs = std::getenv("GEARMULATOR_MD_WORKER_SPIN_US"))
+			m_workerSpinBeforeSleep = std::chrono::microseconds(std::atoll(spinUs));
 		uint32_t idleSpins = 0;
+		auto idleSince = std::chrono::steady_clock::now();
 
 		while(!m_dspWorkerStop.load(std::memory_order_acquire))
 		{
@@ -816,13 +852,36 @@ namespace md
 				|| m_workerDspWanted.load(std::memory_order_relaxed) != 0)
 			{
 				m_statWorkerIdle.fetch_add(1, std::memory_order_relaxed);
-				// Spin while work is imminent (the scheduler thread is mid-block). Only after
-				// about a millisecond with nothing to do (no advance() running) sleep briefly.
-				// Never sched_yield: on Apple platforms it depresses this thread's priority.
-				if(++idleSpins < (1u << 20))
-					cpuRelax();
-				else
-					std::this_thread::sleep_for(std::chrono::microseconds(100));
+				// Spin while work is imminent (the scheduler thread is mid-block). After about
+				// 200 us with nothing to do (typically between audio buffers), sleep until the
+				// scheduler wakes us. Never sched_yield: on Apple platforms it depresses this
+				// thread's priority, and every hand-off can then stall for milliseconds.
+				cpuRelax();
+				if((++idleSpins & 1023) != 0)
+					continue;
+				const auto now = std::chrono::steady_clock::now();
+				if(idleSpins == 1024)
+					idleSince = now;
+				if(now - idleSince < m_workerSpinBeforeSleep)
+					continue;
+
+				std::unique_lock<std::mutex> lock(m_workerSleepMutex);
+				const uint32_t generation = m_workerWakeGeneration.load(std::memory_order_acquire);
+				m_workerSleeping.store(true, std::memory_order_seq_cst);
+				// Re-check after announcing the sleep, so a wake between the check and the wait
+				// cannot be lost (wakers notify under the same mutex).
+				if(published.load(std::memory_order_acquire) >= workerHorizonCycles()
+					&& m_workerDspWanted.load(std::memory_order_relaxed) == 0)
+				{
+					m_statWorkerSleeps.fetch_add(1, std::memory_order_relaxed);
+					m_workerWakeCv.wait_for(lock, std::chrono::milliseconds(5), [&]
+					{
+						return m_dspWorkerStop.load(std::memory_order_acquire)
+							|| m_workerWakeGeneration.load(std::memory_order_acquire) != generation;
+					});
+				}
+				m_workerSleeping.store(false, std::memory_order_seq_cst);
+				idleSpins = 0;
 				continue;
 			}
 			if(!m_workerDspLock.tryLock())
@@ -1378,6 +1437,7 @@ namespace md
 		const size_t receiverCount = m_hostAudioInput.size();
 		for(size_t receiver = 0; receiver < receiverCount; ++receiver)
 		{
+			const OptionalLockGuard inputGuard(hostAudioInputLock(receiver));
 			m_hostAudioInput[receiver].reset(static_cast<int64_t>(m_schedFramesTotal));
 			m_hostAudioInputClockInitialized[receiver] = false;
 		}
@@ -1397,6 +1457,7 @@ namespace md
 		const size_t receiverCount = m_hostAudioInput.size();
 		for(size_t receiver = 0; receiver < receiverCount; ++receiver)
 		{
+			const OptionalLockGuard inputGuard(hostAudioInputLock(receiver));
 			const auto dropped = m_hostAudioInput[receiver].append(m_hostAudioInputSource,
 				m_hostAudioInputSourceFrames, m_hostAudioInputSourceCursor,
 				_frames, static_cast<int64_t>(m_schedFramesTotal));
@@ -1633,6 +1694,8 @@ namespace md
 				publishDspCycles(hereIdx);
 				if(m_workerDsp == 0)
 					schedDrainCodecOutput();
+				if(m_workerSleeping.load(std::memory_order_relaxed))
+					wakeDspWorker();
 				++m_statSchedWaits;
 				cpuRelax();
 				return true;
@@ -1787,6 +1850,8 @@ namespace md
 
 		if(m_dspThreaded)
 		{
+			if(m_workerSleeping.load(std::memory_order_relaxed))
+				wakeDspWorker();								// we moved: the worker has work again
 			publishDspCycles(m_workerDsp == 0 ? 1u : 0u);	// may also have run inline (catch-ups)
 			if(m_workerDsp == 0)
 				schedDrainCodecOutput();					// the mixer on the worker leaves draining to us
@@ -1959,6 +2024,8 @@ namespace md
 		serviceRamRecordingMode();
 		m_schedFramesTotal += static_cast<double>(_machineFrames);
 		m_publishedTarget.store(m_schedFramesTotal, std::memory_order_release);
+		if(m_dspThreaded)
+			wakeDspWorker();
 
 		while(schedStep())
 		{
@@ -1971,6 +2038,8 @@ namespace md
 			const uint64_t mixerTarget = framePosToCycles(0, m_schedFramesTotal);
 			while(publishedCycles(0).load(std::memory_order_acquire) < mixerTarget)
 			{
+				if(m_workerSleeping.load(std::memory_order_relaxed))
+					wakeDspWorker();
 				schedDrainCodecOutput();
 				cpuRelax();
 			}

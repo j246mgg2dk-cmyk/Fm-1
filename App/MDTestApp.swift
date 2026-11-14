@@ -134,6 +134,15 @@ final class TestModel: ObservableObject {
     @Published var result2: MDTestResult?       // two cores (DSP1 on a worker thread)
     @Published var error: String?
     @Published var importing = false
+
+    // Live playback through the iPad's audio output.
+    let live = MDLiveEngine()
+    @Published var liveStarting = false
+    @Published var liveRunning = false
+    @Published var liveStats: MDLiveStats?
+    @Published var liveBuffer = 256
+    @Published var liveSecondCore = true
+    private var liveTimer: Timer?
     private var player: AVAudioPlayer?
 
     init() {
@@ -235,6 +244,44 @@ final class TestModel: ObservableObject {
         }
     }
 
+    func startLive() {
+        guard firmwareOK, !liveRunning, !liveStarting else { return }
+        liveStarting = true
+        liveStats = nil
+        say("Starting live playback (\(liveBuffer)-frame buffers, \(liveSecondCore ? "two cores" : "one core"))…")
+        let fw = Storage.firmware.path, home = Storage.root.path
+        let buffer = liveBuffer, secondCore = liveSecondCore, engine = live
+        UIApplication.shared.isIdleTimerDisabled = true
+        runOnPerformanceCore {
+            let ok = engine.start(withFirmware: fw, homePath: home, secondCore: secondCore, bufferFrames: buffer) { line in
+                Task { @MainActor in self.say(line) }
+            }
+            Task { @MainActor in
+                self.liveStarting = false
+                self.liveRunning = ok
+                if ok {
+                    self.liveTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+                        Task { @MainActor in self.liveStats = self.live.stats() }
+                    }
+                } else {
+                    UIApplication.shared.isIdleTimerDisabled = false
+                }
+            }
+        }
+    }
+
+    func stopLive() {
+        liveTimer?.invalidate()
+        liveTimer = nil
+        if let s = liveStats {
+            say(String(format: "Live playback stopped after %.0f s: load average %.0f%%, peak %.0f%%, %ld overruns in %ld callbacks.",
+                       s.secondsPlayed, s.averageLoad * 100, s.peakLoad * 100, s.overruns, s.callbacks))
+        }
+        live.stop()
+        liveRunning = false
+        UIApplication.shared.isIdleTimerDisabled = false
+    }
+
     func play(_ url: URL = Storage.recording) {
         player = try? AVAudioPlayer(contentsOf: url)
         try? AVAudioSession.sharedInstance().setCategory(.playback)
@@ -256,6 +303,7 @@ struct ContentView: View {
                     filesPanel
                     testsPanel
                     if m.result != nil || m.result2 != nil { resultPanel }
+                    livePanel
                     logPanel
                 }
                 .padding(20)
@@ -297,7 +345,7 @@ struct ContentView: View {
                     .disabled(!m.firmwareOK)
                 if m.running { ProgressView() }
             }
-            .disabled(m.running)
+            .disabled(m.running || m.liveRunning || m.liveStarting)
             if let mips = m.rawMips {
                 Text(String(format: "Raw interpreter: %.0f M instr/s (cloud test machine: 216)", mips)).font(.callout.monospaced())
             }
@@ -345,6 +393,45 @@ struct ContentView: View {
             Text(label).foregroundStyle(.secondary)
             Text(m.result.map(value) ?? "…")
             Text(m.result2.map(value) ?? "…")
+        }
+    }
+
+    private var livePanel: some View {
+        panel("4 · Live playback") {
+            Text("Plays the emulator through the iPad's speaker or headphones in real time: the real audio path the app and AUv3 will use. It boots first (about 10 s), then plays the factory pattern.")
+                .font(.footnote).foregroundStyle(.secondary)
+            HStack(spacing: 16) {
+                Picker("Buffer", selection: $m.liveBuffer) {
+                    Text("128").tag(128); Text("256").tag(256); Text("512").tag(512); Text("1024").tag(1024)
+                }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 320)
+                Toggle("Second core", isOn: $m.liveSecondCore).fixedSize()
+            }
+            .disabled(m.liveRunning || m.liveStarting)
+            HStack(spacing: 12) {
+                if m.liveRunning {
+                    Button("Stop") { m.stopLive() }.buttonStyle(.borderedProminent).tint(.red)
+                } else {
+                    Button("Play live") { m.startLive() }.buttonStyle(.borderedProminent).tint(.orange)
+                        .disabled(!m.firmwareOK || m.liveStarting || m.running)
+                }
+                if m.liveStarting { ProgressView(); Text("Booting…").font(.footnote) }
+            }
+            if let s = m.liveStats {
+                Grid(alignment: .leading, verticalSpacing: 6) {
+                    stat("Playing", String(format: "%.0f s, %@", s.secondsPlayed, s.secondCore ? "two cores" : "one core"))
+                    stat("Buffer", String(format: "%ld frames (%.1f ms)", s.bufferFrames, Double(s.bufferFrames) / 44.1))
+                    stat("Load now / average", String(format: "%.0f%% / %.0f%%", s.recentPeakLoad * 100, s.averageLoad * 100))
+                    stat("Peak load", String(format: "%.0f%%", s.peakLoad * 100))
+                    stat("Overruns", String(format: "%ld of %ld callbacks", s.overruns, s.callbacks))
+                    stat("Audio workgroup", s.secondCore ? (s.workgroupJoined ? "joined" : "not joined") : "—")
+                    stat("Memory", String(format: "%.0f MB", s.footprintMB))
+                }
+                .font(.callout.monospaced())
+                Text("Below 100% load the emulator keeps up. Each overrun is a callback that took longer than its buffer and may be heard as a click.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
         }
     }
 

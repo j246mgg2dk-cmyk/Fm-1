@@ -265,7 +265,15 @@ namespace dsp56k
 		auto& getAudioOutputs() { return m_audioOutputs; }
 
 	public:
-		static constexpr uint32_t RingBufferSize = 8192 * 4;
+		// Frames per serial-port ring (a power of two). Each frame has room for 32 slots,
+		// so the default costs about 40 MB per ESSI. Hosts with tight memory limits (an
+		// AUv3 extension) can define a smaller depth; the Machinedrum's rings peak at about
+		// 114 frames.
+#ifndef DSP56K_AUDIO_RINGBUFFER_SIZE
+#define DSP56K_AUDIO_RINGBUFFER_SIZE (8192 * 4)
+#endif
+		static constexpr uint32_t RingBufferSize = DSP56K_AUDIO_RINGBUFFER_SIZE;
+		static_assert((RingBufferSize & (RingBufferSize - 1)) == 0, "ring size must be a power of two");
 
 	protected:
 		void readRXimpl(RxFrame& _values);

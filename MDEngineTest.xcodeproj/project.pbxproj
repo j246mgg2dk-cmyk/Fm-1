@@ -187,6 +187,7 @@
 		D270BAE29878F518F8DA3E66 /* logging.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F05B2D1C80333CB114067A63 /* logging.cpp */; };
 		D502C0E9772DAEA51C89C4CA /* i2cFlash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 742FC9E20A710C85434651FC /* i2cFlash.cpp */; };
 		D5BE3E7E6340FC6B2D81BD88 /* MDEngineTest.mm in Sources */ = {isa = PBXBuildFile; fileRef = C2914136403554A56D057A31 /* MDEngineTest.mm */; };
+		A1B2C3D4E5F60718293A4B5C /* MDLiveEngine.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5D /* MDLiveEngine.mm */; };
 		D64DEFCCA3EF0D7CB5C524E8 /* jittrampoline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F1E795A30FA835DF588ECA56 /* jittrampoline.cpp */; };
 		D7266ADEEAC6BD4C172015CF /* haltDSP.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5AD8BF88827CD1B9F565CAF4 /* haltDSP.cpp */; };
 		D8290AB1A8C0EC4A7D3C96B9 /* mdromdata.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 923526CF729877A27EED91F3 /* mdromdata.cpp */; };
@@ -396,6 +397,8 @@
 		C1FA3157F28E592B7B7E9C1C /* dsp.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = dsp.cpp; sourceTree = "<group>"; };
 		C242B0B14C349754785E2664 /* x86emithelper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = x86emithelper.cpp; sourceTree = "<group>"; };
 		C2914136403554A56D057A31 /* MDEngineTest.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MDEngineTest.mm; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5D /* MDLiveEngine.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MDLiveEngine.mm; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5E /* MDLiveEngine.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MDLiveEngine.h; sourceTree = "<group>"; };
 		C2DD2B2BAC0F35A345DE48A8 /* jitblock.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitblock.cpp; sourceTree = "<group>"; };
 		C3F6F5CB20708DC82E12B730 /* esxi.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = esxi.cpp; sourceTree = "<group>"; };
 		C417691D207D7BAFA1B28308 /* esai.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = esai.cpp; sourceTree = "<group>"; };
@@ -885,6 +888,8 @@
 			children = (
 				1519FBF9ECE2903380FD753A /* MDEngineTest.h */,
 				C2914136403554A56D057A31 /* MDEngineTest.mm */,
+				A1B2C3D4E5F60718293A4B5E /* MDLiveEngine.h */,
+				A1B2C3D4E5F60718293A4B5D /* MDLiveEngine.mm */,
 				7C86B850BF7137D41A4D38D6 /* MDTest-Bridging-Header.h */,
 			);
 			path = Bridge;
@@ -1000,6 +1005,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D5BE3E7E6340FC6B2D81BD88 /* MDEngineTest.mm in Sources */,
+				A1B2C3D4E5F60718293A4B5C /* MDLiveEngine.mm in Sources */,
 				25C1BAEAB84FCF5828BFBD10 /* MDTestApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1365,6 +1371,7 @@
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					DSP56K_FORCE_INTERPRETER,
+					"DSP56K_AUDIO_RINGBUFFER_SIZE=2048",
 					ASMJIT_STATIC,
 					"DSP56300_DEBUGGER=0",
 					"MD_TRANSPORT_DIAGNOSTICS=0",
@@ -1441,6 +1448,7 @@
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					DSP56K_FORCE_INTERPRETER,
+					"DSP56K_AUDIO_RINGBUFFER_SIZE=2048",
 					ASMJIT_STATIC,
 					"DSP56300_DEBUGGER=0",
 					"MD_TRANSPORT_DIAGNOSTICS=0",

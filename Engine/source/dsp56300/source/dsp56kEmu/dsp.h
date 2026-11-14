@@ -1,5 +1,6 @@
 #pragma once
 
+#include "pagedcache.h"
 #include <atomic>
 
 #include "disasm.h"
@@ -141,11 +142,14 @@ namespace dsp56k
 		// Interpreter-only per-PC dispatch metadata. JIT builds leave this empty
 		// during normal execution; an explicit execInterpreter() call initializes
 		// it lazily so interpreter diagnostics remain supported in a JIT binary.
-		std::vector<OpcodeCacheEntry>	m_opcodeCache;
+		// Zero (op == nullptr) means "not resolved yet". Backed by lazily committed zero pages:
+		// a flat vector filled with op_ResolveCache commits one 48-byte entry per P word,
+		// hundreds of MB for an 8 M-word address space, of which a program executes a few K.
+		LazyZeroArray<OpcodeCacheEntry>	m_opcodeCache;
 
 		// Per-PC instruction cycle count, filled lazily in interpreter builds. JIT builds leave
 		// this vector empty because they account cycles per compiled block. 0 = not yet computed.
-		std::vector<uint8_t>			m_opcodeCycleCache;
+		LazyZeroArray<uint8_t>			m_opcodeCycleCache;
 		
 		InstructionCache				cache;
 
@@ -180,6 +184,18 @@ namespace dsp56k
 		// implementation
 		//
 	public:
+		// True once the interpreter has decoded and cached the instruction at this P address,
+		// i.e. the address has been executed since its last write. Used by the AOT tooling.
+#if defined(DSP56K_AOT) && DSP56K_AOT
+		bool aotExec(TWord _pc, TWord _op) noexcept;	// generated: md_aot.inl
+#endif
+		void resolveAndExec(TWord _op);	// decode, cache and execute the instruction at pcCurrentInstruction
+
+		bool isOpcodeCached(const TWord _pc) const
+		{
+			return _pc < m_opcodeCache.size() && m_opcodeCache[_pc].op != nullptr;
+		}
+
 				DSP								( Memory& _memory, IPeripherals* _pX, IPeripherals* _pY );
 
 		void 	resetHW							();
@@ -339,7 +355,19 @@ namespace dsp56k
 
 			m_currentOpLen = 1;
 
-			(this->*m_opcodeCache[pc].op)(op);
+#if defined(DSP56K_AOT) && DSP56K_AOT
+			// Ahead-of-time translated program (generated from the user's own firmware):
+			// direct handler calls with constant instruction words. Falls back to the
+			// interpreter for any address or word that wasn't translated.
+			if(!aotExec(pc, op))
+#endif
+			{
+				const auto func = m_opcodeCache[pc].op;
+				if(ASMJIT_LIKELY(func != nullptr))
+					(this->*func)(op);
+				else
+					resolveAndExec(op);			// first execution at this address
+			}
 
 			if(ASMJIT_LIKELY(pcCurrentInstruction == pc))
 			{

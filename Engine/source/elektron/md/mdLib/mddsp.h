@@ -83,7 +83,7 @@ namespace md
 		const uint32_t    m_index;
 
 		dsp56k::DefaultMemoryValidator m_validator;
-		std::vector<dsp56k::TWord>     m_buffer;
+		dsp56k::LazyZeroArray<dsp56k::TWord> m_buffer;	// zero pages, committed only where the DSPs write
 		dsp56k::PeripheralsNop         m_periphNop;
 		dsp56k::Peripherals56303       m_periphX;
 		dsp56k::Memory                 m_memory;

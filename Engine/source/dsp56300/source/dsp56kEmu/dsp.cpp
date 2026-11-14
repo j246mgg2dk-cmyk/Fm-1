@@ -407,7 +407,10 @@ namespace dsp56k
 		const TWord currentOp = pcCurrentInstruction;
 		const auto& opCache = m_opcodeCache[currentOp];
 
-		exec_jump(opCache.op, op);
+		if(opCache.op)
+			exec_jump(opCache.op, op);
+		else
+			op_ResolveCache(op);
 
 		if(pcCurrentInstruction == currentOp)
 		{
@@ -1101,10 +1104,8 @@ namespace dsp56k
 		// The cache can exist in a JIT build when a test or diagnostic explicitly
 		// enters the interpreter. Invalidate it when present without allocating it
 		// for the ordinary JIT-only product path.
-		if(_offset < m_opcodeCache.size())
-			m_opcodeCache[_offset].op = &DSP::op_ResolveCache;
-		if constexpr(!g_useJIT)
-			m_opcodeCycleCache[_offset] = 0;
+		m_opcodeCache.reset(_offset);
+		m_opcodeCycleCache.reset(_offset);
 
 #if DSP56300_DEBUGGER
 		if(m_debugger)
@@ -1351,6 +1352,11 @@ namespace dsp56k
 		return dsp56k::calcCycles(instA, instB, _pc, opA, mem.getBridgedMemoryAddress(), 1);
 	}
 
+	void DSP::resolveAndExec(const TWord _op)
+	{
+		op_ResolveCache(_op);
+	}
+
 	uint8_t DSP::getOpcodeCycles(const TWord _pc)
 	{
 		auto& cachedCycles = m_opcodeCycleCache[_pc];
@@ -1361,10 +1367,9 @@ namespace dsp56k
 
 	void DSP::clearOpcodeCache()
 	{
-		m_opcodeCache.clear();
-		m_opcodeCache.resize(mem.sizeP(), {&DSP::op_ResolveCache});
+		m_opcodeCache.assignZero(mem.sizeP());
 		if constexpr(!g_useJIT)
-			m_opcodeCycleCache.assign(mem.sizeP(), 0);
+			m_opcodeCycleCache.assignZero(mem.sizeP());
 	}
 
 	void DSP::clearOpcodeCache(const TWord _address)
@@ -1374,10 +1379,8 @@ namespace dsp56k
 		// cache or grow JIT dispatch metadata for an address that was not written.
 		if(_address >= mem.sizeP())
 			return;
-		if(_address < m_opcodeCache.size())
-			m_opcodeCache[_address].op = &DSP::op_ResolveCache;
-		if constexpr(!g_useJIT)
-			m_opcodeCycleCache[_address] = 0;
+		m_opcodeCache.reset(_address);
+		m_opcodeCycleCache.reset(_address);
 		m_jit.notifyProgramMemWrite(_address);
 	}
 	
@@ -1586,3 +1589,7 @@ namespace dsp56k
 		m_interruptFunc = &dspExecInterrupts;
 	}
 }
+
+#if defined(DSP56K_AOT) && DSP56K_AOT
+#include "md_aot.inl"	// generated from your firmware by tools/gen_aot.py; private, never committed
+#endif
