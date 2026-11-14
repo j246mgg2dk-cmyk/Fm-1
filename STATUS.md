@@ -84,6 +84,39 @@ The interpreter's opcode cache has one 48-byte entry per P-memory word, and the 
 about 384 MB per DSP, all of it touched at start-up, which is too much for an AUv3 extension. It needs a
 sparse, two-level cache. The code only occupies a few kilowords.
 
+### Second core (2026-11-13)
+- One DSP can run on a worker thread once the machine reaches its steady-state link protocol. Boot stays
+  single-threaded.
+- **DSP1 (the mixer) is the worker by default.** Measured on the worker, DSP1 is about 70% of the whole
+  emulation cost; moving DSP2 alone gained only about 13%.
+- **Ordering:** the clocks are kept as ColdFire <= DSP2 <= DSP1 <= DSP2 + 2 codec frames.
+  - DSP2's link words never need DSP1 advanced, and DSP1 never runs DSP2.
+  - The ColdFire's host-port polls find the DSP already at its time.
+- **Synchronisation:** the threads exchange published cycle counters every 64 instructions.
+  - The worker's DSP is owned through a spin lock, which ColdFire accesses take only when they must run that DSP.
+  - Shared rendezvous flags use a separate link lock. The receive rings are lock-free.
+- **Off by default.** The single-thread output stays byte-identical.
+
+| Cloud Xeon, 2 cores, clang | Real-time factor |
+|---|---|
+| Single thread | 0.46× |
+| DSP2 on a worker | 0.52–0.56× |
+| **DSP1 on a worker** | **0.59×** (+28%) |
+
+**Audio check (10 s renders, threaded vs single-thread interpreter):**
+- same RMS (0.0758 vs 0.0756) and spectrum within 3% per band;
+- loudness-envelope correlation 0.85 (for scale: the desktop JIT render correlates 0.49 with the interpreter);
+- no clicks;
+- a 60 s threaded run is stable to the end.
+
+**Projection:** on your M1, 0.69× × about 1.28 is about 0.88×. Measure with the test app (it now runs one core,
+then two cores).
+
+**What limits it now:** DSP1 on the worker is busy about 91% of the time while the main thread waits, so the
+next speed-ups must make DSP1 itself cheaper. Inside DSP1, parallel ALU+move instructions cost about 27% of
+the whole program: 40 M per audio second at about 210 host instructions each, mostly dual X/Y reads with two
+address updates, and multiply-accumulates.
+
 ## Engine changes made for iPad
 1. **DO-loop deadlock fixed** (`dsp56kEmu/dsp.cpp`, `dsp.h`).
    - The interpreter ran each hardware DO loop to completion inside a single step. The MD runs the
@@ -109,8 +142,7 @@ The interpreter test suite and all assembler tests pass, and so do the JIT unit 
 
 ## Next steps, in order
 1. ~~Measure on your iPad~~ Done: 0.69× on an M1 iPad Pro.
-2. **DSP2 on a second core.** The profile shows single-thread tuning alone is unlikely to reach the
-   1.45× needed.
+2. ~~A second core~~ Done (DSP1 on a worker thread, +28% in the lab). Measure on the M1.
    - The two DSPs exchange data every audio frame (the ESSI link), and the ColdFire synchronises with each
      of them on host-port access. This fork models that link word by word on one thread, so this needs a
      synchronisation design, not a switch.
