@@ -46,9 +46,16 @@ emulator relies on its JIT for speed. On iPad the engine runs its interpreter in
   - about 5% ColdFire and about 5% scheduler.
   Most of the time is overhead, not the Machinedrum's own DSP work, which is why there is room to speed it up.
 
-**Rough projection (unconfirmed):** an M4/M5 iPad Pro performance core is roughly 2× this Xeon core, which
-would put the current single-thread engine near 0.9–1.0× real time. **This must be confirmed on your iPad
-with the test app.**
+### Measured on your iPad Pro (M1), 2026-11-13
+| Test | Result |
+|---|---|
+| Raw DSP interpreter, synthetic loop | 257.4 M instr/s (cloud Xeon with clang: 216) |
+| Full Machinedrum, factory pattern playing, one core | **0.69× real time**, 109.3 M DSP instr/s, sound (peak 0.56) |
+| Boot, 12 s of machine time | 14.5 s |
+
+- The emulated LCD shows the real MD UI: tempo 125, kit 01, pattern A01 playing, a TRX-E2 track.
+- **Genuine Machinedrum emulation runs natively on the iPad without JIT, at 69% of real-time speed.**
+- Reaching real time needs about **1.45× more speed**.
 
 ## Engine changes made for iPad
 1. **DO-loop deadlock fixed** (`dsp56kEmu/dsp.cpp`, `dsp.h`).
@@ -74,7 +81,7 @@ with the test app.**
 The interpreter test suite and all assembler tests pass, and so do the JIT unit and optimiser tests.
 
 ## Next steps, in order
-1. **Measure on your iPad** with the test app (Raw DSP speed, Full Machinedrum test).
+1. ~~Measure on your iPad~~ Done: 0.69× on an M1 iPad Pro.
 2. **More single-thread interpreter work:**
    - a pre-decoded instruction cache (opcode words, extension word and cycles in one entry);
    - cheaper parallel-move dispatch;

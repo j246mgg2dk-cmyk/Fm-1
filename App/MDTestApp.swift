@@ -76,7 +76,10 @@ func performImport(_ url: URL, intended: ImportTarget) -> ImportReport {
     defer { try? fm.removeItem(at: temp) }
 
     let isFirmware = MDEngineTest.isSupportedFirmware(temp.path)
-    r.say("  firmware check: \(MDEngineTest.describeFirmware(temp.path))")
+    // Only describe the firmware check when it matters: a firmware import, or a file that is the firmware.
+    if intended == .firmware || isFirmware {
+        r.say("  firmware check: \(MDEngineTest.describeFirmware(temp.path))")
+    }
 
     do {
         if isFirmware {
