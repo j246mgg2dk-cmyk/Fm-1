@@ -131,6 +131,30 @@ address updates, and multiply-accumulates.
 - Headroom is still thin. A real-time audio thread needs margin for OS jitter, UI and the AUv3 host, so the
   remaining speed work still matters.
 
+### Real-time readiness (2026-11-14)
+- **Live playback test:** the test app streams the emulator through AVAudioEngine in real time. You choose
+  128–1024-frame buffers and one or two cores. The DSP worker joins the output's audio workgroup, and the
+  panel shows per-callback load, peak load, overruns (callbacks longer than their buffer) and memory.
+- **Worker sleep:** the worker spins up to 2 ms when idle, then sleeps until the scheduler wakes it.
+  In paced tests, sleeping across every callback gap cost about 12% of the buffer budget:
+
+  | Worker behaviour between buffers | Average load | 99th percentile |
+  |---|---|---|
+  | Sleep after 200 µs | 84% | about 120% |
+  | Spin | 72% | 101% |
+
+- **Data race fixed:** with DSP1 on the worker, its codec-input callback read the host-input timeline while
+  the scheduler appended to it, causing an intermittent runaway in `append`. A per-receiver lock fixes it.
+- **Memory:** total footprint (PSS) is now about 160 MB, down from about 1.2 GB. Output is byte-identical.
+
+  | Change | Saving |
+  |---|---|
+  | Interpreter opcode and cycle caches use lazily committed zero pages (unresolved = all-zero bits) | about 800 MB |
+  | ESSI rings use 2048 frames on iPad instead of 32768 (the MD peaks at about 114 frames) | about 150 MB |
+  | md::Dsp's memory buffer uses lazily committed zero pages | about 66 MB |
+
+  The emulated DSP RAM is mapped about 1,000 times (mirrors), so RSS overstates it. PSS is the real figure.
+
 ## Engine changes made for iPad
 1. **DO-loop deadlock fixed** (`dsp56kEmu/dsp.cpp`, `dsp.h`).
    - The interpreter ran each hardware DO loop to completion inside a single step. The MD runs the
