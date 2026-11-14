@@ -19,14 +19,91 @@ enum Storage {
     static var firmware: URL { root.appendingPathComponent("roms/elektron_sps1-1uw_os1.63.bin") }
     static var cache: URL { root.appendingPathComponent("nvram/md-uw-1.63-factory-v2.cache") }
     static var recording: URL { root.appendingPathComponent("test-recording.wav") }
+    static var logFile: URL { root.appendingPathComponent("test-log.txt") }
 
-    static func install(_ src: URL, to dst: URL) throws {
-        let ok = src.startAccessingSecurityScopedResource()
-        defer { if ok { src.stopAccessingSecurityScopedResource() } }
+    static func size(_ url: URL) -> Int64? {
+        (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber)?.int64Value
+    }
+
+    static func move(_ src: URL, to dst: URL) throws {
         try FileManager.default.createDirectory(at: dst.deletingLastPathComponent(), withIntermediateDirectories: true)
         if FileManager.default.fileExists(atPath: dst.path) { try FileManager.default.removeItem(at: dst) }
-        try FileManager.default.copyItem(at: src, to: dst)
+        try FileManager.default.moveItem(at: src, to: dst)
     }
+}
+
+enum ImportTarget: String { case firmware, cache }
+
+/// Outcome of one import, with a step-by-step log.
+struct ImportReport: Sendable {
+    var lines: [String] = []
+    var error: String?
+    mutating func say(_ s: String) { lines.append(s) }
+}
+
+/// Copies a picked file into the app, logging every step. Runs off the main thread:
+/// reading an iCloud file that is not on the iPad yet waits for its download.
+func performImport(_ url: URL, intended: ImportTarget) -> ImportReport {
+    var r = ImportReport()
+    let fm = FileManager.default
+    r.say("Import (\(intended.rawValue) button): picked \(url.lastPathComponent)")
+
+    let scoped = url.startAccessingSecurityScopedResource()
+    defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+    r.say("  security-scoped access: \(scoped ? "granted" : "not needed or refused")")
+
+    if let v = try? url.resourceValues(forKeys: [.fileSizeKey, .isUbiquitousItemKey, .ubiquitousItemDownloadingStatusKey]) {
+        let status = v.ubiquitousItemDownloadingStatus.map { $0.rawValue.replacingOccurrences(of: "NSURLUbiquitousItemDownloadingStatus", with: "") }
+        r.say("  source: \(v.fileSize.map { "\($0) bytes" } ?? "size unknown")"
+              + ((v.isUbiquitousItem ?? false) ? ", iCloud item, download status \(status ?? "unknown")" : ", local file"))
+    } else {
+        r.say("  source: could not read file attributes")
+    }
+
+    // Coordinated read: for an iCloud file this downloads it before handing it over.
+    let temp = fm.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    var coordError: NSError?
+    var copyError: Error?
+    NSFileCoordinator().coordinate(readingItemAt: url, options: [.withoutChanges], error: &coordError) { readable in
+        do { try fm.copyItem(at: readable, to: temp) } catch { copyError = error }
+    }
+    if let e = coordError ?? (copyError as NSError?) {
+        r.say("  copy FAILED: \(e.localizedDescription) [\(e.domain) \(e.code)]")
+        r.error = "Couldn't read \(url.lastPathComponent): \(e.localizedDescription)"
+        return r
+    }
+    r.say("  copied into the app: \(Storage.size(temp).map { "\($0) bytes" } ?? "size unknown")")
+    defer { try? fm.removeItem(at: temp) }
+
+    let isFirmware = MDEngineTest.isSupportedFirmware(temp.path)
+    r.say("  firmware check: \(MDEngineTest.describeFirmware(temp.path))")
+
+    do {
+        if isFirmware {
+            if intended == .cache { r.say("  this is the firmware, not the cache: installing it as the firmware") }
+            try Storage.move(temp, to: Storage.firmware)
+            r.say("  installed as firmware ✓")
+        } else if intended == .firmware {
+            let size = Storage.size(temp) ?? 0
+            let why: String
+            if size == 0 {
+                why = "The file is empty. It may be an iCloud placeholder that didn't download: open it once in the Files app (or tick “Keep Downloaded”) and try again."
+            } else if size != 8_388_608 {
+                why = "It is \(size) bytes; the MD UW OS 1.63 image is exactly 8,388,608 bytes. It may be a different file or an incomplete copy."
+            } else {
+                why = "The size is right but the contents don't match MD UW OS 1.63 (a different OS version, or a modified or corrupted copy)."
+            }
+            r.say("  NOT installed: \(why)")
+            r.error = "\(url.lastPathComponent) wasn't accepted as the firmware.\n\n\(why)\n\nThe log at the bottom of the screen has the details."
+        } else {
+            try Storage.move(temp, to: Storage.cache)
+            r.say("  installed as factory cache ✓ (it is checked against the firmware when the test boots)")
+        }
+    } catch {
+        r.say("  install FAILED: \(error.localizedDescription)")
+        r.error = "Couldn't save the file: \(error.localizedDescription)"
+    }
+    return r
 }
 
 /// Measured with the factory pattern playing: the work a real-time Machinedrum needs
@@ -51,36 +128,75 @@ final class TestModel: ObservableObject {
     @Published var rawMips: Double?
     @Published var result: MDTestResult?
     @Published var error: String?
+    @Published var importing = false
     private var player: AVAudioPlayer?
 
-    init() { refresh() }
+    init() {
+        repairMisplacedFirmware()
+        refresh()
+    }
 
     func refresh() {
-        firmwareOK = FileManager.default.fileExists(atPath: Storage.firmware.path)
-            && MDEngineTest.isSupportedFirmware(Storage.firmware.path)
+        let fwExists = FileManager.default.fileExists(atPath: Storage.firmware.path)
+        firmwareOK = fwExists && MDEngineTest.isSupportedFirmware(Storage.firmware.path)
         hasCache = FileManager.default.fileExists(atPath: Storage.cache.path)
+        if fwExists && !firmwareOK {
+            say("Installed firmware file is not valid: \(MDEngineTest.describeFirmware(Storage.firmware.path))")
+        }
     }
 
-    func importFirmware(_ url: URL) {
+    /// Earlier builds saved every import into the cache slot (the file picker clears its
+    /// "showing" state before reporting the picked file). Move a firmware found there.
+    private func repairMisplacedFirmware() {
+        guard FileManager.default.fileExists(atPath: Storage.cache.path),
+              MDEngineTest.isSupportedFirmware(Storage.cache.path) else { return }
         do {
-            try Storage.install(url, to: Storage.firmware)
-            refresh()
-            if !firmwareOK { error = "That file isn't the Machinedrum UW OS 1.63 image (elektron_sps1-1uw_os1.63.bin, 8 MB)." }
-        } catch { self.error = error.localizedDescription }
+            try Storage.move(Storage.cache, to: Storage.firmware)
+            say("Found the firmware saved in the cache slot by the earlier import bug: moved it to the firmware slot. Please import the factory cache again.")
+        } catch {
+            say("Found the firmware in the cache slot but couldn't move it: \(error.localizedDescription)")
+        }
     }
 
-    func importCache(_ url: URL) {
-        do { try Storage.install(url, to: Storage.cache); refresh() } catch { self.error = error.localizedDescription }
+    func say(_ line: String) {
+        log.append(line)
+        let stamp = Date().formatted(date: .omitted, time: .standard)
+        let text = "[\(stamp)] \(line)\n"
+        try? FileManager.default.createDirectory(at: Storage.root, withIntermediateDirectories: true)
+        if let h = try? FileHandle(forWritingTo: Storage.logFile) {
+            h.seekToEndOfFile(); h.write(Data(text.utf8)); try? h.close()
+        } else {
+            try? Data(text.utf8).write(to: Storage.logFile)
+        }
+    }
+
+    func importPicked(_ result: Result<URL, Error>, as target: ImportTarget) {
+        switch result {
+        case .failure(let e):
+            say("Import (\(target.rawValue) button): the file picker reported an error: \(e.localizedDescription)")
+            error = e.localizedDescription
+        case .success(let url):
+            importing = true
+            Task.detached(priority: .userInitiated) {
+                let report = performImport(url, intended: target)
+                await MainActor.run {
+                    report.lines.forEach { self.say($0) }
+                    self.refresh()
+                    self.importing = false
+                    if let e = report.error { self.error = e }
+                }
+            }
+        }
     }
 
     func runRaw() {
         running = true
-        log.append("Measuring raw DSP interpreter speed…")
+        say("Measuring raw DSP interpreter speed…")
         runOnPerformanceCore {
             let mips = MDEngineTest.measureRawDspMips()
             Task { @MainActor in
                 self.rawMips = mips
-                self.log.append(String(format: "Raw DSP interpreter: %.1f M instructions/s", mips))
+                self.say(String(format: "Raw DSP interpreter: %.1f M instructions/s", mips))
                 self.running = false
             }
         }
@@ -90,13 +206,13 @@ final class TestModel: ObservableObject {
         guard firmwareOK else { return }
         running = true
         result = nil
-        log.append("Starting full Machinedrum test…")
+        say("Starting full Machinedrum test…")
         let fw = Storage.firmware.path, home = Storage.root.path, wav = Storage.recording.path
         let boot = hasCache ? 12.0 : 30.0
         UIApplication.shared.isIdleTimerDisabled = true
         runOnPerformanceCore {
             let r = MDEngineTest.run(withFirmware: fw, homePath: home, bootSeconds: boot, seconds: 10, wavPath: wav) { line in
-                Task { @MainActor in self.log.append(line) }
+                Task { @MainActor in self.say(line) }
             }
             Task { @MainActor in
                 self.result = r
@@ -115,9 +231,10 @@ final class TestModel: ObservableObject {
 
 struct ContentView: View {
     @StateObject private var m = TestModel()
-    @State private var importing: Importing?
-
-    enum Importing: Identifiable { case firmware, cache; var id: Self { self } }
+    // Which button opened the picker. Kept separately from `showImporter`: SwiftUI sets the
+    // picker's isPresented to false *before* calling its completion handler.
+    @State private var importTarget: ImportTarget = .firmware
+    @State private var showImporter = false
 
     var body: some View {
         NavigationStack {
@@ -133,11 +250,8 @@ struct ContentView: View {
             .background(Color(white: 0.06))
             .navigationTitle("Machinedrum engine test")
         }
-        .fileImporter(isPresented: Binding(get: { importing != nil }, set: { if !$0 { importing = nil } }),
-                      allowedContentTypes: [.data, .item]) { res in
-            guard case let .success(url) = res else { return }
-            if importing == .firmware { m.importFirmware(url) } else { m.importCache(url) }
-            importing = nil
+        .fileImporter(isPresented: $showImporter, allowedContentTypes: [.item]) { res in
+            m.importPicked(res, as: importTarget)
         }
         .alert("MD Engine Test", isPresented: Binding(get: { m.error != nil }, set: { if !$0 { m.error = nil } })) {
             Button("OK") { m.error = nil }
@@ -147,15 +261,19 @@ struct ContentView: View {
     private var filesPanel: some View {
         panel("1 · Your files") {
             row(ok: m.firmwareOK, title: "Firmware", detail: m.firmwareOK ? "MD UW OS 1.63 ready" : "Import elektron_sps1-1uw_os1.63.bin from Files") {
-                importing = .firmware
+                importTarget = .firmware; showImporter = true
             }
             row(ok: m.hasCache, title: "Factory cache (optional)",
                 detail: m.hasCache ? "Factory kits & patterns ready" : "md-uw-1.63-factory-v2.cache from your Mac's Gearmulator nvram folder; skips the slow factory setup") {
-                importing = .cache
+                importTarget = .cache; showImporter = true
+            }
+            if m.importing {
+                HStack(spacing: 8) { ProgressView(); Text("Importing… (an iCloud file downloads first)").font(.footnote) }
             }
             Text("Nothing is included with the app: these are your own files, stored only on this iPad (Files › On My iPad › MD Engine Test).")
                 .font(.footnote).foregroundStyle(.secondary)
         }
+        .disabled(m.importing || m.running)
     }
 
     private var testsPanel: some View {
@@ -197,8 +315,14 @@ struct ContentView: View {
 
     private var logPanel: some View {
         panel("Log") {
-            ForEach(Array(m.log.suffix(40).enumerated()), id: \.offset) { _, l in
-                Text(l).font(.caption.monospaced()).foregroundStyle(.secondary)
+            ForEach(Array(m.log.suffix(60).enumerated()), id: \.offset) { _, l in
+                Text(l).font(.caption.monospaced()).foregroundStyle(.secondary).textSelection(.enabled)
+            }
+            HStack {
+                Button("Copy log") { UIPasteboard.general.string = m.log.joined(separator: "\n") }
+                    .buttonStyle(.bordered).disabled(m.log.isEmpty)
+                Text("Also saved as Files › On My iPad › MD Engine Test › Machinedrum › test-log.txt")
+                    .font(.caption2).foregroundStyle(.secondary)
             }
         }
     }

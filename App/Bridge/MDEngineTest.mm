@@ -78,6 +78,27 @@ namespace
 	return md::RomLoader::isRomForModel(fw, md::MachineModel::Machinedrum);
 }
 
++ (NSString *)describeFirmware:(NSString *)path
+{
+	std::vector<uint8_t> fw;
+	if(!baseLib::filesystem::readFile(fw, path.UTF8String))
+		return @"could not be read";
+
+	uint64_t fingerprint = 14695981039346656037ull;	// same FNV-1a as md::RomLoader
+	for(const auto byte : fw)
+	{
+		fingerprint ^= byte;
+		fingerprint *= 1099511628211ull;
+	}
+	const bool sizeOK = fw.size() == md::g_romSize;
+	const bool fpOK = fingerprint == md::g_mdOs163Fingerprint;
+	const bool ok = md::RomLoader::isRomForModel(fw, md::MachineModel::Machinedrum);
+	return [NSString stringWithFormat:@"%zu bytes (needs %u) %@ · fingerprint %016llx (needs %016llx) %@ → %@",
+		fw.size(), md::g_romSize, sizeOK ? @"✓" : @"✗",
+		(unsigned long long)fingerprint, (unsigned long long)md::g_mdOs163Fingerprint, fpOK ? @"✓" : @"✗",
+		ok ? @"recognised as MD UW OS 1.63" : @"NOT recognised"];
+}
+
 + (MDTestResult *)runWithFirmware:(NSString *)firmwarePath
                          homePath:(NSString *)homePath
                       bootSeconds:(double)bootSeconds

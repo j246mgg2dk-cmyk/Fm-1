@@ -30,6 +30,10 @@ NS_ASSUME_NONNULL_BEGIN
 /// True when the file is the MD 1.63 UW image the engine supports.
 + (BOOL)isSupportedFirmware:(NSString *)path;
 
+/// Human-readable check of a candidate firmware file: whether it can be read, its size
+/// against the required size, and its fingerprint against the supported MD UW 1.63 image.
++ (NSString *)describeFirmware:(NSString *)path;
+
 /// Boots the firmware (home folder may contain nvram/md-uw-1.63-factory-v2.cache),
 /// presses PLAY, renders `seconds` of audio and measures speed.
 + (MDTestResult *)runWithFirmware:(NSString *)firmwarePath
