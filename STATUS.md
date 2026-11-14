@@ -191,6 +191,23 @@ address updates, and multiply-accumulates.
 
 Expected on the M1 with two cores: roughly 1.2–1.25×, up from 1.09×. To be measured.
 
+### Sustained load on the M1 (2026-11-14, evening)
+- **Your runs after the headroom work:** 0 overruns for the first 74 s at 512 frames, 81% average load
+  (about 1.23× real time). After 2–3 minutes the load sat at about 100% and clicks started, at 1024
+  frames too. The thermal state stayed "nominal", but DSP1's speed fell from 110 to about 97 M
+  instructions/s, while lab runs show no slowdown over 150 s. So the iPad lowers its clock under
+  sustained two-core load, and the engine needs margin for that and for heavy use.
+- **DSP1 is a fixed workload:** about 1,800 straight-line instructions per sample, each run once per
+  sample, with no wait loops left. Only interpreter speed and per-slot overhead matter now.
+- **Changes:**
+  - Audio rings without semaphores on iPad (`DSP56K_AUDIO_RING_LOCK=0`), with producer and consumer
+    counters on separate cache lines. The link carries about a million frames a second across cores.
+  - DSP1's link-receive hook checks its own DMA state before taking the shared link lock.
+  - Optional WFE-based waiting ("Low-power wait" in the live panel): the waiting core idles until the
+    other core publishes progress, instead of spinning at full power.
+  - One-core output stays byte-identical. Lab two-core DSP1 throughput went from 59 to about 64 M
+    instructions/s.
+
 ## Engine changes made for iPad
 1. **DO-loop deadlock fixed** (`dsp56kEmu/dsp.cpp`, `dsp.h`).
    - The interpreter ran each hardware DO loop to completion inside a single step. The MD runs the
