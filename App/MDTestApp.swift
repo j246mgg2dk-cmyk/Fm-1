@@ -261,12 +261,34 @@ final class TestModel: ObservableObject {
                 self.liveRunning = ok
                 if ok {
                     self.liveTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
-                        Task { @MainActor in self.liveStats = self.live.stats() }
+                        Task { @MainActor in
+                            self.liveStats = self.live.stats()
+                            let t = ProcessInfo.processInfo.thermalState
+                            if t != self.lastThermal {
+                                if let s = self.liveStats {
+                                    self.say(String(format: "Thermal state now %@ at %.0f s. Threads: %@",
+                                                    Self.thermalName(t), s.secondsPlayed, s.threadStats))
+                                }
+                                self.lastThermal = t
+                            }
+                        }
                     }
                 } else {
                     UIApplication.shared.isIdleTimerDisabled = false
                 }
             }
+        }
+    }
+
+    var lastThermal: ProcessInfo.ThermalState = ProcessInfo.processInfo.thermalState
+
+    static func thermalName(_ t: ProcessInfo.ThermalState) -> String {
+        switch t {
+        case .nominal: return "nominal"
+        case .fair: return "fair (warm)"
+        case .serious: return "serious (throttling)"
+        case .critical: return "critical"
+        @unknown default: return "unknown"
         }
     }
 
@@ -428,6 +450,7 @@ struct ContentView: View {
                     stat("Overruns", String(format: "%ld of %ld callbacks", s.overruns, s.callbacks))
                     stat("Audio workgroup", s.secondCore ? (s.workgroupJoined ? "joined" : "not joined") : "—")
                     stat("Memory", String(format: "%.0f MB", s.footprintMB))
+                    stat("Thermal state", TestModel.thermalName(ProcessInfo.processInfo.thermalState))
                 }
                 .font(.callout.monospaced())
                 if !s.threadStats.isEmpty {
