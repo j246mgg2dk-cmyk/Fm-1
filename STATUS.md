@@ -57,6 +57,33 @@ emulator relies on its JIT for speed. On iPad the engine runs its interpreter in
 - **Genuine Machinedrum emulation runs natively on the iPad without JIT, at 69% of real-time speed.**
 - Reaching real time needs about **1.45× more speed**.
 
+### Profile of the full machine (callgrind, 1 s of audio, factory pattern playing)
+| Component | Self time |
+|---|---|
+| DSP instruction semantics (ALU, moves, address decode) | about 29% |
+| Interpreter loop (fetch, dispatch, cycle and loop checks) | about 19% |
+| ColdFire CPU, its system peripherals (SIM), bus access, MIDI checks | about 17% |
+| DSP peripherals (ESSI clocks, HI08, timers, DMA) | about 10% |
+| Scheduler bookkeeping | about 6% |
+
+The raw interpreter runs 216 M DSP instructions/s on the Xeon, but the full machine reaches only 71 M/s:
+about two-thirds of the time goes to the rest of the machine (the ColdFire, peripherals, scheduling).
+
+### Ahead-of-time translation prototype (2026-11-13): correct, but no faster
+- Built a generator that translates the executed DSP program (DSP1: 2,225 addresses, DSP2: 3,489) into
+  C++ with direct handler calls and constant instruction words. Only the 13 IFcc instructions stay with the
+  interpreter.
+- **The output is byte-identical to the interpreter, but it ran at 0.42× against 0.48×.** The compiler
+  shares and calls the handlers rather than inlining them, so the translation only adds a switch.
+- **Conclusion:** dispatch isn't the bottleneck, so this form of AOT isn't worth pursuing. A deeper
+  translation (whole blocks, peripherals per block) could still help, but it would no longer be
+  bit-identical, and the interpreter loop is only about 19% of the time.
+
+### Memory: an issue for the AUv3
+The interpreter's opcode cache has one 48-byte entry per P-memory word, and the MD maps 8 M P words. That is
+about 384 MB per DSP, all of it touched at start-up, which is too much for an AUv3 extension. It needs a
+sparse, two-level cache. The code only occupies a few kilowords.
+
 ## Engine changes made for iPad
 1. **DO-loop deadlock fixed** (`dsp56kEmu/dsp.cpp`, `dsp.h`).
    - The interpreter ran each hardware DO loop to completion inside a single step. The MD runs the
@@ -82,18 +109,17 @@ The interpreter test suite and all assembler tests pass, and so do the JIT unit 
 
 ## Next steps, in order
 1. ~~Measure on your iPad~~ Done: 0.69× on an M1 iPad Pro.
-2. **More single-thread interpreter work:**
-   - a pre-decoded instruction cache (opcode words, extension word and cycles in one entry);
-   - cheaper parallel-move dispatch;
-   - peripheral servicing per block instead of per instruction where the JIT already does the same.
-3. **DSP2 on a second core.**
-   - The two DSPs exchange data every audio frame (the ESSI link) and the ColdFire synchronises with each of
-     them on host-port access, so this needs a synchronisation design, not a switch. It is the biggest
-     remaining lever (up to about 1.6–1.9× on top of single-thread speed).
-4. **Ahead-of-time translation:**
-   - the DSP programs come from your firmware and are deterministic, so they can be translated to C++ on your
-     Mac at build time and compiled into your personal app, never published;
-   - that is JIT-class speed with no run-time code generation, at the largest effort.
+2. **DSP2 on a second core.** The profile shows single-thread tuning alone is unlikely to reach the
+   1.45× needed.
+   - The two DSPs exchange data every audio frame (the ESSI link), and the ColdFire synchronises with each
+     of them on host-port access. This fork models that link word by word on one thread, so this needs a
+     synchronisation design, not a switch.
+   - It is the biggest remaining lever: up to about 1.6× in theory.
+3. **Single-thread work that also helps a threaded engine:**
+   - per-step overhead on the ColdFire side;
+   - cheaper parallel-move instructions;
+   - the sparse opcode cache (needed for the AUv3 anyway).
+4. ~~Ahead-of-time translation~~ Prototyped: correct but not faster (see above).
 5. **The real app:** then the touch UI and the AUv3, once real time is reached.
 
 ## Other notes
