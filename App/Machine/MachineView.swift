@@ -76,6 +76,7 @@ struct TopBar: View {
     @Binding var showSettings: Bool
     @EnvironmentObject private var machine: MachineController
     @EnvironmentObject private var panel: PanelState
+    @State private var showProjects = false
 
     var body: some View {
         HStack(spacing: 16) {
@@ -86,6 +87,15 @@ struct TopBar: View {
                     .font(.system(size: 11, weight: .bold, design: .monospaced)).foregroundStyle(Panel.orange)
                 Button("Stop") { machine.stopStressTest(restore: true) }.font(.system(size: 11, weight: .semibold))
             }
+            Button { showProjects = true } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: machine.isSaving ? "arrow.down.doc.fill" : "folder.fill").font(.system(size: 12))
+                    Text(machine.currentProject.isEmpty ? "Unsaved session" : machine.currentProject)
+                        .font(.system(size: 11, weight: .semibold)).lineLimit(1)
+                }
+                .foregroundStyle(Panel.silk)
+            }
+            .sheet(isPresented: $showProjects) { ProjectsView().environmentObject(machine) }
             Spacer()
             // Emulation load: how much of real time the emulator needs (average over the last
             // quarter second). Green under 75%, orange under 95%, red above.
@@ -198,11 +208,19 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Picker("Autosave", selection: $machine.autosaveMinutes) {
+                        Text("Off").tag(0)
+                        Text("Every 2 minutes").tag(2)
+                        Text("Every 5 minutes").tag(5)
+                        Text("Every 15 minutes").tag(15)
+                    }
+                    .onChange(of: machine.autosaveMinutes) { _, _ in machine.startAutosave() }
+                    Toggle("Keep the session when leaving the app", isOn: $machine.saveOnLeave)
                     Button("Back up kits, patterns and songs…") { exportURL = machine.exportBackup() }
                     Button("Restore a backup…") { restoring = true }
                     Button("Reset to factory…", role: .destructive) { confirmReset = true }
                 } header: { Text("Your data") } footer: {
-                    Text("Saved automatically every 30 seconds and whenever you leave the app. A factory reset keeps your current state as a backup file first, so it can be restored.")
+                    Text("Nothing is written while you play unless you save (the folder button at the top) or turn on autosave. “Keep the session” saves once when the app goes to the background or quits, never while it's in front, so iOS closing the app doesn't lose your work. A factory reset keeps your current state as a backup file first.")
                 }
 
                 Section {
@@ -274,4 +292,77 @@ private struct BluetoothMIDIView: UIViewControllerRepresentable {
         return nav
     }
     func updateUIViewController(_ vc: UINavigationController, context: Context) {}
+}
+
+
+/// Projects: Save, Save As and Load of the complete machine (all kits, patterns, songs, globals).
+struct ProjectsView: View {
+    @EnvironmentObject private var machine: MachineController
+    @Environment(\.dismiss) private var dismiss
+    @State private var newName = ""
+    @State private var askName = false
+    @State private var confirmLoad: String?
+    @State private var confirmOverwrite: String?
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    if !machine.currentProject.isEmpty {
+                        Button {
+                            machine.saveProject(); dismiss()
+                        } label: { Label("Save “\(machine.currentProject)”", systemImage: "square.and.arrow.down") }
+                    }
+                    Button { newName = suggestedName(); askName = true } label: {
+                        Label(machine.currentProject.isEmpty ? "Save as a project…" : "Save as a new project…", systemImage: "plus.square.on.square")
+                    }
+                } footer: {
+                    Text("A project is the whole machine: all 64 kits, 128 patterns, songs and global settings, exactly as the Machinedrum holds them. Saving runs in the background and doesn't interrupt the audio. Within a project, save and reload kits in the Machinedrum's own KIT menu, as on the hardware.")
+                }
+                Section("Load") {
+                    if machine.projects.isEmpty {
+                        Text("No saved projects yet.").foregroundStyle(.secondary)
+                    }
+                    ForEach(machine.projects) { p in
+                        Button { confirmLoad = p.name } label: {
+                            HStack {
+                                Text(p.name).foregroundStyle(.primary)
+                                if p.name == machine.currentProject { Image(systemName: "checkmark").foregroundStyle(.tint) }
+                                Spacer()
+                                Text(p.date, style: .date).font(.caption).foregroundStyle(.secondary)
+                                Text(p.date, style: .time).font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    .onDelete { idx in idx.map { machine.projects[$0].name }.forEach(machine.deleteProject) }
+                }
+            }
+            .navigationTitle("Projects")
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+            .onAppear { machine.refreshProjects() }
+            .alert("Save as a project", isPresented: $askName) {
+                TextField("Name", text: $newName)
+                Button("Save") {
+                    let name = newName.trimmingCharacters(in: .whitespaces)
+                    guard !name.isEmpty else { return }
+                    if machine.projects.contains(where: { $0.name == name }) { confirmOverwrite = name }
+                    else { machine.saveProject(as: name); dismiss() }
+                }
+                Button("Cancel", role: .cancel) {}
+            }
+            .confirmationDialog("Replace the saved project “\(confirmOverwrite ?? "")”?", isPresented: Binding(get: { confirmOverwrite != nil }, set: { if !$0 { confirmOverwrite = nil } }), titleVisibility: .visible) {
+                Button("Replace", role: .destructive) { if let n = confirmOverwrite { machine.saveProject(as: n); dismiss() } }
+            }
+            .confirmationDialog("Load “\(confirmLoad ?? "")”?", isPresented: Binding(get: { confirmLoad != nil }, set: { if !$0 { confirmLoad = nil } }), titleVisibility: .visible) {
+                Button("Load") { if let n = confirmLoad { machine.loadProject(n); dismiss() } }
+            } message: {
+                Text("Unsaved changes in the current session are replaced. The machine restarts with the project (a few seconds).")
+            }
+        }
+    }
+
+    private func suggestedName() -> String {
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd HHmm"
+        return "Jam \(f.string(from: Date()))"
+    }
 }

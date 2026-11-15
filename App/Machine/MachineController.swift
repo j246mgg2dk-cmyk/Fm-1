@@ -87,6 +87,14 @@ final class MachineController: ObservableObject {
     @AppStorage("secondCore") var secondCore = true
     @AppStorage("lowPowerWait") var lowPowerWait = true
     @AppStorage("thirdCore") var thirdCore = false
+    /// Off by default: nothing is written while you play unless you save.
+    @AppStorage("autosaveMinutes") var autosaveMinutes = 0
+    /// One save of the session when the app goes to the background or quits (never while you play
+    /// in the foreground), so a session isn't lost if iOS closes the app.
+    @AppStorage("saveOnLeave") var saveOnLeave = true
+    @AppStorage("currentProject") var currentProject = ""
+    @Published var projects: [ProjectFile] = []
+    @Published var isSaving = false
     @AppStorage("volume") var volume: Double = 0.85 { didSet { engine.volume = Float(volume) } }
     @AppStorage("lcdTheme") var lcdThemeRaw = LCDTheme.amber.rawValue { didSet { panel.lcd = nil; lastLCD = nil; redrawLCD() } }
 
@@ -114,11 +122,12 @@ final class MachineController: ObservableObject {
         }
         phase = FileManager.default.fileExists(atPath: Storage.firmware.path) ? .suspended : .needsFirmware
         NotificationCenter.default.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
-            Task { @MainActor in self?.saveState() }
+            Task { @MainActor in if self?.saveOnLeave == true { self?.saveState() } }
         }
         NotificationCenter.default.addObserver(forName: UIApplication.willTerminateNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.saveStateNow() }
+            MainActor.assumeIsolated { if self?.saveOnLeave == true { self?.saveStateNow() } }
         }
+        refreshProjects()
     }
 
     func say(_ line: String) {
@@ -382,11 +391,101 @@ final class MachineController: ObservableObject {
 
     // MARK: Saved state
 
-    private func startAutosave() {
-        saveTimer?.invalidate()
-        saveTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+    /// Optional, off by default (Settings › Your data). Saves the session only, never a project.
+    func startAutosave() {
+        saveTimer?.invalidate(); saveTimer = nil
+        guard autosaveMinutes > 0, phase == .running, stressTimer == nil else { return }
+        saveTimer = Timer.scheduledTimer(withTimeInterval: TimeInterval(autosaveMinutes * 60), repeats: true) { [weak self] _ in
             Task { @MainActor in self?.saveState() }
         }
+    }
+
+    // MARK: Projects
+
+    struct ProjectFile: Identifiable, Equatable {
+        let name: String
+        let date: Date
+        var id: String { name }
+    }
+
+    func refreshProjects() {
+        let fm = FileManager.default
+        let urls = (try? fm.contentsOfDirectory(at: Storage.projects, includingPropertiesForKeys: [.contentModificationDateKey],
+                                                 options: [.skipsHiddenFiles])) ?? []
+        projects = urls.filter { $0.pathExtension == "mdproject" }.map { u in
+            ProjectFile(name: u.deletingPathExtension().lastPathComponent,
+                        date: (try? u.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast)
+        }.sorted { $0.date > $1.date }
+    }
+
+    /// Saves the complete machine (all kits, patterns, songs and settings) as a project. The engine
+    /// copies its memory on a background thread; the file is written atomically (a new file
+    /// replaces the old one in one step, so a save can't leave a half-written project), and the
+    /// project's previous version is kept in Projects/.previous.
+    func saveProject(as name: String? = nil) {
+        let target = (name ?? currentProject).trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: ":", with: "-")
+        guard phase == .running, !isSaving, !target.isEmpty, stressTimer == nil else { return }
+        isSaving = true
+        let engine = self.engine
+        DispatchQueue.global(qos: .background).async {
+            let data = engine.copyState()
+            var error: String?
+            if let data, !data.isEmpty {
+                let fm = FileManager.default
+                let url = Storage.project(target)
+                do {
+                    try fm.createDirectory(at: Storage.projectsPrevious, withIntermediateDirectories: true)
+                    if fm.fileExists(atPath: url.path) {
+                        let prev = Storage.projectsPrevious.appendingPathComponent(url.lastPathComponent)
+                        try? fm.removeItem(at: prev)
+                        try? fm.copyItem(at: url, to: prev)
+                    }
+                    try data.write(to: url, options: .atomic)
+                    // The session follows the project, so a relaunch comes back to it.
+                    try fm.createDirectory(at: Storage.state.deletingLastPathComponent(), withIntermediateDirectories: true)
+                    try data.write(to: Storage.state, options: .atomic)
+                } catch let e { error = e.localizedDescription }
+            } else { error = "the machine's memory could not be read" }
+            Task { @MainActor in
+                self.isSaving = false
+                if let error { self.say("Could not save \(target): \(error)"); return }
+                self.lastSavedHash = data?.hashValue
+                self.currentProject = target
+                self.refreshProjects()
+                self.say("Saved project \(target).")
+            }
+        }
+    }
+
+    /// Restarts the machine with a project. Whatever is unsaved in the current session is replaced
+    /// (the session file before loading is kept as state/machinedrum-before-restore.mdstate).
+    func loadProject(_ name: String) {
+        guard let data = try? Data(contentsOf: Storage.project(name)), !data.isEmpty else {
+            say("Project \(name) could not be read."); return
+        }
+        suspend(save: false)
+        let fm = FileManager.default
+        do {
+            try fm.createDirectory(at: Storage.state.deletingLastPathComponent(), withIntermediateDirectories: true)
+            if fm.fileExists(atPath: Storage.state.path) {
+                try? fm.removeItem(at: Storage.statePrevious)
+                try? fm.copyItem(at: Storage.state, to: Storage.statePrevious)
+            }
+            try data.write(to: Storage.state, options: .atomic)
+            currentProject = name
+            lastSavedHash = data.hashValue
+            say("Loading project \(name)…")
+        } catch {
+            say("Could not load \(name): \(error.localizedDescription)")
+        }
+        boot()
+    }
+
+    func deleteProject(_ name: String) {
+        try? FileManager.default.removeItem(at: Storage.project(name))
+        if currentProject == name { currentProject = "" }
+        refreshProjects()
     }
 
     /// Saves in the background (the engine copies its memory under its own locks).
@@ -440,6 +539,7 @@ final class MachineController: ObservableObject {
             say("Your previous state is kept as \(keep.lastPathComponent).")
         }
         lastSavedHash = nil
+        currentProject = ""
         say("Factory reset; restarting.")
         boot()
     }

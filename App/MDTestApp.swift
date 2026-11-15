@@ -19,6 +19,11 @@ enum Storage {
     static var state: URL { root.appendingPathComponent("state/machinedrum.mdstate") }
     static var perfLog: URL { root.appendingPathComponent("performance-log.csv") }
     static var statePrevious: URL { root.appendingPathComponent("state/machinedrum-before-restore.mdstate") }
+    /// Named projects: complete Machinedrum memory (all kits, patterns, songs, globals).
+    static var projects: URL { root.appendingPathComponent("Projects") }
+    /// The version each project had before its last save (one level of undo).
+    static var projectsPrevious: URL { root.appendingPathComponent("Projects/.previous") }
+    static func project(_ name: String) -> URL { projects.appendingPathComponent(name + ".mdproject") }
 
     static func size(_ url: URL) -> Int64? {
         (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber)?.int64Value
