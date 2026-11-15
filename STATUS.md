@@ -277,6 +277,29 @@ The test app is now the Machinedrum app (same bundle, so your imported firmware 
     restarts, memory, thermal, per-thread CPU);
   - a 5- or 30-minute stress test that restores your state afterwards.
 
+## Three-core mode (2026-11-15, needs measuring on the iPad)
+- **Why:** the M1 lowers its clock by about 15% after about 80 s of heavy load. In the two-core
+  mode the render thread (ColdFire + DSP2) waited 22% of its time for DSP1 while DSP1 was busy 81%:
+  neither thread is saturated, the hand-offs limit throughput.
+- **What:** `GEARMULATOR_MD_DSP_WORKER=3` (app: Settings > "Use a third core") runs DSP2 on its
+  own worker. The render thread then runs only the ColdFire.
+  - Ordering: ColdFire <= DSP2 <= DSP1 <= DSP2 + skew, as before, plus DSP2 <= ColdFire + one
+    scheduling quantum (125 us). The single-thread scheduler already keeps DSP2 within a quantum of
+    the ColdFire; leading by a whole block made the firmware go silent.
+  - The ColdFire publishes its position after every step so DSP2 follows it continuously.
+  - DSP2 has its own lock, wake-up and statistics; ColdFire host accesses to DSP2 take that lock
+    (`DspAccess` now covers either worker).
+- **Lab results (2-core container, so correctness only; speed can't be measured here):**
+  - single-thread output still byte-identical;
+  - two-core mode unchanged (0.62x here);
+  - three-core output matches the two-core output as closely as two-core matches single-thread
+    (average spectrum difference 0.26 dB, same number of hits, no dropouts);
+  - 20 s of MIDI flood plus knob turns: no hang, no dropouts.
+  - `GEARMULATOR_MD_YIELD_WAITS=1` (lab only) makes waits yield, for machines with fewer cores
+    than emulation threads.
+- **Device test:** 5-minute stress test with the setting off, then on; compare the CSV columns
+  `load_avg_pct`, `underruns`, `render_waits_for_dsp1_pct`, `dsp1_busy_pct`, `dsp2_busy_pct`.
+
 ## Engine changes made for iPad
 1. **DO-loop deadlock fixed** (`dsp56kEmu/dsp.cpp`, `dsp.h`).
    - The interpreter ran each hardware DO loop to completion inside a single step. The MD runs the

@@ -205,6 +205,9 @@ namespace md
 		// Called on the DSP worker thread when it starts (e.g. to join the host's audio
 		// workgroup on Apple platforms). Process-wide; set before the worker starts.
 		static void setDspWorkerThreadStartHook(std::function<void()> _hook);
+		// On a DSP worker thread: the index of the DSP it runs (0 = DSP1, 1 = DSP2); -1 elsewhere.
+		// For the start hook, e.g. to name the thread.
+		static int currentWorkerDsp();
 		bool isDspThreaded() const { return m_dspThreaded; }
 		// True when the DSP is not threaded, or when threaded DSP2 has already
 		// reached the ColdFire's current machine time (no catch-up needed).
@@ -221,7 +224,14 @@ namespace md
 			DspAccess& operator=(const DspAccess&) = delete;
 		private:
 			Hardware* m_hw = nullptr;
+			uint32_t m_index = 0;
 		};
+		// True when the DSP runs on a worker thread (the main worker, or DSP2's own worker
+		// in three-core mode).
+		bool isDspOnWorker(uint32_t _dspIndex) const
+		{
+			return m_dspThreaded && (((_dspIndex & 1) == m_workerDsp) || (m_dualWorker && (_dspIndex & 1) == 1));
+		}
 		// Shared inter-DSP link state (rendezvous flags, ROE, Port C pin) guard.
 		RecursiveSpinLock* linkLock() noexcept { return m_dspThreaded ? &m_linkLock : nullptr; }
 
@@ -400,7 +410,7 @@ namespace md
 		std::array<RecursiveSpinLock, 2> m_hostAudioInputLock;
 		RecursiveSpinLock* hostAudioInputLock(size_t _receiver) noexcept
 		{
-			return (m_dspThreaded && _receiver == m_workerDsp) ? &m_hostAudioInputLock[_receiver & 1] : nullptr;
+			return isDspOnWorker(static_cast<uint32_t>(_receiver)) ? &m_hostAudioInputLock[_receiver & 1] : nullptr;
 		}
 		std::array<int64_t, 2> m_hostAudioInputClockOrigin{};
 		std::array<uint64_t, 2> m_hostAudioInputNextRxIndex{};
@@ -425,6 +435,11 @@ namespace md
 		void     publishDspCycles(uint32_t _dspIndex);
 		uint64_t workerHorizonCycles() const;
 		void     wakeDspWorker();						// scheduler thread: wake a sleeping worker
+		bool     anyDspWorkerSleeping() const
+		{
+			return m_workerSleeping.load(std::memory_order_relaxed)
+				|| (m_dualWorker && m_dsp2Worker.sleeping.load(std::memory_order_relaxed));
+		}
 		// Worker sleep: it spins while work is imminent and sleeps once idle for a while
 		// (between audio buffers); advance() and every scheduler-side wait wake it.
 		alignas(g_cacheLine) std::atomic<uint32_t> m_workerWakeGeneration{0};
@@ -439,6 +454,29 @@ namespace md
 		double   publishedFramePos(uint32_t _dspIndex) const;
 		uint64_t framePosToCycles(uint32_t _dspIndex, double _framePos) const;
 		uint32_t m_workerDsp = 0;				// index of the DSP the worker owns
+		// Three-core mode: DSP1 on the main worker, DSP2 on its own worker, the ColdFire alone on
+		// the scheduler thread.
+		bool     m_dualWorkerRequested = false;
+		bool     m_dualWorker = false;
+		struct alignas(g_cacheLine) SecondWorker
+		{
+			std::thread thread;
+			RecursiveSpinLock lock;
+			alignas(g_cacheLine) std::atomic<uint32_t> wanted{0};
+			alignas(g_cacheLine) std::atomic<uint32_t> wakeGeneration{0};
+			std::atomic<bool> sleeping{false};
+			std::mutex sleepMutex;
+			std::condition_variable wakeCv;
+			alignas(g_cacheLine) std::atomic<uint64_t> busyNs{0};
+			std::atomic<uint64_t> instructions{0};
+			std::atomic<uint64_t> bursts{0};
+		};
+		SecondWorker m_dsp2Worker;
+		// The ColdFire's position (UC cycles), published by the scheduler thread in three-core
+		// mode: DSP2 keeps within one scheduling quantum of it, as when they share a thread.
+		alignas(g_cacheLine) std::atomic<uint64_t> m_publishedUcCycles{0};
+		void     dsp2WorkerMain();
+		uint64_t dsp2WorkerHorizonCycles() const;
 		std::atomic<double> m_publishedTarget{0.0};	// advance() target, for a leading worker
 		bool     m_dspThreadRequested = false;
 		bool     m_dspThreaded = false;			// scheduler-thread view
@@ -493,11 +531,13 @@ namespace md
 			uint64_t schedWaitNs = 0;		// of which waiting for the worker's DSP
 			uint64_t workerBusyNs = 0;		// worker executing its DSP
 			uint64_t workerInstructions = 0;
+			uint64_t dsp2WorkerBusyNs = 0;	// three-core mode: DSP2's worker executing
 		};
 		DspWorkerTiming dspWorkerTiming() const
 		{
 			return {m_statAdvanceNs.load(std::memory_order_relaxed), m_statSchedWaitNs.load(std::memory_order_relaxed),
-				m_statWorkerBusyNs.load(std::memory_order_relaxed), m_statWorkerInstr.load(std::memory_order_relaxed)};
+				m_statWorkerBusyNs.load(std::memory_order_relaxed), m_statWorkerInstr.load(std::memory_order_relaxed),
+				m_dsp2Worker.busyNs.load(std::memory_order_relaxed)};
 		}
 		uint64_t m_threadStartCycles2 = 0;
 	private:

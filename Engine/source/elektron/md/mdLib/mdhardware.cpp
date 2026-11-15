@@ -39,6 +39,7 @@ namespace md
 	{
 		// Set on the DSP worker thread (see "DSP worker thread").
 		thread_local bool t_isDspWorker = false;
+		thread_local int t_workerDspIndex = -1;		// the DSP this worker thread owns
 	}
 
 	// The current 40 MHz ColdFire clock is consistent with the firmware's timer
@@ -159,8 +160,12 @@ namespace md
 			double skew = 1.0;
 			if(const auto* const skewEnv = std::getenv("GEARMULATOR_MD_DSP_SKEW"))
 				skew = std::atof(skewEnv);
+			// "3" = three cores: DSP1 and DSP2 on their own workers, the ColdFire alone here.
 			const int which = std::atoi(workerEnv);
 			setDspWorkerEnabled(which != 0, skew, which == 2 ? 1u : 0u);
+			m_dualWorkerRequested = which == 3;
+			if(std::getenv("GEARMULATOR_MD_YIELD_WAITS"))
+				g_yieldWaits.store(true);
 		}
 
 		if(!m_rom.isValid())
@@ -686,7 +691,7 @@ namespace md
 	// ---------------------------------------------------------------------------------------
 	std::string Hardware::dspWorkerStats() const
 	{
-		char buf[512];
+		char buf[1024];
 		const double adv = std::max(1.0, double(m_statAdvanceNs.load()));
 		const double busy = std::max(1.0, double(m_statWorkerBusyNs.load()));
 		const int n0 = std::snprintf(buf, sizeof(buf), "time in advance %.2f s: scheduler thread waiting %.0f%%, worker executing %.0f%% (%.1f M DSP instructions/s, %.2f cycles/instruction). ",
@@ -699,6 +704,13 @@ namespace md
 			(unsigned long long)m_statWorkerSleeps.load(),
 			(unsigned long long)m_statWorkerLockMiss.load(), (unsigned long long)m_statSchedWaits,
 			(unsigned long long)m_statSchedDsp2Access);
+		if(m_dualWorker)
+		{
+			const size_t used = std::strlen(buf);
+			std::snprintf(buf + used, sizeof(buf) - used, "; DSP2 worker: bursts %llu, executing %.0f%%, %.1f M instr; published DSP1 %.1f DSP2 %.1f target %.1f frames",
+				(unsigned long long)m_dsp2Worker.bursts.load(), 100.0 * double(m_dsp2Worker.busyNs.load()) / adv,
+				double(m_dsp2Worker.instructions.load()) * 1e-6, publishedFramePos(0), publishedFramePos(1), m_publishedTarget.load());
+		}
 		return buf;
 	}
 
@@ -711,32 +723,40 @@ namespace md
 
 	Hardware::DspAccess::DspAccess(Hardware& _hw, const uint32_t _dspIndex) noexcept
 	{
-		if(!_hw.m_dspThreaded || (_dspIndex & 1) != _hw.m_workerDsp)
+		const uint32_t i = _dspIndex & 1;
+		if(!_hw.isDspOnWorker(i))
 			return;
 		m_hw = &_hw;
-		if(t_isDspWorker)
+		m_index = i;
+		const bool second = _hw.m_dualWorker && i == 1;
+		auto& lock = second ? _hw.m_dsp2Worker.lock : _hw.m_workerDspLock;
+		auto& wanted = second ? _hw.m_dsp2Worker.wanted : _hw.m_workerDspWanted;
+		if(t_workerDspIndex == static_cast<int>(i))
 		{
-			_hw.m_workerDspLock.lock();		// already held by the worker; recursion only
+			lock.lock();		// already held by this DSP's worker; recursion only
 			return;
 		}
 		++_hw.m_statSchedDsp2Access;
-		_hw.m_workerDspWanted.fetch_add(1, std::memory_order_relaxed);
-		_hw.m_workerDspLock.lock();
-		_hw.m_workerDspWanted.fetch_sub(1, std::memory_order_relaxed);
+		wanted.fetch_add(1, std::memory_order_relaxed);
+		lock.lock();
+		wanted.fetch_sub(1, std::memory_order_relaxed);
 	}
 
 	Hardware::DspAccess::~DspAccess()
 	{
 		if(!m_hw)
 			return;
-		m_hw->publishDspCycles(m_hw->m_workerDsp);
-		m_hw->m_workerDspLock.unlock();
+		m_hw->publishDspCycles(m_index);
+		if(m_hw->m_dualWorker && m_index == 1)
+			m_hw->m_dsp2Worker.lock.unlock();
+		else
+			m_hw->m_workerDspLock.unlock();
 	}
 
 	bool Hardware::isDspAtHostTime(const uint32_t _dspIndex) const
 	{
 		const auto i = _dspIndex & 1;
-		if(!m_dspThreaded || i != m_workerDsp || t_isDspWorker)
+		if(!isDspOnWorker(i) || t_workerDspIndex == static_cast<int>(i))
 			return false;
 		if(m_schedUcCyclesDone <= m_schedDspOriginUcCycles[i])
 			return true;
@@ -788,12 +808,19 @@ namespace md
 		publishDspCycles(0);
 		publishDspCycles(1);
 		m_publishedTarget.store(m_schedFramesTotal, std::memory_order_release);
+		m_publishedUcCycles.store(m_schedUcCyclesDone, std::memory_order_release);
 		std::fprintf(stderr, "[MD] DSP%u worker thread started (max skew %.2f frames)\n",
 			m_workerDsp + 1, m_dspMaxSkewFrames);
 		m_dspThreaded = true;
+		m_dualWorker = m_dualWorkerRequested && m_workerDsp == 0;
 		m_dspWorkerStop.store(false, std::memory_order_release);
 		m_dspWorkerRun.store(true, std::memory_order_release);
 		m_dspWorkerThread = std::thread([this] { dspWorkerMain(); });
+		if(m_dualWorker)
+		{
+			std::fprintf(stderr, "[MD] DSP2 worker thread started (three cores)\n");
+			m_dsp2Worker.thread = std::thread([this] { dsp2WorkerMain(); });
+		}
 		return true;
 	}
 
@@ -804,8 +831,11 @@ namespace md
 		m_dspWorkerStop.store(true, std::memory_order_release);
 		wakeDspWorker();
 		m_dspWorkerThread.join();
+		if(m_dsp2Worker.thread.joinable())
+			m_dsp2Worker.thread.join();
 		m_dspWorkerRun.store(false, std::memory_order_release);
 		m_dspThreaded = false;
+		m_dualWorker = false;
 	}
 
 	void Hardware::waitForWorkerDsp(const double _framePos)
@@ -820,7 +850,7 @@ namespace md
 			const uint64_t seen = publishedCycles(m_workerDsp).load(std::memory_order_acquire);
 			if(seen >= targetCyc)
 				break;
-			if(m_workerSleeping.load(std::memory_order_relaxed))
+			if(anyDspWorkerSleeping())
 				wakeDspWorker();
 			waitForChange(publishedCycles(m_workerDsp), seen, m_lowPowerWait);
 		}
@@ -834,6 +864,15 @@ namespace md
 		{
 			const std::lock_guard<std::mutex> lock(m_workerSleepMutex);
 			m_workerWakeCv.notify_one();
+		}
+		if(m_dualWorker)
+		{
+			m_dsp2Worker.wakeGeneration.fetch_add(1, std::memory_order_acq_rel);
+			if(m_dsp2Worker.sleeping.load(std::memory_order_seq_cst))
+			{
+				const std::lock_guard<std::mutex> lock(m_dsp2Worker.sleepMutex);
+				m_dsp2Worker.wakeCv.notify_one();
+			}
 		}
 	}
 
@@ -855,6 +894,11 @@ namespace md
 		}
 	}
 
+	int Hardware::currentWorkerDsp()
+	{
+		return t_workerDspIndex;
+	}
+
 	void Hardware::setDspWorkerThreadStartHook(std::function<void()> _hook)
 	{
 		dspWorkerThreadStartHook() = std::move(_hook);
@@ -863,6 +907,7 @@ namespace md
 	void Hardware::dspWorkerMain()
 	{
 		t_isDspWorker = true;
+		t_workerDspIndex = static_cast<int>(m_workerDsp);
 		if(const auto& hook = dspWorkerThreadStartHook())
 			hook();
 #if defined(__APPLE__)
@@ -944,6 +989,13 @@ namespace md
 				for(uint32_t i = 0; i < 64 && d.getCycles() < limit; ++i)
 					d.exec();
 				published.store(d.getCycles(), std::memory_order_release);
+				if(m_dualWorker && m_dsp2Worker.sleeping.load(std::memory_order_relaxed))
+				{
+					// DSP2 follows the mixer: it has room again.
+					m_dsp2Worker.wakeGeneration.fetch_add(1, std::memory_order_acq_rel);
+					const std::lock_guard<std::mutex> sl(m_dsp2Worker.sleepMutex);
+					m_dsp2Worker.wakeCv.notify_one();
+				}
 				if(m_workerDspWanted.load(std::memory_order_relaxed) != 0)
 					break;
 				limit = workerHorizonCycles();
@@ -955,6 +1007,114 @@ namespace md
 			m_statWorkerCycles.fetch_add(d.getCycles() - cyc0, std::memory_order_relaxed);
 			m_workerDspLock.unlock();
 			m_statWorkerBusyNs.fetch_add(static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+				std::chrono::steady_clock::now() - burstStart).count()), std::memory_order_relaxed);
+		}
+	}
+
+	// Three-core mode: DSP2 on its own worker. It may run up to DSP1's published time (it never
+	// passes the mixer) and no further than the current advance() target.
+	uint64_t Hardware::dsp2WorkerHorizonCycles() const
+	{
+		// On one thread the scheduler always steps the laggard of ColdFire and DSP2 by at most a
+		// quantum, so DSP2 never leads the ColdFire by more than that; the firmware's host-port
+		// protocol relies on it. Keep the same bound across threads.
+		const double ucPerFrame = static_cast<double>(g_ucClockHz) / static_cast<double>(g_samplerate);
+		const double quantum = transportPolicy(m_model).backgroundQuantumMicroseconds
+			* static_cast<double>(g_samplerate) / 1.0e6;
+		const double ucFrame = static_cast<double>(m_publishedUcCycles.load(std::memory_order_acquire)) / ucPerFrame;
+		const double limit = std::min({publishedFramePos(0), m_publishedTarget.load(std::memory_order_acquire),
+			ucFrame + quantum});
+		return framePosToCycles(1, limit);
+	}
+
+	void Hardware::dsp2WorkerMain()
+	{
+		t_isDspWorker = true;
+		t_workerDspIndex = 1;
+		if(const auto& hook = dspWorkerThreadStartHook())
+			hook();
+#if defined(__APPLE__)
+		pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
+#endif
+		auto& w = m_dsp2Worker;
+		auto& d = m_dspProducer.dsp();
+		auto& published = publishedCycles(1);
+		uint32_t idleSpins = 0;
+		auto idleSince = std::chrono::steady_clock::now();
+
+		while(!m_dspWorkerStop.load(std::memory_order_acquire))
+		{
+			const uint64_t horizon = dsp2WorkerHorizonCycles();
+			if(published.load(std::memory_order_acquire) >= horizon
+				|| w.wanted.load(std::memory_order_relaxed) != 0)
+			{
+				// Blocked by the mixer: sleep on its counter (it moves every 64 instructions).
+				// Blocked by the block target or by the scheduler wanting this DSP: plain
+				// pause (those don't write the mixer's line).
+				const bool notWanted = w.wanted.load(std::memory_order_relaxed) == 0;
+				if(notWanted && framePosToCycles(1, publishedFramePos(0)) <= horizon)
+					waitForChange(publishedCycles(0), publishedCycles(0).load(std::memory_order_acquire), m_lowPowerWait);
+				else if(notWanted)
+					waitForChange(m_publishedUcCycles, m_publishedUcCycles.load(std::memory_order_acquire), m_lowPowerWait);
+				else
+					cpuRelax();
+				if((++idleSpins & 1023) != 0)
+					continue;
+				const auto now = std::chrono::steady_clock::now();
+				if(idleSpins == 1024)
+					idleSince = now;
+				if(now - idleSince < m_workerSpinBeforeSleep)
+					continue;
+				std::unique_lock<std::mutex> lock(w.sleepMutex);
+				const uint32_t generation = w.wakeGeneration.load(std::memory_order_acquire);
+				w.sleeping.store(true, std::memory_order_seq_cst);
+				if(published.load(std::memory_order_acquire) >= dsp2WorkerHorizonCycles()
+					&& w.wanted.load(std::memory_order_relaxed) == 0)
+				{
+					w.wakeCv.wait_for(lock, std::chrono::milliseconds(5), [&]
+					{
+						return m_dspWorkerStop.load(std::memory_order_acquire)
+							|| w.wakeGeneration.load(std::memory_order_acquire) != generation;
+					});
+				}
+				w.sleeping.store(false, std::memory_order_seq_cst);
+				idleSpins = 0;
+				continue;
+			}
+			if(!w.lock.tryLock())
+			{
+				cpuRelax();
+				continue;
+			}
+			w.bursts.fetch_add(1, std::memory_order_relaxed);
+			idleSpins = 0;
+			const auto burstStart = std::chrono::steady_clock::now();
+			const uint64_t instr0 = d.getInstructionCounter();
+			uint64_t limit = dsp2WorkerHorizonCycles();
+			{
+			const dsp56k::DSP::IdleSkipScope idleSkip(d, m_idleSkipEnabled ? limit : 0);
+			for(uint32_t burst = 0; burst < 16 && d.getCycles() < limit; ++burst)
+			{
+				for(uint32_t i = 0; i < 64 && d.getCycles() < limit; ++i)
+					d.exec();
+				published.store(d.getCycles(), std::memory_order_release);
+				// The mixer may be waiting for us: let it see progress promptly.
+				if(anyDspWorkerSleeping())
+				{
+					m_workerWakeGeneration.fetch_add(1, std::memory_order_acq_rel);
+					const std::lock_guard<std::mutex> sl(m_workerSleepMutex);
+					m_workerWakeCv.notify_one();
+				}
+				if(w.wanted.load(std::memory_order_relaxed) != 0)
+					break;
+				limit = dsp2WorkerHorizonCycles();
+				idleSkip.setLimit(m_idleSkipEnabled ? limit : 0);
+			}
+			}
+			published.store(d.getCycles(), std::memory_order_release);
+			w.instructions.fetch_add(d.getInstructionCounter() - instr0, std::memory_order_relaxed);
+			w.lock.unlock();
+			w.busyNs.fetch_add(static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
 				std::chrono::steady_clock::now() - burstStart).count()), std::memory_order_relaxed);
 		}
 	}
@@ -1657,7 +1817,7 @@ namespace md
 		// A DSP that is not yet runnable is parked at the target so it is never chosen as the laggard.
 		// A DSP owned by the worker thread is never stepped here either.
 		const bool dsp1Here = !m_dspThreaded || m_workerDsp != 0;
-		const bool dsp2Here = !m_dspThreaded || m_workerDsp != 1;
+		const bool dsp2Here = !m_dspThreaded || (m_workerDsp != 1 && !m_dualWorker);
 		double dsp1Pos = (m_schedDspOriginLatched[0] && dsp1Here) ? schedDspFramePos(0) : target;
 		double dsp2Pos = (m_schedDspOriginLatched[1] && dsp2Here) ? schedDspFramePos(1) : target;
 
@@ -1669,7 +1829,9 @@ namespace md
 		{
 			// A few cycles of slack keep rounding from stalling the ColdFire at a block end.
 			constexpr double slack = 16.0 / g_dsp1CyclesPerEsaiFrame;
-			if(m_workerDsp == 1)
+			if(m_dualWorker)
+				ucCap = std::min(publishedFramePos(0), publishedFramePos(1)) + slack;	// ColdFire behind both
+			else if(m_workerDsp == 1)
 			{
 				const double dsp2Published = publishedFramePos(1);
 				ucCap = dsp2Published + slack;
@@ -1733,7 +1895,17 @@ namespace md
 			const uint32_t hereIdx = m_workerDsp == 0 ? 1u : 0u;			// the DSP stepped on this thread
 			const double dspPos = hereIdx == 0 ? dsp1Pos : dsp2Pos;
 			const bool ucMay = may(ucPos, ucCap);
-			const bool dspMay = may(dspPos, dspCap);
+			const bool dspMay = !m_dualWorker && may(dspPos, dspCap);	// three cores: nothing but the ColdFire here
+			if(m_dualWorker && !ucMay)
+			{
+				// The ColdFire has caught up with the slower DSP (DSP2): let the workers move.
+				schedDrainCodecOutput();
+				wakeDspWorker();
+				++m_statSchedWaits;
+				schedWaitBegin();
+				waitForChange(publishedCycles(1), publishedCycles(1).load(std::memory_order_acquire), m_lowPowerWait);
+				return true;
+			}
 			if(ucMay && (!dspMay || ucPos <= dspPos))		{ who = 0; minPos = ucPos; cap = ucCap; }
 			else if(dspMay)									{ who = static_cast<int>(hereIdx) + 1; minPos = dspPos; cap = dspCap; }
 			else
@@ -1743,7 +1915,7 @@ namespace md
 				publishDspCycles(hereIdx);
 				if(m_workerDsp == 0)
 					schedDrainCodecOutput();
-				if(m_workerSleeping.load(std::memory_order_relaxed))
+				if(anyDspWorkerSleeping())
 					wakeDspWorker();
 				++m_statSchedWaits;
 				schedWaitBegin();
@@ -1776,6 +1948,9 @@ namespace md
 			do
 			{
 			processUC();
+			// Three cores: DSP2 follows the ColdFire within a quantum; let it see every step.
+			if(m_dualWorker)
+				m_publishedUcCycles.store(m_schedUcCyclesDone, std::memory_order_release);
 			// Probe periodically within the existing UC slice. A
 			// pending host word/wake, restore or MIDI transfer disables skipping.
 			// The Monomachine path skips its ColdFire idle loop (BRA.B -2) in
@@ -1832,6 +2007,8 @@ namespace md
 			}
 			while(static_cast<double>(m_schedUcCyclesDone) / ucPerFrame < subTarget
 				&& m_schedUcCyclesDone < clampStop);
+			if(m_dualWorker)
+				m_publishedUcCycles.store(m_schedUcCyclesDone, std::memory_order_release);
 #if MD_TRANSPORT_DIAGNOSTICS
 			const auto diagnosticExecuted = m_schedUcCyclesDone - diagnosticStart;
 			score.executedCycles += diagnosticExecuted;
@@ -1902,9 +2079,10 @@ namespace md
 		if(m_dspThreaded)
 		{
 			schedWaitEnd();
-			if(m_workerSleeping.load(std::memory_order_relaxed))
+			if(anyDspWorkerSleeping())
 				wakeDspWorker();								// we moved: the worker has work again
-			publishDspCycles(m_workerDsp == 0 ? 1u : 0u);	// may also have run inline (catch-ups)
+			if(!m_dualWorker)
+				publishDspCycles(m_workerDsp == 0 ? 1u : 0u);	// may also have run inline (catch-ups)
 			if(m_workerDsp == 0)
 				schedDrainCodecOutput();					// the mixer on the worker leaves draining to us
 		}
@@ -2098,7 +2276,7 @@ namespace md
 				const uint64_t seen = publishedCycles(0).load(std::memory_order_acquire);
 				if(seen >= mixerTarget)
 					break;
-				if(m_workerSleeping.load(std::memory_order_relaxed))
+				if(anyDspWorkerSleeping())
 					wakeDspWorker();
 				schedDrainCodecOutput();
 				waitForChange(publishedCycles(0), seen, m_lowPowerWait);

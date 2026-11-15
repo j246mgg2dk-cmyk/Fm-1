@@ -14,8 +14,17 @@ namespace md
 	// line stops the two threads from bouncing one line between cores.
 	constexpr size_t g_cacheLine = 128;
 
+	// Lab only (GEARMULATOR_MD_YIELD_WAITS): yield instead of spinning, for machines with fewer
+	// cores than emulation threads, where spinning threads would starve the one with work.
+	inline std::atomic<bool> g_yieldWaits{false};
+
 	inline void cpuRelax() noexcept
 	{
+		if(g_yieldWaits.load(std::memory_order_relaxed))
+		{
+			std::this_thread::yield();
+			return;
+		}
 #if defined(__aarch64__)
 		asm volatile("yield" ::: "memory");
 #elif defined(__x86_64__) || defined(_M_X64)

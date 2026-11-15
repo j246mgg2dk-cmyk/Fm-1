@@ -22,6 +22,8 @@ NS_ASSUME_NONNULL_BEGIN
 // Two cores, since the last stats call: which thread is the limit.
 @property (nonatomic) double schedulerWait;       // share of the render thread's emulation time spent waiting for DSP1
 @property (nonatomic) double workerBusy;          // share of that time the DSP1 thread was executing
+@property (nonatomic) double dsp2Busy;            // three cores: share of that time the DSP2 thread was executing
+@property (nonatomic) BOOL threeCores;            // DSP2 runs on its own core too
 @property (nonatomic) double dsp1Mips;            // DSP1 instructions per second while executing (millions)
 @property (nonatomic) double footprintMB;         // app memory footprint
 @property (nonatomic) double secondsPlayed;
@@ -37,6 +39,10 @@ NS_ASSUME_NONNULL_BEGIN
 /// Two cores only: the threads wait for each other with WFE (low power) instead of spinning.
 /// Set before starting.
 @property (nonatomic) BOOL lowPowerWait;
+
+/// With the second core on: DSP2 also gets its own core (three emulation threads: ColdFire,
+/// DSP1, DSP2). Set before starting.
+@property (nonatomic) BOOL thirdCore;
 
 /// Safety buffer in frames (256-4096): how far the render thread runs ahead of the output.
 /// Heavy moments shorter than this are absorbed instead of heard. Set before starting.

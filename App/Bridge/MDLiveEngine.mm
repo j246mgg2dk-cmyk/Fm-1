@@ -663,13 +663,13 @@ namespace
 		g_audioWorkgroup = _engine.outputNode.AUAudioUnit.osWorkgroup;
 	md::Hardware::setDspWorkerThreadStartHook([]
 	{
-		pthread_setname_np("md.dsp1-worker");
+		pthread_setname_np(md::Hardware::currentWorkerDsp() == 1 ? "md.dsp2-worker" : "md.dsp1-worker");
 		if(joinAudioWorkgroup())
 			g_workgroupJoined = true;
 	});
 
 	// 3. Boot the Machinedrum off the audio threads.
-	setenv("GEARMULATOR_MD_DSP_WORKER", secondCore ? "1" : "0", 1);
+	setenv("GEARMULATOR_MD_DSP_WORKER", secondCore ? (self.thirdCore ? "3" : "1") : "0", 1);
 	setenv("GEARMULATOR_MD_DSP_SKEW", "2", 1);
 	setenv("GEARMULATOR_MD_LOW_POWER_WAIT", self.lowPowerWait ? "1" : "0", 1);
 	std::vector<uint8_t> fw;
@@ -721,7 +721,8 @@ namespace
 	}
 	const bool threaded = s->device->getHardware().isDspThreaded();
 	progress(secondCore
-		? (threaded ? @"DSP1 is running on a second core." : @"Second core requested but not active.")
+		? (threaded ? (self.thirdCore ? @"DSP1 and DSP2 are running on their own cores." : @"DSP1 is running on a second core.")
+			: @"Second core requested but not active.")
 		: @"Running on one core.");
 	if(secondCore)
 		progress(g_workgroupJoined ? @"The DSP worker joined the audio workgroup." : @"The DSP worker could not join the audio workgroup (it still runs at high priority).");
@@ -840,7 +841,9 @@ namespace
 		{
 			r.schedulerWait = double(t.schedWaitNs - s.lastTiming.schedWaitNs) / adv;
 			r.workerBusy = busy / adv;
+			r.dsp2Busy = double(t.dsp2WorkerBusyNs - s.lastTiming.dsp2WorkerBusyNs) / adv;
 		}
+		r.threeCores = t.dsp2WorkerBusyNs > 0;
 		if(busy > 0)
 			r.dsp1Mips = double(t.workerInstructions - s.lastTiming.workerInstructions) / busy * 1e3;
 		s.lastTiming = t;

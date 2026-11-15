@@ -86,6 +86,7 @@ final class MachineController: ObservableObject {
     @AppStorage("perfLog") var perfLogEnabled = false
     @AppStorage("secondCore") var secondCore = true
     @AppStorage("lowPowerWait") var lowPowerWait = true
+    @AppStorage("thirdCore") var thirdCore = false
     @AppStorage("volume") var volume: Double = 0.85 { didSet { engine.volume = Float(volume) } }
     @AppStorage("lcdTheme") var lcdThemeRaw = LCDTheme.amber.rawValue { didSet { panel.lcd = nil; lastLCD = nil; redrawLCD() } }
 
@@ -137,6 +138,7 @@ final class MachineController: ObservableObject {
         let state = try? Data(contentsOf: Storage.state)
         let buffer = bufferFrames, two = secondCore
         engine.lowPowerWait = lowPowerWait
+        engine.thirdCore = thirdCore
         engine.safetyFrames = safetyFrames
         let engine = self.engine
         runOnPerformanceCore {
@@ -265,7 +267,8 @@ final class MachineController: ObservableObject {
     private var perfLast = Date()
     private var perfLoadSum = 0.0, perfLoadCount = 0, perfPeak = 0.0
     private var perfMinSafety = Int.max, perfUnderrunsAtStart = 0, perfLastUnderruns = 0
-    private var perfWaitSum = 0.0, perfBusySum = 0.0, perfMipsSum = 0.0, perfSplitCount = 0
+    private var perfWaitSum = 0.0, perfBusySum = 0.0, perfDsp2Sum = 0.0, perfMipsSum = 0.0, perfSplitCount = 0
+    private var perfCores = 1
     private var stressTimer: Timer?
     private var stressSnapshot: Data?
     private var stressEnd = Date()
@@ -278,7 +281,8 @@ final class MachineController: ObservableObject {
         perfLoadSum += s.recentLoad; perfLoadCount += 1
         perfPeak = max(perfPeak, s.recentPeakLoad)
         perfMinSafety = min(perfMinSafety, s.safetyMinFill)
-        if s.workerBusy > 0 { perfWaitSum += s.schedulerWait; perfBusySum += s.workerBusy; perfMipsSum += s.dsp1Mips; perfSplitCount += 1 }
+        if s.workerBusy > 0 { perfWaitSum += s.schedulerWait; perfBusySum += s.workerBusy; perfDsp2Sum += s.dsp2Busy; perfMipsSum += s.dsp1Mips; perfSplitCount += 1 }
+        perfCores = s.threeCores ? 3 : (s.secondCore ? 2 : 1)
         let now = Date()
         guard now.timeIntervalSince(perfLast) >= 10 else { return }
         perfLast = now
@@ -287,18 +291,19 @@ final class MachineController: ObservableObject {
         if let h = try? FileHandle(forReadingFrom: Storage.perfLog) {
             let head = String(decoding: h.readData(ofLength: 400), as: UTF8.self)
             try? h.close()
-            if !head.contains("dsp1_mips") { try? fm.removeItem(at: Storage.perfLog) }
+            if !head.contains("dsp2_busy_pct") { try? fm.removeItem(at: Storage.perfLog) }
         }
         if !fm.fileExists(atPath: Storage.perfLog.path) {
             try? fm.createDirectory(at: Storage.perfLog.deletingLastPathComponent(), withIntermediateDirectories: true)
-            let header = "time,elapsed_s,stress,load_avg_pct,block_peak_pct,underruns,min_safety_frames,safety_frames,output_frames,audio_restarts,memory_mb,thermal,midi_in,midi_out,render_waits_for_dsp1_pct,dsp1_busy_pct,dsp1_mips,threads\n"
+            let header = "time,elapsed_s,stress,load_avg_pct,block_peak_pct,underruns,min_safety_frames,safety_frames,output_frames,audio_restarts,memory_mb,thermal,midi_in,midi_out,cores,render_waits_for_dsp1_pct,dsp1_busy_pct,dsp2_busy_pct,dsp1_mips,threads\n"
             try? header.write(to: Storage.perfLog, atomically: true, encoding: .utf8)
         }
         let thermal = ["nominal", "fair", "serious", "critical"][min(3, ProcessInfo.processInfo.thermalState.rawValue)]
         let f = ISO8601DateFormatter()
         let split = perfSplitCount > 0
-            ? String(format: "%.0f,%.0f,%.1f", perfWaitSum / Double(perfSplitCount) * 100, perfBusySum / Double(perfSplitCount) * 100, perfMipsSum / Double(perfSplitCount))
-            : ",,"
+            ? String(format: "%ld,%.0f,%.0f,%@,%.1f", perfCores, perfWaitSum / Double(perfSplitCount) * 100, perfBusySum / Double(perfSplitCount) * 100,
+                     perfCores == 3 ? String(format: "%.0f", perfDsp2Sum / Double(perfSplitCount) * 100) : "", perfMipsSum / Double(perfSplitCount))
+            : "\(perfCores),,,,"
         let underruns = max(0, s.overruns - perfLastUnderruns)
         let line = String(format: "%@,%.0f,%@,%.1f,%.1f,%ld,%ld,%ld,%ld,%ld,%.0f,%@,%ld,%ld,%@,\"%@\"\n",
                           f.string(from: now), now.timeIntervalSince(perfStart), stressTimer != nil ? "yes" : "no",
@@ -311,7 +316,7 @@ final class MachineController: ObservableObject {
             h.seekToEndOfFile(); h.write(line.data(using: .utf8)!); try? h.close()
         }
         perfLoadSum = 0; perfLoadCount = 0; perfPeak = 0; perfMinSafety = Int.max
-        perfWaitSum = 0; perfBusySum = 0; perfMipsSum = 0; perfSplitCount = 0
+        perfWaitSum = 0; perfBusySum = 0; perfDsp2Sum = 0; perfMipsSum = 0; perfSplitCount = 0
     }
 
     func resetPerformanceLog() {
