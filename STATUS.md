@@ -300,6 +300,27 @@ The test app is now the Machinedrum app (same bundle, so your imported firmware 
 - **Device test:** 5-minute stress test with the setting off, then on; compare the CSV columns
   `load_avg_pct`, `underruns`, `render_waits_for_dsp1_pct`, `dsp1_busy_pct`, `dsp2_busy_pct`.
 
+## Device results, 2026-11-15
+- **Two-core stress (twice):** about 84% before the clock drop, 98-99% after it (DSP1 116 -> 98 M
+  instr/s, thermal nominal). Dropouts only while the clock falls; none once it has settled.
+- **Three-core, normal play:** 76.6% load against 69.0% for two-core on the same pattern. The DSP2
+  thread is busy 30% but holds a core at 100%; with three busy cores the M1 keeps a lower clock
+  (DSP1 108 instead of 120 M instr/s). DSP1 is busy 95% in normal play: it is the floor.
+- **Saving:** autosave is now off by default (Settings: off / 2 / 5 / 15 min); named projects with
+  Save / Save As / Load; the session is saved once when the app leaves the foreground (setting).
+
+## Parallel-move fast path (2026-11-15)
+- A sampled profile of DSP1's program shows no hot loop; time is spread over the mixer code, but
+  `mac` with parallel moves is about 40% of it and ALU+move instructions about 43%.
+- The interpreter ran every ALU+move instruction through `exec_parallel`: save A/B, ALU, restore
+  A/B, move, compare and merge. That is only needed when the move touches A or B (the only
+  registers a parallel ALU op writes). When it doesn't (XY moves into x0/x1/y0/y1, X: or Y: moves
+  of x/y/r/n registers, register moves among those, immediates, address updates), the ALU now runs
+  first and the move second, directly: exactly the latched result.
+- **Lab:** single-thread output byte-identical; interpreter unit tests pass; whole-emulator
+  single-thread time 14.38 -> 13.32 s for 8 s of audio (-7%, four alternating runs each); DSP1
+  instruction rate on the worker about +14% (noisy 2-core machine).
+
 ## Engine changes made for iPad
 1. **DO-loop deadlock fixed** (`dsp56kEmu/dsp.cpp`, `dsp.h`).
    - The interpreter ran each hardware DO loop to completion inside a single step. The MD runs the

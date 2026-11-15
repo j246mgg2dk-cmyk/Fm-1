@@ -1400,6 +1400,8 @@ namespace dsp56k
 		void op_Wait(TWord _op);
 		void op_ResolveCache(TWord op);
 		void op_Parallel(TWord op);
+		void op_ParallelAluFirst(TWord op);
+		static bool parallelMoveLeavesAB(Instruction _move, TWord _op);
 
 		// ------------- function permutations -------------
 		static TInstructionFunc resolvePermutation(Instruction _inst, TWord _op);

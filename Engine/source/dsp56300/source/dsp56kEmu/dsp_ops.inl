@@ -631,12 +631,48 @@ namespace dsp56k
 			else
 			{
 				// call special function that simulates latch registers for alu op + parallel move
-				cacheEntry.op = &DSP::op_Parallel;
 				cacheEntry.opMove = resolvePermutation(oiMove->m_instruction, op);
 				cacheEntry.opAlu = resolvePermutation(oiAlu->m_instruction, op);
-				op_Parallel(op);
+				if(parallelMoveLeavesAB(oiMove->m_instruction, op))
+				{
+					// The move neither reads nor writes A or B, the only registers a parallel ALU
+					// operation writes: running the ALU first and the move second is exactly the
+					// latched behaviour, without saving, restoring and comparing A and B.
+					cacheEntry.op = &DSP::op_ParallelAluFirst;
+					op_ParallelAluFirst(op);
+				}
+				else
+				{
+					cacheEntry.op = &DSP::op_Parallel;
+					op_Parallel(op);
+				}
 			}
 		}
+	}
+
+	inline bool DSP::parallelMoveLeavesAB(const Instruction _move, const TWord _op)
+	{
+		// ddddd register codes that are not part of A or B: x0, x1, y0, y1, r0-r7, n0-n7
+		const auto safe = [](const TWord _d) { return (_d >= 0x04 && _d <= 0x07) || (_d >= 0x10 && _d <= 0x1f); };
+		switch(_move)
+		{
+		case Movexy:	return getFieldValue<Movexy, Field_ee>(_op) < 2 && getFieldValue<Movexy, Field_ff>(_op) < 2;	// x0/x1, y0/y1
+		case Movex_ea:	return safe(getFieldValue<Movex_ea, Field_dd, Field_ddd>(_op));
+		case Movey_ea:	return safe(getFieldValue<Movey_ea, Field_dd, Field_ddd>(_op));
+		case Movex_aa:	return safe(getFieldValue<Movex_aa, Field_dd, Field_ddd>(_op));
+		case Movey_aa:	return safe(getFieldValue<Movey_aa, Field_dd, Field_ddd>(_op));
+		case Mover:		return safe(getFieldValue<Mover, Field_eeeee>(_op)) && safe(getFieldValue<Mover, Field_ddddd>(_op));
+		case Move_xx:	return safe(getFieldValue<Move_xx, Field_ddddd>(_op));
+		case Move_ea:	return true;	// address register update only
+		default:		return false;
+		}
+	}
+
+	inline void DSP::op_ParallelAluFirst(const TWord op)
+	{
+		const auto& cacheEntry = m_opcodeCache[pcCurrentInstruction];
+		(this->*cacheEntry.opAlu)(op);
+		(this->*cacheEntry.opMove)(op);
 	}
 
 	inline void DSP::op_Parallel(const TWord op)
