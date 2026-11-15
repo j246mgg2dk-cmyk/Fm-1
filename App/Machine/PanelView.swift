@@ -213,21 +213,22 @@ struct FrontPanelView: View {
         GeometryReader { geo in
             // Designed at 1180 x 760 points (11-inch iPad Pro, landscape); everything scales.
             let u = min(geo.size.width / 1180, geo.size.height / 760)
-            let key = 62 * u, keyH = 44 * u
-            VStack(spacing: 16 * u) {
+            let key = 66 * u, keyH = 50 * u
+            VStack(spacing: 0) {
                 // Row 1: LEVEL, LCD, data entry encoders, navigation.
                 HStack(alignment: .top, spacing: 22 * u) {
                     VStack(spacing: 14 * u) {
-                        EncoderKnob(encoder: 8, label: "LEVEL", size: 74 * u, pushable: false)
+                        EncoderKnob(encoder: 8, label: "LEVEL", size: 80 * u, pushable: false)
                     }
                     .padding(.top, 20 * u)
-                    LCDDisplay().frame(width: 400 * u, height: 210 * u)
+                    LCDDisplay().frame(width: 440 * u, height: 228 * u)
                     VStack(spacing: 14 * u) {
-                        HStack(spacing: 18 * u) { ForEach(0..<4) { i in EncoderKnob(encoder: i, label: ["A", "B", "C", "D"][i], size: 64 * u) } }
-                        HStack(spacing: 18 * u) { ForEach(4..<8) { i in EncoderKnob(encoder: i, label: ["E", "F", "G", "H"][i - 4], size: 64 * u) } }
+                        HStack(spacing: 18 * u) { ForEach(0..<4) { i in EncoderKnob(encoder: i, label: ["A", "B", "C", "D"][i], size: 72 * u) } }
+                        HStack(spacing: 18 * u) { ForEach(4..<8) { i in EncoderKnob(encoder: i, label: ["E", "F", "G", "H"][i - 4], size: 72 * u) } }
                     }
                     navigation(u: u, key: key, keyH: keyH)
                 }
+                Spacer(minLength: 12 * u)
                 // Row 2: modes, banks, pages.
                 HStack(alignment: .bottom, spacing: 14 * u) {
                     ledKey(.classicExtended, "CLASSIC/EXT", leds: [("CLASSIC", panel.leds.classic, Panel.green), ("EXTENDED", panel.leds.extended, Panel.green)], u: u)
@@ -248,9 +249,10 @@ struct FrontPanelView: View {
                     }
                     ledKey(.scale, "SCALE", leds: [("1", panel.leds.page1, Panel.red), ("2", panel.leds.page2, Panel.red), ("3", panel.leds.page3, Panel.red), ("4", panel.leds.page4, Panel.red)], u: u)
                 }
+                Spacer(minLength: 12 * u)
                 // Row 3: track LEDs above the trigs.
                 HStack(spacing: 0) {
-                    Color.clear.frame(width: transportWidth(u: u, key: key))
+                    Color.clear.frame(width: transportWidth(u: u, key: key), height: 4 * u)
                     HStack(spacing: 6 * u) {
                         ForEach(0..<16) { i in
                             Capsule().fill(panel.leds.track(i) ? Panel.red : Color(white: 0.09))
@@ -260,12 +262,14 @@ struct FrontPanelView: View {
                         }
                     }
                 }
+                .frame(height: 10 * u)
+                .padding(.bottom, 8 * u)
                 // Row 4: transport and the 16 trig keys.
                 HStack(spacing: 10 * u) {
                     transport(u: u, key: key)
                     HStack(spacing: 6 * u) {
                         ForEach(0..<16) { i in
-                            TrigKey(index: i, w: (geo.size.width - transportWidth(u: u, key: key) - 48 * u - 15 * 6 * u) / 16, h: 108 * u)
+                            TrigKey(index: i, w: (geo.size.width - transportWidth(u: u, key: key) - 48 * u - 15 * 6 * u) / 16, h: 132 * u)
                         }
                     }
                 }
@@ -276,24 +280,24 @@ struct FrontPanelView: View {
         }
     }
 
-    private func transportWidth(u: CGFloat, key: CGFloat) -> CGFloat { 3 * 58 * u + 2 * 8 * u + 10 * u }
+    private func transportWidth(u: CGFloat, key: CGFloat) -> CGFloat { 3 * 62 * u + 2 * 8 * u + 10 * u }
 
     private func transport(u: CGFloat, key: CGFloat) -> some View {
         HStack(spacing: 8 * u) {
-            PanelKey(control: MDControl.record.rawValue, width: 58 * u, height: 108 * u, haptic: .medium) {
+            PanelKey(control: MDControl.record.rawValue, width: 62 * u, height: 132 * u, haptic: .medium) {
                 VStack(spacing: 6 * u) {
                     LED(on: panel.leds.record, size: 8 * u)
                     Circle().fill(Panel.red.opacity(0.85)).frame(width: 16 * u, height: 16 * u)
                     Silk("REC", size: 9 * u, color: Panel.silkDim)
                 }
             }
-            PanelKey(control: MDControl.play.rawValue, width: 58 * u, height: 108 * u, haptic: .medium) {
+            PanelKey(control: MDControl.play.rawValue, width: 62 * u, height: 132 * u, haptic: .medium) {
                 VStack(spacing: 6 * u) {
                     Image(systemName: "play.fill").font(.system(size: 18 * u)).foregroundStyle(Panel.green.opacity(0.85))
                     Silk("PLAY", size: 9 * u, color: Panel.silkDim)
                 }
             }
-            PanelKey(control: MDControl.stop.rawValue, width: 58 * u, height: 108 * u, haptic: .medium) {
+            PanelKey(control: MDControl.stop.rawValue, width: 62 * u, height: 132 * u, haptic: .medium) {
                 VStack(spacing: 6 * u) {
                     RoundedRectangle(cornerRadius: 2).fill(Panel.silk).frame(width: 15 * u, height: 15 * u)
                     Silk("STOP", size: 9 * u, color: Panel.silkDim)
@@ -332,7 +336,7 @@ struct FrontPanelView: View {
                     }
                 }
             }
-            FunctionKey(control: control, label: label, w: max(88 * u, CGFloat(leds.count) * 34 * u), h: 44 * u)
+            FunctionKey(control: control, label: label, w: max(96 * u, CGFloat(leds.count) * 36 * u), h: 50 * u)
         }
     }
 }
