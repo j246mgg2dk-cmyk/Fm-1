@@ -17,14 +17,20 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) double footprintMB;         // app memory footprint
 @property (nonatomic) double secondsPlayed;
 @property (nonatomic, copy) NSString *threadStats;  // two-core timing: who waits for whom
+@property (nonatomic) NSInteger midiInCount;      // MIDI messages received so far
+@property (nonatomic) NSInteger midiOutCount;     // MIDI messages the Machinedrum sent so far
 @end
 
-/// Plays the real Machinedrum emulator through the iPad's audio output in real time.
+/// Plays the real Machinedrum emulator through the iPad's audio output in real time, and is
+/// the bridge for its front panel (LCD, LEDs, buttons, encoders), MIDI and saved state.
 @interface MDLiveEngine : NSObject
 
 /// Two cores only: the threads wait for each other with WFE (low power) instead of spinning.
 /// Set before starting.
 @property (nonatomic) BOOL lowPowerWait;
+
+/// Output gain applied after the emulator, 0...1 (the Machinedrum's analogue VOLUME knob).
+@property (nonatomic) float volume;
 
 /// Starts audio output (silence), boots the firmware off the audio thread, presses PLAY and
 /// then streams the emulator. Blocks until playing or failed: call it off the main thread.
@@ -34,11 +40,60 @@ NS_ASSUME_NONNULL_BEGIN
              bufferFrames:(NSInteger)bufferFrames
                  progress:(void (^)(NSString *line))progress;
 
+/// As above. `state` (from -copyState) restores kits, patterns, songs and settings before the
+/// boot; nil starts from the machine's flash as it is. `autoPlay` presses PLAY after the boot.
+- (BOOL)startWithFirmware:(NSString *)firmwarePath
+                 homePath:(NSString *)homePath
+               secondCore:(BOOL)secondCore
+             bufferFrames:(NSInteger)bufferFrames
+             restoreState:(nullable NSData *)state
+                 autoPlay:(BOOL)autoPlay
+                 progress:(void (^)(NSString *line))progress;
+
 /// Stops audio and releases the emulator.
 - (void)stop;
 
+/// YES once booted and producing audio.
+@property (nonatomic, readonly) BOOL isRunning;
+
 /// Current statistics (thread-safe; resets the recent peak).
 - (MDLiveStats *)stats;
+
+// ---- Front panel (main thread) -------------------------------------------------------------
+
+/// Press or release a panel control. `control` is the md::PanelControl value
+/// (0-15 trig keys 1-16, then the function keys in the engine's order).
+- (void)setControl:(NSInteger)control pressed:(BOOL)pressed;
+
+/// Turn an encoder by whole detents (negative = anticlockwise).
+/// 0-7 = data entry A-H, 8 = LEVEL, 9 = sound selection.
+- (void)turnEncoder:(NSInteger)encoder steps:(NSInteger)steps;
+
+/// Push or release a data entry encoder (0-7).
+- (void)setEncoder:(NSInteger)encoder pressed:(BOOL)pressed;
+
+/// Copies the LCD (128 x 64 bytes, row-major, 1 = lit) and the LED state into the caller's
+/// buffers. leds[0] = step LEDs 1-16 (bit n = step n+1), leds[1] = track LEDs 1-16,
+/// leds[2] = status bank (page 1-3, pattern, song, routing, effects, synthesis),
+/// leds[3] = mode bank (classic, extended, bank group A-D, E-H, record, tempo, page 4).
+/// Returns NO when nothing changed since the last call (the buffers are then untouched).
+- (BOOL)copyPanelLCD:(uint8_t *)lcd leds:(uint32_t *)leds;
+
+// ---- MIDI ----------------------------------------------------------------------------------
+
+/// One complete MIDI message (or SysEx, F0...F7) from any input, any thread. `hostTime` is
+/// its mach_absolute_time (0 = now). Events reach the emulator one audio buffer later at
+/// their original spacing, so timing is a fixed delay rather than jitter.
+- (void)receiveMIDI:(const uint8_t *)bytes length:(NSUInteger)length hostTime:(uint64_t)hostTime;
+
+/// Hands every MIDI message the Machinedrum sent to `handler` with the host time it should
+/// leave at (lined up with the audio output). Call from one thread only.
+- (void)drainMIDIOut:(void (NS_NOESCAPE ^)(const uint8_t *bytes, NSUInteger length, uint64_t hostTime))handler;
+
+// ---- Saved state ---------------------------------------------------------------------------
+
+/// Kits, patterns, songs and global settings as the Machinedrum holds them now.
+- (nullable NSData *)copyState;
 
 @end
 

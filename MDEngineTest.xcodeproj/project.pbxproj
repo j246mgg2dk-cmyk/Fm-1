@@ -188,6 +188,11 @@
 		D502C0E9772DAEA51C89C4CA /* i2cFlash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 742FC9E20A710C85434651FC /* i2cFlash.cpp */; };
 		D5BE3E7E6340FC6B2D81BD88 /* MDEngineTest.mm in Sources */ = {isa = PBXBuildFile; fileRef = C2914136403554A56D057A31 /* MDEngineTest.mm */; };
 		A1B2C3D4E5F60718293A4B5C /* MDLiveEngine.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5D /* MDLiveEngine.mm */; };
+		BA0CDD7A3A85493FF36D3477 /* MDMIDI.mm in Sources */ = {isa = PBXBuildFile; fileRef = B90ADBC2F80BDFA0EA463CDD /* MDMIDI.mm */; };
+		4E198AB29A831D9C7C2C9CA0 /* MachinedrumApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B968E148DC4A2B6AFE799EAE /* MachinedrumApp.swift */; };
+		0EFA1C67AD1A465344968B26 /* MachineController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AEC4FDDC1990065125F287A /* MachineController.swift */; };
+		F1B55967284CFBC4F765E73B /* PanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C05603B344695FA00D645EA2 /* PanelView.swift */; };
+		ADB814FB55F38CE7866667F6 /* MachineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CED1DA1FD0F4279B2538196B /* MachineView.swift */; };
 		D64DEFCCA3EF0D7CB5C524E8 /* jittrampoline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F1E795A30FA835DF588ECA56 /* jittrampoline.cpp */; };
 		D7266ADEEAC6BD4C172015CF /* haltDSP.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5AD8BF88827CD1B9F565CAF4 /* haltDSP.cpp */; };
 		D8290AB1A8C0EC4A7D3C96B9 /* mdromdata.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 923526CF729877A27EED91F3 /* mdromdata.cpp */; };
@@ -399,6 +404,12 @@
 		C2914136403554A56D057A31 /* MDEngineTest.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MDEngineTest.mm; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718293A4B5D /* MDLiveEngine.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MDLiveEngine.mm; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718293A4B5E /* MDLiveEngine.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MDLiveEngine.h; sourceTree = "<group>"; };
+		B90ADBC2F80BDFA0EA463CDD /* MDMIDI.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MDMIDI.mm; sourceTree = "<group>"; };
+		DCFD632937A7B11DB84FEF31 /* MDMIDI.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MDMIDI.h; sourceTree = "<group>"; };
+		B968E148DC4A2B6AFE799EAE /* MachinedrumApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachinedrumApp.swift; sourceTree = "<group>"; };
+		5AEC4FDDC1990065125F287A /* MachineController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineController.swift; sourceTree = "<group>"; };
+		C05603B344695FA00D645EA2 /* PanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanelView.swift; sourceTree = "<group>"; };
+		CED1DA1FD0F4279B2538196B /* MachineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineView.swift; sourceTree = "<group>"; };
 		C2DD2B2BAC0F35A345DE48A8 /* jitblock.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = jitblock.cpp; sourceTree = "<group>"; };
 		C3F6F5CB20708DC82E12B730 /* esxi.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = esxi.cpp; sourceTree = "<group>"; };
 		C417691D207D7BAFA1B28308 /* esai.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = esai.cpp; sourceTree = "<group>"; };
@@ -508,6 +519,8 @@
 				56300F98BA789BA1B5C1D29C /* Info.plist */,
 				40F440F5107DBA8B95D86A83 /* MDTestApp.swift */,
 				BE7369C336B275B325DC009B /* Bridge */,
+				B968E148DC4A2B6AFE799EAE /* MachinedrumApp.swift */,
+				2C8BB3A199421688D1792BF5 /* Machine */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -883,6 +896,16 @@
 			path = src;
 			sourceTree = "<group>";
 		};
+		2C8BB3A199421688D1792BF5 /* Machine */ = {
+			isa = PBXGroup;
+			children = (
+				5AEC4FDDC1990065125F287A /* MachineController.swift */,
+				C05603B344695FA00D645EA2 /* PanelView.swift */,
+				CED1DA1FD0F4279B2538196B /* MachineView.swift */,
+			);
+			path = Machine;
+			sourceTree = "<group>";
+		};
 		BE7369C336B275B325DC009B /* Bridge */ = {
 			isa = PBXGroup;
 			children = (
@@ -891,6 +914,8 @@
 				A1B2C3D4E5F60718293A4B5E /* MDLiveEngine.h */,
 				A1B2C3D4E5F60718293A4B5D /* MDLiveEngine.mm */,
 				7C86B850BF7137D41A4D38D6 /* MDTest-Bridging-Header.h */,
+				B90ADBC2F80BDFA0EA463CDD /* MDMIDI.mm */,
+				DCFD632937A7B11DB84FEF31 /* MDMIDI.h */,
 			);
 			path = Bridge;
 			sourceTree = "<group>";
@@ -1006,6 +1031,11 @@
 			files = (
 				D5BE3E7E6340FC6B2D81BD88 /* MDEngineTest.mm in Sources */,
 				A1B2C3D4E5F60718293A4B5C /* MDLiveEngine.mm in Sources */,
+				BA0CDD7A3A85493FF36D3477 /* MDMIDI.mm in Sources */,
+				4E198AB29A831D9C7C2C9CA0 /* MachinedrumApp.swift in Sources */,
+				0EFA1C67AD1A465344968B26 /* MachineController.swift in Sources */,
+				F1B55967284CFBC4F765E73B /* PanelView.swift in Sources */,
+				ADB814FB55F38CE7866667F6 /* MachineView.swift in Sources */,
 				25C1BAEAB84FCF5828BFBD10 /* MDTestApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

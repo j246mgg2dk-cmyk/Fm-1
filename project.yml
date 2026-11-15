@@ -257,6 +257,8 @@ targets:
     dependencies:
       - target: MDEngine
       - sdk: AVFoundation.framework
+      - sdk: CoreMIDI.framework
+      - sdk: CoreAudioKit.framework
     settings:
       base:
         PRODUCT_NAME: MD Engine Test
@@ -269,11 +271,14 @@ targets:
     info:
       path: App/Info.plist
       properties:
-        CFBundleDisplayName: MD Engine Test
+        CFBundleDisplayName: Machinedrum
+        UIBackgroundModes: [audio]
+        NSBluetoothAlwaysUsageDescription: Connect Bluetooth MIDI controllers and instruments to the Machinedrum.
+        UIRequiresFullScreen: true
         UILaunchScreen: {}
         UIFileSharingEnabled: true
         LSSupportsOpeningDocumentsInPlace: true
-        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight, UIInterfaceOrientationPortraitUpsideDown]
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
 
 schemes:
   MDEngineTest:

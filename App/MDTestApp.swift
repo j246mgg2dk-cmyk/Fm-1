@@ -3,12 +3,6 @@ import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
-@main
-struct MDTestApp: App {
-    var body: some Scene {
-        WindowGroup { ContentView().preferredColorScheme(.dark) }
-    }
-}
 
 /// Where imported files live: Documents/Machinedrum (visible in the Files app).
 /// Firmware is never bundled with the app; you import your own.
@@ -21,6 +15,9 @@ enum Storage {
     static var recording: URL { root.appendingPathComponent("test-recording.wav") }
     static var recording2: URL { root.appendingPathComponent("test-recording-2core.wav") }
     static var logFile: URL { root.appendingPathComponent("test-log.txt") }
+    /// Your kits, patterns, songs and settings (saved automatically).
+    static var state: URL { root.appendingPathComponent("state/machinedrum.mdstate") }
+    static var statePrevious: URL { root.appendingPathComponent("state/machinedrum-before-restore.mdstate") }
 
     static func size(_ url: URL) -> Int64? {
         (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber)?.int64Value
@@ -314,7 +311,8 @@ final class TestModel: ObservableObject {
     }
 }
 
-struct ContentView: View {
+/// The engine tests (formerly the test app's main screen), reached from Settings.
+struct DiagnosticsView: View {
     @StateObject private var m = TestModel()
     // Which button opened the picker. Kept separately from `showImporter`: SwiftUI sets the
     // picker's isPresented to false *before* calling its completion handler.
@@ -322,20 +320,18 @@ struct ContentView: View {
     @State private var showImporter = false
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    filesPanel
-                    testsPanel
-                    if m.result != nil || m.result2 != nil { resultPanel }
-                    livePanel
-                    logPanel
-                }
-                .padding(20)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                filesPanel
+                testsPanel
+                if m.result != nil || m.result2 != nil { resultPanel }
+                livePanel
+                logPanel
             }
-            .background(Color(white: 0.06))
-            .navigationTitle("Machinedrum engine test")
+            .padding(20)
         }
+        .background(Color(white: 0.06))
+        .navigationTitle("Diagnostics")
         .fileImporter(isPresented: $showImporter, allowedContentTypes: [.item]) { res in
             m.importPicked(res, as: importTarget)
         }
