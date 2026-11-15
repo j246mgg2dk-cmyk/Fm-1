@@ -309,6 +309,18 @@ The test app is now the Machinedrum app (same bundle, so your imported firmware 
 - **Saving:** autosave is now off by default (Settings: off / 2 / 5 / 15 min); named projects with
   Save / Save As / Load; the session is saved once when the app leaves the foreground (setting).
 
+## Two-core stress with skew 8 + parallel-move fast path (2026-11-15, device)
+| | before (two runs) | now |
+|---|---|---|
+| load before the clock drop | 84% | 72% |
+| DSP1 speed before / after the drop | 116 / 98 M instr/s | 126 / 112 M instr/s |
+| load after the drop (sustained) | 98-99% | 80-82% |
+| render thread waiting for DSP1 | 22% | 6-7% |
+| underruns | 373-473 around the drop | 0 for the whole test |
+| normal play afterwards | 69.0% | 64.8% |
+- Total CPU fell from about 223% to 207%: less waiting, and the M1 holds a higher clock under
+  sustained load.
+
 ## Three-core verdict and link skew (2026-11-15, new build)
 - **Three-core stress, twice:** 75% load before the clock drop (two-core: 84%), but then the clock
   falls further, DSP1 118 -> 89-91 M instr/s (two-core: 98), total CPU 320% against 225%, and
