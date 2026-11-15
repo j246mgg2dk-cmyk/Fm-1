@@ -208,6 +208,20 @@ Expected on the M1 with two cores: roughly 1.2–1.25×, up from 1.09×. To be m
   - One-core output stays byte-identical. Lab two-core DSP1 throughput went from 59 to about 64 M
     instructions/s.
 
+### What is left to try, and what isn't worth it (2026-11-14, late)
+- **Your run with the link changes and low-power wait** (512 frames, 250 s): 5 overruns, against 120 in
+  160 s before. Average load 86%. Main-thread spin-waits fell from 6.8 billion to 0.2 billion.
+- **Heavy use:** saturating the MIDI input costs about 6% (lab 0.67× → 0.63×). That's a trigger on every
+  track plus constant parameter CCs, at the 31.25 kbaud wire limit. The extra work lands on the main
+  thread, which still has slack; DSP1 stays the limit.
+- **Ruled out:**
+  - Ahead-of-time translation with inlined handlers. The straight-line code is 1.3 MB, and DSP1 runs
+    through all of it every sample, so it thrashes the instruction cache. The interpreter's compact shared
+    handlers win.
+  - ThinLTO: no measurable difference.
+- **Available:** profile-guided optimisation, +7% on one core and about +5% for DSP1 on two cores in the
+  lab, with byte-identical output. It needs one profiling run on the iPad through Xcode.
+
 ## Engine changes made for iPad
 1. **DO-loop deadlock fixed** (`dsp56kEmu/dsp.cpp`, `dsp.h`).
    - The interpreter ran each hardware DO loop to completion inside a single step. The MD runs the
