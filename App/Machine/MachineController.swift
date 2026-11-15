@@ -150,6 +150,7 @@ final class MachineController: ObservableObject {
             Task { @MainActor in
                 if ok {
                     self.phase = .running
+                    self.perfLastUnderruns = 0
                     self.lastSavedHash = state?.hashValue
                     self.midi.start()
                     self.startDisplay()
@@ -264,6 +265,7 @@ final class MachineController: ObservableObject {
     private var perfLast = Date()
     private var perfLoadSum = 0.0, perfLoadCount = 0, perfPeak = 0.0
     private var perfMinSafety = Int.max, perfUnderrunsAtStart = 0, perfLastUnderruns = 0
+    private var perfWaitSum = 0.0, perfBusySum = 0.0, perfMipsSum = 0.0, perfSplitCount = 0
     private var stressTimer: Timer?
     private var stressSnapshot: Data?
     private var stressEnd = Date()
@@ -276,28 +278,40 @@ final class MachineController: ObservableObject {
         perfLoadSum += s.recentLoad; perfLoadCount += 1
         perfPeak = max(perfPeak, s.recentPeakLoad)
         perfMinSafety = min(perfMinSafety, s.safetyMinFill)
+        if s.workerBusy > 0 { perfWaitSum += s.schedulerWait; perfBusySum += s.workerBusy; perfMipsSum += s.dsp1Mips; perfSplitCount += 1 }
         let now = Date()
         guard now.timeIntervalSince(perfLast) >= 10 else { return }
         perfLast = now
         let fm = FileManager.default
+        // A log from an older version has different columns: start a new one.
+        if let h = try? FileHandle(forReadingFrom: Storage.perfLog) {
+            let head = String(decoding: h.readData(ofLength: 400), as: UTF8.self)
+            try? h.close()
+            if !head.contains("dsp1_mips") { try? fm.removeItem(at: Storage.perfLog) }
+        }
         if !fm.fileExists(atPath: Storage.perfLog.path) {
             try? fm.createDirectory(at: Storage.perfLog.deletingLastPathComponent(), withIntermediateDirectories: true)
-            let header = "time,elapsed_s,stress,load_avg_pct,block_peak_pct,underruns,min_safety_frames,safety_frames,output_frames,audio_restarts,memory_mb,thermal,midi_in,midi_out,threads\n"
+            let header = "time,elapsed_s,stress,load_avg_pct,block_peak_pct,underruns,min_safety_frames,safety_frames,output_frames,audio_restarts,memory_mb,thermal,midi_in,midi_out,render_waits_for_dsp1_pct,dsp1_busy_pct,dsp1_mips,threads\n"
             try? header.write(to: Storage.perfLog, atomically: true, encoding: .utf8)
         }
         let thermal = ["nominal", "fair", "serious", "critical"][min(3, ProcessInfo.processInfo.thermalState.rawValue)]
         let f = ISO8601DateFormatter()
-        let line = String(format: "%@,%.0f,%@,%.1f,%.1f,%ld,%ld,%ld,%ld,%ld,%.0f,%@,%ld,%ld,\"%@\"\n",
+        let split = perfSplitCount > 0
+            ? String(format: "%.0f,%.0f,%.1f", perfWaitSum / Double(perfSplitCount) * 100, perfBusySum / Double(perfSplitCount) * 100, perfMipsSum / Double(perfSplitCount))
+            : ",,"
+        let underruns = max(0, s.overruns - perfLastUnderruns)
+        let line = String(format: "%@,%.0f,%@,%.1f,%.1f,%ld,%ld,%ld,%ld,%ld,%.0f,%@,%ld,%ld,%@,\"%@\"\n",
                           f.string(from: now), now.timeIntervalSince(perfStart), stressTimer != nil ? "yes" : "no",
                           perfLoadCount > 0 ? perfLoadSum / Double(perfLoadCount) * 100 : 0, perfPeak * 100,
-                          s.overruns - perfLastUnderruns, perfMinSafety == Int.max ? -1 : perfMinSafety, s.safetyFrames,
+                          underruns, perfMinSafety == Int.max ? -1 : perfMinSafety, s.safetyFrames,
                           s.bufferFrames, s.audioRestarts, s.footprintMB, thermal, s.midiInCount, s.midiOutCount,
-                          MDLiveEngine.threadCPUReport())
+                          split, MDLiveEngine.threadCPUReport())
         perfLastUnderruns = s.overruns
         if let h = try? FileHandle(forWritingTo: Storage.perfLog) {
             h.seekToEndOfFile(); h.write(line.data(using: .utf8)!); try? h.close()
         }
         perfLoadSum = 0; perfLoadCount = 0; perfPeak = 0; perfMinSafety = Int.max
+        perfWaitSum = 0; perfBusySum = 0; perfMipsSum = 0; perfSplitCount = 0
     }
 
     func resetPerformanceLog() {

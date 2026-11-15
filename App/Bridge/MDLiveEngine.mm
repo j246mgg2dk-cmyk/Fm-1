@@ -180,6 +180,7 @@ namespace
 		std::atomic<double> peakBlockLoad{0}, recentPeakBlockLoad{0};
 		std::atomic<int64_t> fifoMin{g_fifoFrames};					// lowest fill seen recently
 		std::atomic<int64_t> audioRestarts{0};
+		md::Hardware::DspWorkerTiming lastTiming;		// main thread (stats)
 
 		// ---- MIDI ----------------------------------------------------------------------
 		MidiRing<1024> midiIn;
@@ -830,6 +831,20 @@ namespace
 	r.bufferFrames = s.lastFrames.load();
 	r.sampleRate = [AVAudioSession sharedInstance].sampleRate;
 	r.secondsPlayed = double(s.framesPlayed.load()) / g_emuRate;
+	if(s.device && r.secondCore)
+	{
+		const auto t = s.device->getHardware().dspWorkerTiming();
+		const double adv = double(t.advanceNs - s.lastTiming.advanceNs);
+		const double busy = double(t.workerBusyNs - s.lastTiming.workerBusyNs);
+		if(adv > 0)
+		{
+			r.schedulerWait = double(t.schedWaitNs - s.lastTiming.schedWaitNs) / adv;
+			r.workerBusy = busy / adv;
+		}
+		if(busy > 0)
+			r.dsp1Mips = double(t.workerInstructions - s.lastTiming.workerInstructions) / busy * 1e3;
+		s.lastTiming = t;
+	}
 	r.threadStats = (s.device && r.secondCore)
 		? [NSString stringWithUTF8String:s.device->getHardware().dspWorkerStats().c_str()] : @"";
 	r.midiInCount = s.midiInCount.load();

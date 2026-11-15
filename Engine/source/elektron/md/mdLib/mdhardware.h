@@ -484,6 +484,21 @@ namespace md
 		uint64_t m_statSchedDsp2Access = 0;
 		// One-line summary for diagnostics (scheduler thread).
 		std::string dspWorkerStats() const;
+
+		// Cumulative two-core timing (nanoseconds / counts since the worker started), for hosts
+		// that compute their own windows.
+		struct DspWorkerTiming
+		{
+			uint64_t advanceNs = 0;			// scheduler thread inside advance()
+			uint64_t schedWaitNs = 0;		// of which waiting for the worker's DSP
+			uint64_t workerBusyNs = 0;		// worker executing its DSP
+			uint64_t workerInstructions = 0;
+		};
+		DspWorkerTiming dspWorkerTiming() const
+		{
+			return {m_statAdvanceNs.load(std::memory_order_relaxed), m_statSchedWaitNs.load(std::memory_order_relaxed),
+				m_statWorkerBusyNs.load(std::memory_order_relaxed), m_statWorkerInstr.load(std::memory_order_relaxed)};
+		}
 		uint64_t m_threadStartCycles2 = 0;
 	private:
 		double   m_schedFramesTotal   = 0.0;	// machine-time target, accumulated codec frames

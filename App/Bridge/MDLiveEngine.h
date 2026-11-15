@@ -19,6 +19,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) NSInteger safetyFill;       // frames in the safety buffer now
 @property (nonatomic) NSInteger safetyMinFill;    // lowest fill since the last stats call
 @property (nonatomic) NSInteger audioRestarts;    // automatic output restarts (route changes, stalls)
+// Two cores, since the last stats call: which thread is the limit.
+@property (nonatomic) double schedulerWait;       // share of the render thread's emulation time spent waiting for DSP1
+@property (nonatomic) double workerBusy;          // share of that time the DSP1 thread was executing
+@property (nonatomic) double dsp1Mips;            // DSP1 instructions per second while executing (millions)
 @property (nonatomic) double footprintMB;         // app memory footprint
 @property (nonatomic) double secondsPlayed;
 @property (nonatomic, copy) NSString *threadStats;  // two-core timing: who waits for whom
