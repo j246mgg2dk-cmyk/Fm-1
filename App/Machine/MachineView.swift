@@ -115,6 +115,7 @@ struct SettingsView: View {
     @State private var exportURL: URL?
     @State private var restoring = false
     @State private var showBluetooth = false
+    @State private var confirmReset = false
 
     var body: some View {
         NavigationStack {
@@ -169,8 +170,9 @@ struct SettingsView: View {
                 Section {
                     Button("Back up kits, patterns and songs…") { exportURL = machine.exportBackup() }
                     Button("Restore a backup…") { restoring = true }
+                    Button("Reset to factory…", role: .destructive) { confirmReset = true }
                 } header: { Text("Your data") } footer: {
-                    Text("Saved automatically every two minutes and whenever you leave the app.")
+                    Text("Saved automatically every 30 seconds and whenever you leave the app. A factory reset keeps your current state as a backup file first, so it can be restored.")
                 }
 
                 Section {
@@ -183,6 +185,11 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+            .confirmationDialog("Reset the Machinedrum to its factory kits, patterns and settings?", isPresented: $confirmReset, titleVisibility: .visible) {
+                Button("Reset to factory", role: .destructive) { machine.factoryReset(); dismiss() }
+            } message: {
+                Text("Your current state is saved as a backup file first, so you can restore it later.")
+            }
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
         .sheet(item: Binding(get: { exportURL.map { ShareItem(url: $0) } }, set: { exportURL = $0?.url })) { item in

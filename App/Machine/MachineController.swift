@@ -242,7 +242,7 @@ final class MachineController: ObservableObject {
 
     private func startAutosave() {
         saveTimer?.invalidate()
-        saveTimer = Timer.scheduledTimer(withTimeInterval: 120, repeats: true) { [weak self] _ in
+        saveTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.saveState() }
         }
     }
@@ -282,6 +282,22 @@ final class MachineController: ObservableObject {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("Machinedrum \(f.string(from: Date())).mdstate")
         try? data.write(to: url, options: .atomic)
         return url
+    }
+
+    /// Back to the factory kits, patterns and settings. Your current state is kept as a backup
+    /// file first (Files › On My iPad › MD Engine Test › Machinedrum › state).
+    func factoryReset() {
+        suspend()
+        let fm = FileManager.default
+        if fm.fileExists(atPath: Storage.state.path) {
+            let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd HHmmss"
+            let keep = Storage.state.deletingLastPathComponent().appendingPathComponent("before-reset \(f.string(from: Date())).mdstate")
+            try? fm.moveItem(at: Storage.state, to: keep)
+            say("Your previous state is kept as \(keep.lastPathComponent).")
+        }
+        lastSavedHash = nil
+        say("Factory reset; restarting.")
+        boot()
     }
 
     /// Replaces your state with a backup and restarts the machine with it.

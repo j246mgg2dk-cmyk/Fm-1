@@ -125,8 +125,19 @@ struct EncoderKnob: View {
     @State private var pushed = false
     @State private var moved = false
     @State private var holdTask: Task<Void, Never>?
+    @State private var lastTime: Date?
 
-    private let pointsPerDetent: CGFloat = 9
+    /// Slow drags move one detent per few points for fine control; fast swipes accelerate,
+    /// so a quick flick sweeps a whole 0-127 range.
+    private let pointsPerDetent: CGFloat = 6
+    private func acceleration(_ speed: CGFloat) -> CGFloat {
+        switch speed {
+        case ..<180: 1
+        case ..<450: 2
+        case ..<900: 4
+        default: 8
+        }
+    }
 
     var body: some View {
         VStack(spacing: size * 0.08) {
@@ -153,7 +164,10 @@ struct EncoderKnob: View {
                     last = v.translation
                     let delta = d.width - d.height                     // right or up = clockwise
                     if abs(v.translation.width) + abs(v.translation.height) > 4 { moved = true }
-                    accum += delta
+                    let now = Date()
+                    let dt = max(0.004, now.timeIntervalSince(lastTime ?? now))
+                    lastTime = now
+                    accum += delta * acceleration(abs(delta) / CGFloat(dt))
                     let steps = Int(accum / pointsPerDetent)
                     if steps != 0 {
                         accum -= CGFloat(steps) * pointsPerDetent
@@ -165,7 +179,7 @@ struct EncoderKnob: View {
                 .onEnded { _ in
                     holdTask?.cancel(); holdTask = nil
                     if pushed { machine.pushEncoder(encoder, false); pushed = false }
-                    last = .zero; accum = 0; moved = false
+                    last = .zero; accum = 0; moved = false; lastTime = nil
                 })
             Silk(label, size: max(9, size * 0.2))
         }
