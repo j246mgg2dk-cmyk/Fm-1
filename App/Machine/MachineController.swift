@@ -388,7 +388,9 @@ final class MachineController: ObservableObject {
     func saveState() {
         guard phase == .running else { return }
         let engine = self.engine
-        DispatchQueue.global(qos: .utility).async {
+        // Background QoS keeps the encoding on the efficiency cores, away from the two cores
+        // the emulator runs on.
+        DispatchQueue.global(qos: .background).async {
             guard let data = engine.copyState() else { return }
             Task { @MainActor in self.write(data) }
         }
