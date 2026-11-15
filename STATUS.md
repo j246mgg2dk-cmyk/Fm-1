@@ -309,6 +309,18 @@ The test app is now the Machinedrum app (same bundle, so your imported firmware 
 - **Saving:** autosave is now off by default (Settings: off / 2 / 5 / 15 min); named projects with
   Save / Save As / Load; the session is saved once when the app leaves the foreground (setting).
 
+## Three-core verdict and link skew (2026-11-15, new build)
+- **Three-core stress, twice:** 75% load before the clock drop (two-core: 84%), but then the clock
+  falls further, DSP1 118 -> 89-91 M instr/s (two-core: 98), total CPU 320% against 225%, and
+  underruns recur every 20-40 s for the rest of the test (two-core: none once settled). On the
+  M1 the sustained clock depends on how many cores are busy, so the third core costs more than it
+  gives. The setting is removed and forced off; the engine code stays for the lab.
+- **New build, two-core normal play (one sample):** 66.9% load at 124.5 M instr/s, against 69.0%
+  at 120.3 before: about +3.5% on DSP1 on the M1 (the lab showed more).
+- **Skew 2 -> 8 frames:** lab MIDI+knob stress, three alternating runs: render thread waiting
+  30% -> 24%, throughput 0.63x -> 0.66x. Sound matches within the usual threading variation, no
+  dropouts.
+
 ## Parallel-move fast path (2026-11-15)
 - A sampled profile of DSP1's program shows no hot loop; time is spread over the mixer code, but
   `mac` with parallel moves is about 40% of it and ALU+move instructions about 43%.

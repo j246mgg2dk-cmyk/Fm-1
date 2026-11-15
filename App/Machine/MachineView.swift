@@ -165,8 +165,6 @@ struct SettingsView: View {
                     }
                     LabeledContent("Total latency", value: String(format: "about %.0f ms", Double(machine.bufferFrames + machine.safetyFrames) / 44.1))
                     Toggle("Use a second core", isOn: restartOnChange($machine.secondCore))
-                    Toggle("Use a third core (DSP2 on its own core)", isOn: restartOnChange($machine.thirdCore))
-                        .disabled(!machine.secondCore)
                     Toggle("Low-power waiting", isOn: restartOnChange($machine.lowPowerWait))
                         .disabled(!machine.secondCore)
                     if pendingRestart {

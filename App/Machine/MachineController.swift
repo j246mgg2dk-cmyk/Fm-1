@@ -147,7 +147,8 @@ final class MachineController: ObservableObject {
         let state = try? Data(contentsOf: Storage.state)
         let buffer = bufferFrames, two = secondCore
         engine.lowPowerWait = lowPowerWait
-        engine.thirdCore = thirdCore
+        // Three-core mode measured worse on the M1 (lower sustained clock, more underruns): off.
+        engine.thirdCore = false
         engine.safetyFrames = safetyFrames
         let engine = self.engine
         runOnPerformanceCore {

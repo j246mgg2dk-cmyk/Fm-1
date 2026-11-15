@@ -670,7 +670,9 @@ namespace
 
 	// 3. Boot the Machinedrum off the audio threads.
 	setenv("GEARMULATOR_MD_DSP_WORKER", secondCore ? (self.thirdCore ? "3" : "1") : "0", 1);
-	setenv("GEARMULATOR_MD_DSP_SKEW", "2", 1);
+	// DSP1 may lead DSP2 by up to 8 codec frames (well inside the link's 32-sample block): under
+	// heavy ColdFire load the render thread waits less for DSP1 (lab stress: 30% -> 25%).
+	setenv("GEARMULATOR_MD_DSP_SKEW", "8", 1);
 	setenv("GEARMULATOR_MD_LOW_POWER_WAIT", self.lowPowerWait ? "1" : "0", 1);
 	std::vector<uint8_t> fw;
 	if(!baseLib::filesystem::readFile(fw, firmwarePath.UTF8String))
