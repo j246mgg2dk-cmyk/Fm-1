@@ -1,3 +1,4 @@
+#include <atomic>
 #include "memory.h"
 
 
@@ -405,6 +406,13 @@ namespace dsp56k
 
 	void Memory::logReadOutOfRange(const TWord _offset) const
 	{
-		LOG_ERR_MEM_READ( _offset );
+		// The Machinedrum firmware reads past mapped memory routinely (it gets 0, as on the
+		// hardware), hundreds of times a second while playing and far more under heavy use.
+		// Formatting and printing every one cost real time on the emulation threads, so
+		// log the first few and then one in a million.
+		static std::atomic<uint64_t> s_count{0};
+		const auto n = s_count.fetch_add(1, std::memory_order_relaxed);
+		if(n < 8 || (n & 0xfffff) == 0)
+			LOG_ERR_MEM_READ( _offset );
 	}
 }

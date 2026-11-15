@@ -6,7 +6,6 @@ import UniformTypeIdentifiers
 /// The app: the Machinedrum's front panel, with a slim top bar.
 struct MachineView: View {
     @EnvironmentObject private var machine: MachineController
-    @EnvironmentObject private var panel: PanelState
     @State private var showSettings = false
     @State private var importing = false
     @State private var importError: String?
@@ -17,7 +16,7 @@ struct MachineView: View {
             switch machine.phase {
             case .running:
                 VStack(spacing: 0) {
-                    topBar
+                    TopBar(showSettings: $showSettings)
                     FrontPanelView()
                 }
             case .needsFirmware:
@@ -61,25 +60,40 @@ struct MachineView: View {
         .persistentSystemOverlays(.hidden)
     }
 
-    private var topBar: some View {
+    private var firmwarePrompt: some View {
+        VStack(spacing: 16) {
+            Silk("MACHINEDRUM", size: 16)
+            Text("Import your Machinedrum UW OS 1.63 firmware (elektron_sps1-1uw_os1.63.bin) to start. It stays on this iPad and is never shared.")
+                .font(.callout).foregroundStyle(Panel.silkDim).multilineTextAlignment(.center).frame(maxWidth: 520)
+            Button("Import firmware…") { importing = true }.buttonStyle(.borderedProminent).tint(Panel.orange)
+        }
+    }
+}
+
+/// Status, meters and settings above the panel. Observes the meters on its own so the panel
+/// doesn't redraw with them.
+struct TopBar: View {
+    @Binding var showSettings: Bool
+    @EnvironmentObject private var machine: MachineController
+    @EnvironmentObject private var panel: PanelState
+
+    var body: some View {
         HStack(spacing: 16) {
             Silk("MACHINEDRUM", size: 12)
-            Silk("SPS-1 UW", size: 10, color: Panel.silkDim)
-            Spacer()
-            // Audio load: green under 75%, orange under 95%, red above.
-            HStack(spacing: 6) {
-                Silk("CPU", size: 9, color: Panel.silkDim)
-                GeometryReader { g in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(Color(white: 0.08))
-                        Capsule().fill(panel.load < 0.75 ? Panel.green : panel.load < 0.95 ? Panel.orange : Panel.red)
-                            .frame(width: g.size.width * min(1, panel.load))
-                    }
-                }
-                .frame(width: 70, height: 5)
-                Text("\(Int(panel.load * 100))%").font(.system(size: 10, weight: .medium, design: .monospaced)).foregroundStyle(Panel.silkDim)
-                    .frame(width: 34, alignment: .leading)
+            Silk("UW 1.63", size: 10, color: Panel.silkDim)
+            if let left = panel.stressRemaining {
+                Text(String(format: "STRESS TEST %d:%02d", left / 60, left % 60))
+                    .font(.system(size: 11, weight: .bold, design: .monospaced)).foregroundStyle(Panel.orange)
+                Button("Stop") { machine.stopStressTest(restore: true) }.font(.system(size: 11, weight: .semibold))
             }
+            Spacer()
+            // Emulation load: how much of real time the emulator needs (average over the last
+            // quarter second). Green under 75%, orange under 95%, red above.
+            meter("DSP", value: panel.load, label: "\(Int(panel.load * 100))%",
+                  color: panel.load < 0.75 ? Panel.green : panel.load < 0.95 ? Panel.orange : Panel.red)
+            // Safety buffer: how full it stayed. Near empty means a click is close.
+            meter("SAFETY", value: panel.safety, label: "\(Int(panel.safety * 100))%",
+                  color: panel.safety > 0.4 ? Panel.green : panel.safety > 0.15 ? Panel.orange : Panel.red)
             HStack(spacing: 6) {
                 Silk("MIDI", size: 9, color: Panel.silkDim)
                 LED(on: panel.midiIn, color: Panel.green, size: 6)
@@ -87,7 +101,7 @@ struct MachineView: View {
             }
             HStack(spacing: 6) {
                 Image(systemName: "speaker.wave.2.fill").font(.system(size: 11)).foregroundStyle(Panel.silkDim)
-                Slider(value: $machine.volume, in: 0...1).frame(width: 120).tint(Panel.orange)
+                Slider(value: $machine.volume, in: 0...1).frame(width: 110).tint(Panel.orange)
             }
             Button { showSettings = true } label: {
                 Image(systemName: "gearshape.fill").font(.system(size: 16)).foregroundStyle(Panel.silk)
@@ -97,12 +111,18 @@ struct MachineView: View {
         .padding(.top, 10)
     }
 
-    private var firmwarePrompt: some View {
-        VStack(spacing: 16) {
-            Silk("MACHINEDRUM", size: 16)
-            Text("Import your Machinedrum UW OS 1.63 firmware (elektron_sps1-1uw_os1.63.bin) to start. It stays on this iPad and is never shared.")
-                .font(.callout).foregroundStyle(Panel.silkDim).multilineTextAlignment(.center).frame(maxWidth: 520)
-            Button("Import firmware…") { importing = true }.buttonStyle(.borderedProminent).tint(Panel.orange)
+    private func meter(_ title: String, value: Double, label: String, color: Color) -> some View {
+        HStack(spacing: 6) {
+            Silk(title, size: 9, color: Panel.silkDim)
+            GeometryReader { g in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color(white: 0.08))
+                    Capsule().fill(color).frame(width: g.size.width * min(1, max(0, value)))
+                }
+            }
+            .frame(width: 60, height: 5)
+            Text(label).font(.system(size: 10, weight: .medium, design: .monospaced)).foregroundStyle(Panel.silkDim)
+                .frame(width: 34, alignment: .leading)
         }
     }
 }
@@ -121,11 +141,19 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section {
-                    Picker("Audio buffer", selection: restartOnChange($machine.bufferFrames)) {
+                    Picker("Output buffer", selection: restartOnChange($machine.bufferFrames)) {
+                        Text("128 frames (2.9 ms)").tag(128)
                         Text("256 frames (5.8 ms)").tag(256)
                         Text("512 frames (11.6 ms)").tag(512)
-                        Text("1024 frames (23.2 ms)").tag(1024)
                     }
+                    Picker("Safety buffer", selection: restartOnChange($machine.safetyFrames)) {
+                        Text("512 frames (11.6 ms)").tag(512)
+                        Text("768 frames (17.4 ms)").tag(768)
+                        Text("1024 frames (23.2 ms)").tag(1024)
+                        Text("1536 frames (34.8 ms)").tag(1536)
+                        Text("2048 frames (46.4 ms)").tag(2048)
+                    }
+                    LabeledContent("Total latency", value: String(format: "about %.0f ms", Double(machine.bufferFrames + machine.safetyFrames) / 44.1))
                     Toggle("Use a second core", isOn: restartOnChange($machine.secondCore))
                     Toggle("Low-power waiting", isOn: restartOnChange($machine.lowPowerWait))
                         .disabled(!machine.secondCore)
@@ -136,7 +164,7 @@ struct SettingsView: View {
                         }
                     }
                 } header: { Text("Audio") } footer: {
-                    Text("On an M1 iPad, 1024 frames gives the most headroom. Smaller buffers mean less latency but more risk of clicks. Watch the CPU meter at the top.")
+                    Text("The emulator runs on its own thread ahead of the output by the safety buffer, so heavy moments (fast knob sweeps, kit changes) are absorbed instead of heard. The DSP meter shows how much of real time the emulation needs; SAFETY shows how full the buffer stayed. If SAFETY keeps dipping to red, choose a bigger safety buffer.")
                 }
 
                 Section("Display") {
@@ -173,6 +201,21 @@ struct SettingsView: View {
                     Button("Reset to factory…", role: .destructive) { confirmReset = true }
                 } header: { Text("Your data") } footer: {
                     Text("Saved automatically every 30 seconds and whenever you leave the app. A factory reset keeps your current state as a backup file first, so it can be restored.")
+                }
+
+                Section {
+                    Toggle("Performance log", isOn: $machine.perfLogEnabled)
+                    Button(machine.isStressRunning ? "Stop the stress test" : "Run the stress test (5 minutes)") {
+                        if machine.isStressRunning { machine.stopStressTest(restore: true) } else { machine.startStressTest(minutes: 5); dismiss() }
+                    }
+                    if !machine.isStressRunning {
+                        Button("Run the stress test (30 minutes)") { machine.startStressTest(minutes: 30); dismiss() }
+                    }
+                    Button("Share the performance log…") {
+                        if FileManager.default.fileExists(atPath: Storage.perfLog.path) { exportURL = Storage.perfLog }
+                    }
+                } header: { Text("Performance") } footer: {
+                    Text("The log adds a line every 10 seconds: emulation load, worst render block, underruns, lowest safety-buffer fill, automatic audio restarts, memory, thermal state and per-thread CPU. The stress test hammers all knobs, triggers all 16 tracks, sends parameter CCs and changes patterns on top of what you're playing; your state is saved first and put back afterwards.")
                 }
 
                 Section {

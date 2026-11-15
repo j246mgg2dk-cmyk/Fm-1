@@ -17,6 +17,7 @@ enum Storage {
     static var logFile: URL { root.appendingPathComponent("test-log.txt") }
     /// Your kits, patterns, songs and settings (saved automatically).
     static var state: URL { root.appendingPathComponent("state/machinedrum.mdstate") }
+    static var perfLog: URL { root.appendingPathComponent("performance-log.csv") }
     static var statePrevious: URL { root.appendingPathComponent("state/machinedrum-before-restore.mdstate") }
 
     static func size(_ url: URL) -> Int64? {

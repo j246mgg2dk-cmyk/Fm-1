@@ -50,7 +50,9 @@ struct MDLeds: Equatable {
 final class PanelState: ObservableObject {
     @Published var lcd: CGImage?
     @Published var leds = MDLeds()
-    @Published var load: Double = 0          // audio load, 0...1+
+    @Published var load: Double = 0          // emulation time / audio time, last quarter second
+    @Published var safety: Double = 1        // lowest safety-buffer fill / target, last quarter second
+    @Published var stressRemaining: Int?     // seconds left in a running stress test
     @Published var midiIn = false            // blinks on activity
     @Published var midiOut = false
 }
@@ -79,7 +81,9 @@ final class MachineController: ObservableObject {
     @Published var midiDestinations: [MDMIDIEndpoint] = []
 
     // Settings (remembered). Changing an engine setting restarts the machine (state is saved first).
-    @AppStorage("bufferFrames") var bufferFrames = 1024
+    @AppStorage("ioBufferFrames") var bufferFrames = 256
+    @AppStorage("safetyFrames") var safetyFrames = 1024
+    @AppStorage("perfLog") var perfLogEnabled = false
     @AppStorage("secondCore") var secondCore = true
     @AppStorage("lowPowerWait") var lowPowerWait = true
     @AppStorage("volume") var volume: Double = 0.85 { didSet { engine.volume = Float(volume) } }
@@ -133,6 +137,7 @@ final class MachineController: ObservableObject {
         let state = try? Data(contentsOf: Storage.state)
         let buffer = bufferFrames, two = secondCore
         engine.lowPowerWait = lowPowerWait
+        engine.safetyFrames = safetyFrames
         let engine = self.engine
         runOnPerformanceCore {
             let ok = engine.start(withFirmware: fw, homePath: home, secondCore: two, bufferFrames: buffer,
@@ -158,9 +163,21 @@ final class MachineController: ObservableObject {
     }
 
     /// Saves and stops (for Diagnostics, or before applying engine settings).
-    func suspend() {
+    func suspend(save: Bool = true) {
         guard phase == .running else { return }
-        saveStateNow()
+        var save = save
+        if stressTimer != nil {
+            // Stopped mid-test: put your state back instead of saving the stressed one.
+            stressTimer?.invalidate(); stressTimer = nil
+            panel.stressRemaining = nil
+            if let snap = stressSnapshot {
+                try? snap.write(to: Storage.state, options: .atomic)
+                lastSavedHash = snap.hashValue
+                stressSnapshot = nil
+                save = false
+            }
+        }
+        if save { saveStateNow() }
         stopDisplay()
         saveTimer?.invalidate(); saveTimer = nil
         engine.stop()
@@ -182,7 +199,8 @@ final class MachineController: ObservableObject {
     private func startDisplay() {
         stopDisplay()
         let link = CADisplayLink(target: DisplayTarget { [weak self] in self?.tick() }, selector: #selector(DisplayTarget.fire))
-        link.preferredFrameRateRange = CAFrameRateRange(minimum: 30, maximum: 60, preferred: 60)
+        // 30 frames a second is plenty for an LCD and LEDs, and leaves the cores to the emulator.
+        link.preferredFrameRateRange = CAFrameRateRange(minimum: 20, maximum: 30, preferred: 30)
         link.add(to: .main, forMode: .common)
         displayLink = link
     }
@@ -207,7 +225,9 @@ final class MachineController: ObservableObject {
         if now.timeIntervalSince(lastStats) > 0.25 {
             lastStats = now
             let s = engine.stats()
-            panel.load = s.recentPeakLoad
+            panel.load = s.recentLoad
+            panel.safety = s.safetyFrames > 0 ? min(1, Double(s.safetyMinFill) / Double(s.safetyFrames)) : 1
+            recordPerformance(s)
             let inNow = s.midiInCount, outNow = s.midiOutCount
             panel.midiIn = inNow != lastMidiIn
             panel.midiOut = outNow != lastMidiOut
@@ -237,6 +257,109 @@ final class MachineController: ObservableObject {
                             space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue),
                             provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent)
     }
+
+    // MARK: Performance log and stress test
+
+    private var perfStart = Date()
+    private var perfLast = Date()
+    private var perfLoadSum = 0.0, perfLoadCount = 0, perfPeak = 0.0
+    private var perfMinSafety = Int.max, perfUnderrunsAtStart = 0, perfLastUnderruns = 0
+    private var stressTimer: Timer?
+    private var stressSnapshot: Data?
+    private var stressEnd = Date()
+    private var stressTick = 0
+    private var rng = SystemRandomNumberGenerator()
+
+    /// Every 10 s, while the log is on: one CSV line in Documents/Machinedrum/performance-log.csv.
+    private func recordPerformance(_ s: MDLiveStats) {
+        guard perfLogEnabled || stressTimer != nil else { return }
+        perfLoadSum += s.recentLoad; perfLoadCount += 1
+        perfPeak = max(perfPeak, s.recentPeakLoad)
+        perfMinSafety = min(perfMinSafety, s.safetyMinFill)
+        let now = Date()
+        guard now.timeIntervalSince(perfLast) >= 10 else { return }
+        perfLast = now
+        let fm = FileManager.default
+        if !fm.fileExists(atPath: Storage.perfLog.path) {
+            try? fm.createDirectory(at: Storage.perfLog.deletingLastPathComponent(), withIntermediateDirectories: true)
+            let header = "time,elapsed_s,stress,load_avg_pct,block_peak_pct,underruns,min_safety_frames,safety_frames,output_frames,audio_restarts,memory_mb,thermal,midi_in,midi_out,threads\n"
+            try? header.write(to: Storage.perfLog, atomically: true, encoding: .utf8)
+        }
+        let thermal = ["nominal", "fair", "serious", "critical"][min(3, ProcessInfo.processInfo.thermalState.rawValue)]
+        let f = ISO8601DateFormatter()
+        let line = String(format: "%@,%.0f,%@,%.1f,%.1f,%ld,%ld,%ld,%ld,%ld,%.0f,%@,%ld,%ld,\"%@\"\n",
+                          f.string(from: now), now.timeIntervalSince(perfStart), stressTimer != nil ? "yes" : "no",
+                          perfLoadCount > 0 ? perfLoadSum / Double(perfLoadCount) * 100 : 0, perfPeak * 100,
+                          s.overruns - perfLastUnderruns, perfMinSafety == Int.max ? -1 : perfMinSafety, s.safetyFrames,
+                          s.bufferFrames, s.audioRestarts, s.footprintMB, thermal, s.midiInCount, s.midiOutCount,
+                          MDLiveEngine.threadCPUReport())
+        perfLastUnderruns = s.overruns
+        if let h = try? FileHandle(forWritingTo: Storage.perfLog) {
+            h.seekToEndOfFile(); h.write(line.data(using: .utf8)!); try? h.close()
+        }
+        perfLoadSum = 0; perfLoadCount = 0; perfPeak = 0; perfMinSafety = Int.max
+    }
+
+    func resetPerformanceLog() {
+        try? FileManager.default.removeItem(at: Storage.perfLog)
+        perfStart = Date(); perfLast = Date()
+        perfLastUnderruns = engine.stats().overruns
+    }
+
+    /// Hammers the running machine: encoder sweeps on all eight data knobs and LEVEL, triggers
+    /// on all 16 tracks, CC parameter changes on the four track channels and pattern changes,
+    /// on top of whatever you're playing. Your state is saved first and put back afterwards.
+    func startStressTest(minutes: Int) {
+        guard phase == .running, stressTimer == nil else { return }
+        stressSnapshot = engine.copyState()
+        saveTimer?.invalidate(); saveTimer = nil              // don't autosave the mangled state
+        resetPerformanceLog()
+        stressEnd = Date().addingTimeInterval(TimeInterval(minutes * 60))
+        stressTick = 0
+        say("Stress test started for \(minutes) minutes. Your state is saved and will be put back.")
+        stressTimer = Timer.scheduledTimer(withTimeInterval: 0.025, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.stressStep() }
+        }
+    }
+
+    private func stressStep() {
+        let left = stressEnd.timeIntervalSinceNow
+        if left <= 0 { stopStressTest(restore: true); return }
+        panel.stressRemaining = Int(left)
+        stressTick += 1
+        // Every 25 ms: turn a random knob by up to 6 detents.
+        let enc = Int.random(in: 0...8, using: &rng)
+        turn(enc, Int.random(in: -6...6, using: &rng))
+        // Every 50 ms: trigger a random track (notes 36-51 on the base channel).
+        if stressTick % 2 == 0 {
+            var note: [UInt8] = [0x90, UInt8(36 + Int.random(in: 0..<16, using: &rng)), UInt8(Int.random(in: 40...127, using: &rng))]
+            engine.receiveMIDI(&note, length: 3, hostTime: 0)
+        }
+        // Every 75 ms: a random track parameter CC on the four track channels.
+        if stressTick % 3 == 0 {
+            var cc: [UInt8] = [UInt8(0xB0 | Int.random(in: 0..<4, using: &rng)), UInt8(Int.random(in: 16...119, using: &rng)), UInt8(Int.random(in: 0...127, using: &rng))]
+            engine.receiveMIDI(&cc, length: 3, hostTime: 0)
+        }
+        // Every 8 s: change pattern (program change on the base channel).
+        if stressTick % 320 == 0 {
+            var pc: [UInt8] = [0xC0, UInt8(Int.random(in: 0..<16, using: &rng))]
+            engine.receiveMIDI(&pc, length: 2, hostTime: 0)
+        }
+    }
+
+    func stopStressTest(restore: Bool) {
+        stressTimer?.invalidate(); stressTimer = nil
+        panel.stressRemaining = nil
+        say("Stress test finished. The log is in Files › On My iPad › MD Engine Test › Machinedrum › performance-log.csv.")
+        guard restore, let snap = stressSnapshot else { startAutosave(); return }
+        stressSnapshot = nil
+        suspend(save: false)
+        try? snap.write(to: Storage.state, options: .atomic)
+        lastSavedHash = snap.hashValue
+        boot()
+    }
+
+    var isStressRunning: Bool { stressTimer != nil }
 
     // MARK: Saved state
 

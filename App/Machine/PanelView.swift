@@ -219,9 +219,54 @@ struct LCDDisplay: View {
 
 // MARK: - The front panel
 
+/// One panel LED bound to the LED state: only this view redraws when the LED changes.
+struct PanelLED: View {
+    let path: KeyPath<MDLeds, Bool>
+    var color: Color = Panel.red
+    var size: CGFloat = 7
+    @EnvironmentObject private var panel: PanelState
+    var body: some View { LED(on: panel.leds[keyPath: path], color: color, size: size) }
+}
+
+/// A key with a row of labelled LEDs above it.
+struct LEDKey: View {
+    let control: MDControl
+    let label: String
+    let leds: [(String, KeyPath<MDLeds, Bool>, Color)]
+    let u: CGFloat
+    var body: some View {
+        VStack(spacing: 6 * u) {
+            HStack(spacing: 8 * u) {
+                ForEach(Array(leds.enumerated()), id: \.offset) { _, l in
+                    VStack(spacing: 3 * u) {
+                        PanelLED(path: l.1, color: l.2, size: 7 * u)
+                        Silk(l.0, size: 7.5 * u, color: Panel.silkDim)
+                    }
+                }
+            }
+            FunctionKey(control: control, label: label, w: max(96 * u, CGFloat(leds.count) * 36 * u), h: 50 * u)
+        }
+    }
+}
+
+/// The 16 track LEDs above the trig keys.
+struct TrackLEDs: View {
+    let u: CGFloat
+    @EnvironmentObject private var panel: PanelState
+    var body: some View {
+        HStack(spacing: 6 * u) {
+            ForEach(0..<16) { i in
+                Capsule().fill(panel.leds.track(i) ? Panel.red : Color(white: 0.09))
+                    .frame(height: 4 * u)
+                    .shadow(color: panel.leds.track(i) ? Panel.red : .clear, radius: 4 * u)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+    }
+}
+
 struct FrontPanelView: View {
     @EnvironmentObject private var machine: MachineController
-    @EnvironmentObject private var panel: PanelState
 
     var body: some View {
         GeometryReader { geo in
@@ -245,9 +290,9 @@ struct FrontPanelView: View {
                 Spacer(minLength: 12 * u)
                 // Row 2: modes, banks, pages.
                 HStack(alignment: .bottom, spacing: 14 * u) {
-                    ledKey(.classicExtended, "CLASSIC/EXT", leds: [("CLASSIC", panel.leds.classic, Panel.green), ("EXTENDED", panel.leds.extended, Panel.green)], u: u)
-                    ledKey(.patternSong, "PATTERN/SONG", leds: [("PATTERN", panel.leds.pattern, Panel.green), ("SONG", panel.leds.song, Panel.green)], u: u)
-                    ledKey(.bankGroup, "BANK GROUP", leds: [("A-D", panel.leds.bankAD, Panel.green), ("E-H", panel.leds.bankEH, Panel.green)], u: u)
+                    LEDKey(control: .classicExtended, label: "CLASSIC/EXT", leds: [("CLASSIC", \.classic, Panel.green), ("EXTENDED", \.extended, Panel.green)], u: u)
+                    LEDKey(control: .patternSong, label: "PATTERN/SONG", leds: [("PATTERN", \.pattern, Panel.green), ("SONG", \.song, Panel.green)], u: u)
+                    LEDKey(control: .bankGroup, label: "BANK GROUP", leds: [("A-D", \.bankAD, Panel.green), ("E-H", \.bankEH, Panel.green)], u: u)
                     HStack(spacing: 8 * u) {
                         FunctionKey(control: .bankA, label: "A", w: keyH, h: keyH)
                         FunctionKey(control: .bankB, label: "B", w: keyH, h: keyH)
@@ -255,26 +300,19 @@ struct FrontPanelView: View {
                         FunctionKey(control: .bankD, label: "D", w: keyH, h: keyH)
                     }
                     Spacer(minLength: 8 * u)
-                    ledKey(.synEfxRout, "SYN/EFX/ROUT", leds: [("SYNTH", panel.leds.synthesis, Panel.red), ("EFFECTS", panel.leds.effects, Panel.red), ("ROUTING", panel.leds.routing, Panel.red)], u: u)
+                    LEDKey(control: .synEfxRout, label: "SYN/EFX/ROUT", leds: [("SYNTH", \.synthesis, Panel.red), ("EFFECTS", \.effects, Panel.red), ("ROUTING", \.routing, Panel.red)], u: u)
                     FunctionKey(control: .kit, label: "KIT", w: key, h: keyH)
                     VStack(spacing: 5 * u) {
-                        LED(on: panel.leds.tempo, color: Panel.red, size: 7 * u)
+                        PanelLED(path: \.tempo, color: Panel.red, size: 7 * u)
                         FunctionKey(control: .tempo, label: "TEMPO", w: key, h: keyH)
                     }
-                    ledKey(.scale, "SCALE", leds: [("1", panel.leds.page1, Panel.red), ("2", panel.leds.page2, Panel.red), ("3", panel.leds.page3, Panel.red), ("4", panel.leds.page4, Panel.red)], u: u)
+                    LEDKey(control: .scale, label: "SCALE", leds: [("1", \.page1, Panel.red), ("2", \.page2, Panel.red), ("3", \.page3, Panel.red), ("4", \.page4, Panel.red)], u: u)
                 }
                 Spacer(minLength: 12 * u)
                 // Row 3: track LEDs above the trigs.
                 HStack(spacing: 0) {
                     Color.clear.frame(width: transportWidth(u: u, key: key), height: 4 * u)
-                    HStack(spacing: 6 * u) {
-                        ForEach(0..<16) { i in
-                            Capsule().fill(panel.leds.track(i) ? Panel.red : Color(white: 0.09))
-                                .frame(height: 4 * u)
-                                .shadow(color: panel.leds.track(i) ? Panel.red : .clear, radius: 4 * u)
-                                .frame(maxWidth: .infinity)
-                        }
-                    }
+                    TrackLEDs(u: u)
                 }
                 .frame(height: 10 * u)
                 .padding(.bottom, 8 * u)
@@ -300,7 +338,7 @@ struct FrontPanelView: View {
         HStack(spacing: 8 * u) {
             PanelKey(control: MDControl.record.rawValue, width: 62 * u, height: 132 * u, haptic: .medium) {
                 VStack(spacing: 6 * u) {
-                    LED(on: panel.leds.record, size: 8 * u)
+                    PanelLED(path: \.record, size: 8 * u)
                     Circle().fill(Panel.red.opacity(0.85)).frame(width: 16 * u, height: 16 * u)
                     Silk("REC", size: 9 * u, color: Panel.silkDim)
                 }
@@ -339,18 +377,5 @@ struct FrontPanelView: View {
         }
     }
 
-    /// A key with a row of labelled LEDs above it.
-    private func ledKey(_ control: MDControl, _ label: String, leds: [(String, Bool, Color)], u: CGFloat) -> some View {
-        VStack(spacing: 6 * u) {
-            HStack(spacing: 8 * u) {
-                ForEach(Array(leds.enumerated()), id: \.offset) { _, l in
-                    VStack(spacing: 3 * u) {
-                        LED(on: l.1, color: l.2, size: 7 * u)
-                        Silk(l.0, size: 7.5 * u, color: Panel.silkDim)
-                    }
-                }
-            }
-            FunctionKey(control: control, label: label, w: max(96 * u, CGFloat(leds.count) * 36 * u), h: 50 * u)
-        }
-    }
+
 }

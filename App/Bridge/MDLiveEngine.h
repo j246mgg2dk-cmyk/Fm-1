@@ -10,10 +10,15 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) NSInteger bufferFrames;     // frames per audio callback (actual)
 @property (nonatomic) double sampleRate;          // hardware rate the callback runs at
 @property (nonatomic) NSInteger callbacks;
-@property (nonatomic) NSInteger overruns;         // callbacks that took longer than their buffer
-@property (nonatomic) double averageLoad;         // render time / buffer duration, 0..1+
-@property (nonatomic) double peakLoad;
-@property (nonatomic) double recentPeakLoad;      // peak over the last ~second
+@property (nonatomic) NSInteger overruns;         // underruns: the output found the safety buffer short (a click)
+@property (nonatomic) double averageLoad;         // emulation time / audio time since start, 0..1+
+@property (nonatomic) double peakLoad;            // worst single render block since start
+@property (nonatomic) double recentPeakLoad;      // worst render block since the last stats call
+@property (nonatomic) double recentLoad;          // emulation time / audio time since the last stats call
+@property (nonatomic) NSInteger safetyFrames;     // safety buffer target, frames
+@property (nonatomic) NSInteger safetyFill;       // frames in the safety buffer now
+@property (nonatomic) NSInteger safetyMinFill;    // lowest fill since the last stats call
+@property (nonatomic) NSInteger audioRestarts;    // automatic output restarts (route changes, stalls)
 @property (nonatomic) double footprintMB;         // app memory footprint
 @property (nonatomic) double secondsPlayed;
 @property (nonatomic, copy) NSString *threadStats;  // two-core timing: who waits for whom
@@ -28,6 +33,10 @@ NS_ASSUME_NONNULL_BEGIN
 /// Two cores only: the threads wait for each other with WFE (low power) instead of spinning.
 /// Set before starting.
 @property (nonatomic) BOOL lowPowerWait;
+
+/// Safety buffer in frames (256-4096): how far the render thread runs ahead of the output.
+/// Heavy moments shorter than this are absorbed instead of heard. Set before starting.
+@property (nonatomic) NSInteger safetyFrames;
 
 /// Output gain applied after the emulator, 0...1 (the Machinedrum's analogue VOLUME knob).
 @property (nonatomic) float volume;
@@ -58,6 +67,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// Current statistics (thread-safe; resets the recent peak).
 - (MDLiveStats *)stats;
+
+/// CPU use of this app's busy threads as the kernel reports it ("total 170%; md.render 88%;
+/// md.dsp1-worker 72%; ..."; 100% = one core).
++ (NSString *)threadCPUReport;
 
 // ---- Front panel (main thread) -------------------------------------------------------------
 
