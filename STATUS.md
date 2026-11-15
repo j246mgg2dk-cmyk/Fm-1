@@ -309,6 +309,22 @@ The test app is now the Machinedrum app (same bundle, so your imported firmware 
 - **Saving:** autosave is now off by default (Settings: off / 2 / 5 / 15 min); named projects with
   Save / Save As / Load; the session is saved once when the app leaves the foreground (setting).
 
+## 30-minute stress and profile-guided build (2026-11-15)
+- **Device, 30-minute stress:** 72% at full clock; 79-83% once settled (DSP1 110-115 M instr/s);
+  0 underruns for the last 18 minutes. Between minutes 4 and 11 the iPad cut the clock further
+  five times for 10-20 s (DSP1 97-104): four dropout bursts (478 callbacks) and one near miss
+  (28 frames left). About 10% more headroom would ride through those dips.
+- **PGO:** `Engine/pgo/md.proftext` holds execution counts of the engine's functions (no firmware
+  content), recorded in the lab with front-end instrumentation (target-independent): 3 s of normal
+  play plus 3 s of MIDI+knob stress, two-core mode, zero-count functions removed. Xcode converts
+  it with its own llvm-profdata (build phase in MDEngine). CI check with Apple clang: dsp.cpp 2768
+  of 2784 functions match (16 ignored), mdhardware.cpp all match.
+- **Lab, same code with and without the profile:** single-thread output byte-identical;
+  single-thread time 13.40 -> 12.84 s (-4%); two-core MIDI+knob stress 0.66x -> 0.71x (+7%),
+  DSP1 64.2 -> 66.5 M instr/s (three alternating runs each).
+- **Upkeep:** after larger engine changes, re-record the profile (mdbuild-pgo, then filter as in
+  this commit); a stale profile only loses its effect on the changed functions.
+
 ## Two-core stress with skew 8 + parallel-move fast path (2026-11-15, device)
 | | before (two runs) | now |
 |---|---|---|
