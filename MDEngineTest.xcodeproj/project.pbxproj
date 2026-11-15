@@ -972,6 +972,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = E774A4EAA85905C86106A2E7 /* Build configuration list for PBXNativeTarget "MDEngine" */;
 			buildPhases = (
+				9C0F11A2B3C4D5E6F7A8B9C0 /* Prepare PGO profile */,
 				ABF6A0EC4DD7D7DE6688D03E /* Sources */,
 			);
 			buildRules = (
@@ -1023,6 +1024,30 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		9C0F11A2B3C4D5E6F7A8B9C0 /* Prepare PGO profile */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 0;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Engine/pgo/md.proftext",
+			);
+			name = "Prepare PGO profile";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/md.profdata",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Profile-guided optimisation of the emulator engine. The profile is a text file of\n# execution counts of the engine's own functions (recorded in the lab); this converts it\n# to the indexed format of this Xcode's compiler.\nset -e\nmkdir -p \"${DERIVED_FILE_DIR}\"\nxcrun llvm-profdata merge -o \"${DERIVED_FILE_DIR}/md.profdata\" \"${SRCROOT}/Engine/pgo/md.proftext\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		751A3B9A45F5B3D9DED47073 /* Sources */ = {
@@ -1305,6 +1330,10 @@
 				);
 				OTHER_CFLAGS = (
 					"-fno-strict-aliasing",
+					"-fprofile-instr-use=$(DERIVED_FILE_DIR)/md.profdata",
+					"-Wno-profile-instr-unprofiled",
+					"-Wno-profile-instr-out-of-date",
+					"-Wno-profile-instr-missing",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.modularmayhem.MDEngine;
 				SDKROOT = iphoneos;
@@ -1347,6 +1376,10 @@
 				);
 				OTHER_CFLAGS = (
 					"-fno-strict-aliasing",
+					"-fprofile-instr-use=$(DERIVED_FILE_DIR)/md.profdata",
+					"-Wno-profile-instr-unprofiled",
+					"-Wno-profile-instr-out-of-date",
+					"-Wno-profile-instr-missing",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.modularmayhem.MDEngine;
 				SDKROOT = iphoneos;

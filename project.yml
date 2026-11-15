@@ -32,7 +32,15 @@ targets:
     settings:
       base:
         GCC_WARN_INHIBIT_ALL_WARNINGS: YES
-        OTHER_CFLAGS: ["-fno-strict-aliasing"]
+        OTHER_CFLAGS: ["-fno-strict-aliasing", "-fprofile-instr-use=$(DERIVED_FILE_DIR)/md.profdata", "-Wno-profile-instr-unprofiled", "-Wno-profile-instr-out-of-date", "-Wno-profile-instr-missing"]
+    preBuildScripts:
+      - name: Prepare PGO profile
+        inputFiles: ["$(SRCROOT)/Engine/pgo/md.proftext"]
+        outputFiles: ["$(DERIVED_FILE_DIR)/md.profdata"]
+        script: |
+          set -e
+          mkdir -p "${DERIVED_FILE_DIR}"
+          xcrun llvm-profdata merge -o "${DERIVED_FILE_DIR}/md.profdata" "${SRCROOT}/Engine/pgo/md.proftext"
     sources:
       - path: Engine/source/baseLib/binarystream.cpp
       - path: Engine/source/baseLib/commandline.cpp

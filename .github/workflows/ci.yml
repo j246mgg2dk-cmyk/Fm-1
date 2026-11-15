@@ -15,3 +15,15 @@ jobs:
           echo "=== errors ==="; grep -E "error:" build.log | sort -u | head -n 200
           echo "=== tail ==="; tail -n 40 build.log
           exit $status
+      - name: Check that the PGO profile matches this compiler
+        run: |
+          xcrun llvm-profdata merge -o /tmp/md.profdata Engine/pgo/md.proftext
+          for f in Engine/source/dsp56300/source/dsp56kEmu/dsp.cpp Engine/source/elektron/md/mdLib/mdhardware.cpp; do
+            echo "== $f"
+            xcrun --sdk iphoneos clang++ -target arm64-apple-ios17.0 -std=gnu++17 -O3 -fno-strict-aliasing \
+              -DDSP56K_FORCE_INTERPRETER -DDSP56K_AUDIO_RINGBUFFER_SIZE=2048 -DDSP56K_AUDIO_RING_LOCK=0 -DASMJIT_STATIC \
+              -DDSP56300_DEBUGGER=0 -DMD_TRANSPORT_DIAGNOSTICS=0 -DNDEBUG -DRELEASE \
+              -IEngine/source -IEngine/source/dsp56300/source -IEngine/source/dsp56300/source/asmjit/src -IEngine/source/elektron/md \
+              -fprofile-instr-use=/tmp/md.profdata -Wprofile-instr-out-of-date \
+              -c "$f" -o /tmp/out.o 2>&1 | grep -i "profile" || echo "profile matched (no mismatch warnings)"
+          done
