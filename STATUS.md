@@ -248,6 +248,35 @@ The test app is now the Machinedrum app (same bundle, so your imported firmware 
   - CPU meter and MIDI activity LEDs in the top bar.
 - **Diagnostics:** the former test screens, under Settings.
 
+### Dropouts that stuck, and the safety buffer (2026-11-14, late night)
+- **What you saw:** after a heavy moment (a knob burst), the audio stopped until the route changed
+  (earbuds out and in). The app hadn't crashed. The emulator ran inside the CoreAudio callback, so a
+  late callback could stall the output, and nothing restarted it.
+- **What the CPU figure was:** emulation time per buffer divided by the buffer's duration, *peak* over
+  a quarter second, on the thread that runs the emulator. It wasn't the iPad's total CPU. The meter
+  now shows the average over the quarter second (DSP) and the safety-buffer fill (SAFETY).
+- **Fix:**
+  - The emulator runs on its own render thread, joined to the audio workgroup, ahead of the output
+    by a safety buffer. The callback only copies.
+  - The output restarts by itself after configuration and route changes, interruptions and media
+    resets, or if a watchdog sees it stall.
+- **Lab, maximum MIDI stress (2-core Xeon, noisy neighbours, worst single block up to 7x budget):**
+
+  | Average load | Direct (old) | Safety 768 | Safety 1536 |
+  |---|---|---|---|
+  | about 83% | 15% of buffers late | 0.15% short | 0 short |
+  | about 90% | 37% of buffers late | 1% short | 0 short |
+
+- **Lab, sustained overload with a MIDI flood for 11 minutes:** no crash, no hang.
+- **Also:**
+  - Out-of-range memory-read errors are counted instead of logged: about 150/s during normal
+    playback, 1,500/s under stress.
+  - LED views redraw individually and the panel runs at 30 fps.
+- **In-app tools:**
+  - a performance log (a CSV line every 10 s: load, worst block, underruns, lowest buffer fill,
+    restarts, memory, thermal, per-thread CPU);
+  - a 5- or 30-minute stress test that restores your state afterwards.
+
 ## Engine changes made for iPad
 1. **DO-loop deadlock fixed** (`dsp56kEmu/dsp.cpp`, `dsp.h`).
    - The interpreter ran each hardware DO loop to completion inside a single step. The MD runs the
