@@ -222,6 +222,32 @@ Expected on the M1 with two cores: roughly 1.2–1.25×, up from 1.09×. To be m
 - **Available:** profile-guided optimisation, +7% on one core and about +5% for DSP1 on two cores in the
   lab, with byte-identical output. It needs one profiling run on the iPad through Xcode.
 
+### The real app (2026-11-14, night)
+The test app is now the Machinedrum app (same bundle, so your imported firmware stays).
+- **Front panel:**
+  - dot-matrix LCD (Amber, Ice or Classic);
+  - LEVEL and data entry encoders A–H (drag to turn, hold to push, hold and drag to turn while
+    pushed);
+  - 16 trig keys with step LEDs, plus track LEDs above them;
+  - RECORD / PLAY / STOP;
+  - FUNCTION, arrows, YES/ENTER, NO/EXIT, KIT, TEMPO, SYN/EFX/ROUT, CLASSIC/EXT,
+    PATTERN/SONG, BANK GROUP, banks A–D and SCALE, each with its LEDs.
+  - Keys send press and release separately, so holds and multi-finger combos work.
+- **MIDI:**
+  - every USB, Bluetooth and network device, switchable per device;
+  - a virtual "Machinedrum" input and output for other apps;
+  - Bluetooth pairing and network MIDI.
+  - Incoming MIDI gets a fixed one-buffer delay at its original spacing (no jitter). Outgoing MIDI is
+    time-stamped against the audio output.
+- **Your data:** kits, patterns, songs and settings are restored at boot, and saved every two minutes
+  and when you leave the app. Backup export and restore.
+- **Audio:**
+  - 1024-frame default, second core, low-power waiting;
+  - background audio that mixes with other apps;
+  - recovery after interruptions;
+  - CPU meter and MIDI activity LEDs in the top bar.
+- **Diagnostics:** the former test screens, under Settings.
+
 ## Engine changes made for iPad
 1. **DO-loop deadlock fixed** (`dsp56kEmu/dsp.cpp`, `dsp.h`).
    - The interpreter ran each hardware DO loop to completion inside a single step. The MD runs the

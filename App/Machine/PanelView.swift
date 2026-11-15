@@ -265,7 +265,7 @@ struct FrontPanelView: View {
                     transport(u: u, key: key)
                     HStack(spacing: 6 * u) {
                         ForEach(0..<16) { i in
-                            TrigKey(index: i, w: (geo.size.width - transportWidth(u: u, key: key) - 48 * u - 15 * 6 * u) / 16, h: 86 * u)
+                            TrigKey(index: i, w: (geo.size.width - transportWidth(u: u, key: key) - 48 * u - 15 * 6 * u) / 16, h: 108 * u)
                         }
                     }
                 }
@@ -280,20 +280,20 @@ struct FrontPanelView: View {
 
     private func transport(u: CGFloat, key: CGFloat) -> some View {
         HStack(spacing: 8 * u) {
-            PanelKey(control: MDControl.record.rawValue, width: 58 * u, height: 86 * u, haptic: .medium) {
+            PanelKey(control: MDControl.record.rawValue, width: 58 * u, height: 108 * u, haptic: .medium) {
                 VStack(spacing: 6 * u) {
                     LED(on: panel.leds.record, size: 8 * u)
                     Circle().fill(Panel.red.opacity(0.85)).frame(width: 16 * u, height: 16 * u)
                     Silk("REC", size: 9 * u, color: Panel.silkDim)
                 }
             }
-            PanelKey(control: MDControl.play.rawValue, width: 58 * u, height: 86 * u, haptic: .medium) {
+            PanelKey(control: MDControl.play.rawValue, width: 58 * u, height: 108 * u, haptic: .medium) {
                 VStack(spacing: 6 * u) {
                     Image(systemName: "play.fill").font(.system(size: 18 * u)).foregroundStyle(Panel.green.opacity(0.85))
                     Silk("PLAY", size: 9 * u, color: Panel.silkDim)
                 }
             }
-            PanelKey(control: MDControl.stop.rawValue, width: 58 * u, height: 86 * u, haptic: .medium) {
+            PanelKey(control: MDControl.stop.rawValue, width: 58 * u, height: 108 * u, haptic: .medium) {
                 VStack(spacing: 6 * u) {
                     RoundedRectangle(cornerRadius: 2).fill(Panel.silk).frame(width: 15 * u, height: 15 * u)
                     Silk("STOP", size: 9 * u, color: Panel.silkDim)
