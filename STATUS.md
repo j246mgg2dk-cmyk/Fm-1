@@ -309,6 +309,14 @@ The test app is now the Machinedrum app (same bundle, so your imported firmware 
 - **Saving:** autosave is now off by default (Settings: off / 2 / 5 / 15 min); named projects with
   Save / Save As / Load; the session is saved once when the app leaves the foreground (setting).
 
+## 30-minute stress with PGO (2026-11-16, device): passed
+- **0 underruns for the whole 30 minutes;** lowest safety-buffer fill 406 of 1024 frames; worst
+  block 103%.
+- Full clock: 66.8% (DSP1 129 M instr/s). After the first clock drop: 72.8% (118.5). From minute
+  15 the clock eased down further, to 77-81% (DSP1 106-110); thermal "nominal" throughout.
+- Normal play afterwards: 63.1% at 127.5 M instr/s (start of the day: 69.0% at 120).
+- Memory 131 -> 150 MB over the stress run, 144 after it; flat from minute 13.
+
 ## 30-minute stress and profile-guided build (2026-11-15)
 - **Device, 30-minute stress:** 72% at full clock; 79-83% once settled (DSP1 110-115 M instr/s);
   0 underruns for the last 18 minutes. Between minutes 4 and 11 the iPad cut the clock further
