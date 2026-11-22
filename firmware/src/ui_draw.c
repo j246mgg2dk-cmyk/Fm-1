@@ -973,6 +973,15 @@ static void draw_columns(void)
         }
         return;
     }
+    if (cur_page()->graph == GR_TECHNO) {           /* TECHNO (this fork): STYLE DRIVE GROOVE EVOLVE */
+        for (c = 0; c < 4u; c++) {
+            const param_desc_t *d = &TC_DESC[c];
+            int32_t v = techno_get(c);
+            param_format(d, v, val, &unit);
+            draw_column(c, d->label, val, unit, VAL(c), RATIO(d, v), param_icon(d, v));
+        }
+        return;
+    }
     if (cur_page()->graph == GR_DREAM) {            /* DREAM (this fork): MOOD MOTION BLOOM DRIFT */
         for (c = 0; c < 4u; c++) {
             const param_desc_t *d = &DR_DESC[c];

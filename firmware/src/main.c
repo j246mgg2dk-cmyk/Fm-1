@@ -116,6 +116,42 @@ static void dream_boot(void)
         ui.force = 1;
     }
 }
+/* TECHNO (this fork, techno.c): at power-on after a session that ended in TECHNO, it is ready again (the style's
+ * defaults, a new groove), stopped: PLAY, or the master's START */
+static void techno_boot(void)
+{
+    uint32_t i, seed = fm1_ticks() * 2654435761u ^ fm1_ms;
+    tc_noplay = 1;                                /* (no kick out of the blue at power-on: PLAY, or the master's START) */
+    techno_start(seed);
+    for (i = 0; i < NPAGES && PAGES[i].graph != GR_TECHNO; i++)
+        ;
+    if (i < NPAGES) {
+        ui.page = (uint8_t)i;
+        ui.fam_last[FAM_GLO] = (uint8_t)i;
+        ui.home = 0;
+        ui.force = 1;
+    }
+}
+/* main loop: TECHNO's work (techno_poll), its name, the phase said as it changes while its page shows */
+static void techno_main(void)
+{
+    techno_poll();
+    if (techno.named) {
+        techno.named = 0;
+        str_cpy(proj_name, "TECHNO", sizeof proj_name);
+        proj_cur = PROJ_NO_SLOT;
+    }
+    if (techno.on && song.playing && !ui.home && !ui.menu && cur_page()->graph == GR_TECHNO) {
+        uint32_t ph = tc_phase(techno.abs);
+        if (techno.said != ph + 1u) {
+            char b[12];
+            techno.said = (uint8_t)(ph + 1u);
+            b[0] = ' ';
+            str_cpy(b + 1, N_TC_STYLE[techno.style % TC_NSTYLE], sizeof b - 1u);
+            ui_say(N_TC_PHASE[ph], b);            /* "PEAK DARK" */
+        }
+    }
+}
 /* main loop: DREAM's work (dream_poll); a new dream names the music DREAM (so the next power-on dreams again); the act
  * it is in, said once as it changes, while its page shows */
 static void dream_main(void)
@@ -252,6 +288,8 @@ static void fm1_main(void)
     }
     if ((!autosave_boot(boot_clean) || str_eq(proj_name, "DREAM")) && boot_clean)   /* (1.2) the last session's music, */
         dream_boot();                         /* under the splash; none (or a DREAM's): DREAM wakes (this fork) */
+    else if (boot_clean && str_eq(proj_name, "TECHNO"))
+        techno_boot();                        /* (this fork) TECHNO ready again */
     for (ms = 0; ms < 400u; ms += 10u) {      /* the splash; the pot followed (MIDI IN plays under it) */
         fm1_delay_ms(10);
         master_poll();
@@ -349,6 +387,7 @@ static void fm1_main(void)
         settings_poll();                              /* queued settings save: only while stopped */
         autosave_poll();                              /* (1.2) the music, stopped and idle: project.c */
         dream_main();                                 /* DREAM (this fork): the next half, the breathing, its name */
+        techno_main();                                /* TECHNO (this fork): the next half, the sync's song position */
         felucca_dbg.stage = 2;
         ui_leds();
         ui_draw();

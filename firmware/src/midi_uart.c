@@ -7,8 +7,8 @@
  * USB-MIDI packets (cable 0, CIN = status >> 4), so seq.c routes them by channel
  * exactly as USB (CH1-4 or SEL;
  * host tests: midi_uart_test, hostsim TRACKS trs_test);
- * Clock/Start/Continue/Stop retain timestamps and source; other realtime,
- * system common and SysEx are ignored (no SysEx->UBOOT from DIN). */
+ * Clock/Start/Continue/Stop retain timestamps and source; the Song Position Pointer is kept (this fork); other
+ * realtime, system common and SysEx are ignored (no SysEx->UBOOT from DIN). */
 #include "../hal/fm1_uart.h"   /* registers; relative, so the host tests find it too */
 
 #define UM_RING 128u
@@ -42,8 +42,8 @@ static void um_byte(uint32_t b)
     }
     if (b & 0x80u) {
         um.sysex = b == 0xF0u;
-        um.st = b < 0xF0u ? (uint8_t)b : 0;        /* system common/SysEx cancel running status */
-        um.need = (uint8_t)um_len(b);
+        um.st = b < 0xF0u || b == 0xF2u ? (uint8_t)b : 0;   /* system common/SysEx cancel running status; */
+        um.need = (uint8_t)um_len(b);                       /* (this fork) the Song Position Pointer is kept */
         um.got = 0;
         return;
     }
@@ -56,8 +56,10 @@ static void um_byte(uint32_t b)
     }
     {
         uint32_t d1 = um.need == 2u ? um.d0 : b, d2 = um.need == 2u ? b : 0u;
-        uint32_t pkt = (um.st >> 4) | (uint32_t)um.st << 8 | d1 << 16 | d2 << 24;
+        uint32_t pkt = (um.st == 0xF2u ? 0x3u : um.st >> 4) | (uint32_t)um.st << 8 | d1 << 16 | d2 << 24;
         um.got = 0;
+        if (um.st == 0xF2u)
+            um.st = 0;                             /* (system common: no running status after it) */
         if (midi_enqueue(pkt, 2u)) {
             um.msgs++;
         } else {

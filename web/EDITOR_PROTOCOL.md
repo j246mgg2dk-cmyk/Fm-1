@@ -160,7 +160,7 @@ sets them back to 127, user presets and projects store them (older ones load at 
 Other enums that grew: `P_SDIV` (DIV, id 30) has 10 names (1/4, 1/8, 1/16, 1/32, 8T, 16T, 1/2, 1/1, 2BAR,
 4BAR; the first six keep their numbers), `P_AMODE` (id 17) 15 (OFF, UP, DN, UPDN, RND, ORD, REPEAT, and since 1.2 DNUP, UP+8, CONV, DIVG, PINKY, THUMB, WALK,
 CHORD: values 7..14, appended; an editor that knows only 7 names shows the value by `DESC`'s name) and the
-global `G_CLOCK` (id 2, label "CLK") 3 (INT, USB, TRS). `G_MIDI` (id 12) is an enum of USB / TRS that nothing reads.
+global `G_CLOCK` (id 2, label "CLK") 4 (INT, USB, TRS; this fork: AUTO). `G_MIDI` (id 12) is an enum of USB / TRS that nothing reads.
 Since 1.5.1 the delay's `G_DTIME` (global id 4, label "TIME") has 13 names: P_SDIV's ten at the same values, then
 1/8D, 1/16D, 1/4D (values 10..12, dotted: 3/4, 3/8, 3/2 of a quarter); `DESC` sends all 13, max 12. P_SDIV, P_ARATE
 and the LFO's SYNC keep their lists. The device's knob steps TIME by length, longest first (4BAR 2BAR 1/1 1/2 1/4D
@@ -614,10 +614,14 @@ when the track's engine is not the saved one).
   count (LFO 2 off, QUANTIZE ON, SPREAD 0, the engine values and their motion from 91..98 to 96..103), every nudge 0; FUN8 and
   older as before. Firmware before 1.2 refuses a FUN10 (its size and magic), so an editor must not send one there
   (`BACKUP_PUT` begin answers rc 1 for its size). Backups, `PROJECT` and the editor's project files carry the 3840 bytes.
-- **MIDI clock** has no SysEx. `G_CLOCK` selects the source: 0 INT, 1 USB, 2 TRS. With 1 or 2 the sequencer
-  steps on that port's Clock pulses (the other port's are ignored), Start (0xFA) restarts from step 0,
+- **MIDI clock** has no SysEx. `G_CLOCK` selects the source: 0 INT, 1 USB, 2 TRS (this fork: 3 AUTO). With 1 or 2 the
+  sequencer steps on that port's Clock pulses (the other port's are ignored), Start (0xFA) restarts from step 0,
   Continue (0xFB) resumes and Stop (0xFC) stops; BPM follows the incoming tempo (40..240), and 500 ms
-  without a pulse stops the transport. Changing `G_CLOCK` stops it.
+  without a pulse stops the transport. Changing `G_CLOCK` stops it. This fork: the Song Position Pointer (0xF2)
+  received stopped makes the next Continue play from that sixteenth (every track at its step there); a plain Continue
+  resumes as before. AUTO is the internal clock until a Clock, Start, Continue or Song Position comes in on either
+  port; then that port leads (as 1 or 2; the transport stops for its Start) until it has been silent 2 s with the
+  transport stopped.
 - Pitch bend, sustain (CC64), RPN 0 (bend range, ±0..24 semitones), CC120 / 121 / 123 are MIDI only and
   have no parameters, protocol or saved state. The standard CC map (1.1: CC5 7 10 71..75 91 93 94, README "MIDI
   in") sets parameters as a knob does: the editor sees those changes as `CHANGED` / `TRACK_CHANGED` pushes.

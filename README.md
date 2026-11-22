@@ -1,8 +1,9 @@
-# FM-1 GLITCH (a Felucca fork): TITAN, DREAM, GLITCH, JUNGLE
+# FM-1 GLITCH (a Felucca fork): TITAN, DREAM, TECHNO, GLITCH, JUNGLE
 
 Custom firmware for the M-VAVE FM-1, built on [Felucca](https://github.com/hugelton/Felucca) 1.6.1 by Leo Kuroshita /
 Hügelton Instruments (GPL-3.0-only). It keeps everything Felucca does and adds **TITAN** (a big two-layer polysynth
-engine), **DREAM** (the FM-1 plays itself), glitch effects in the **FX layer** and JUNGLE breakbeat tools in SLICE.
+engine), **DREAM** (the FM-1 plays itself), **TECHNO** (kicks, hats, percussion and bass locked to your MIDI clock),
+glitch effects in the **FX layer** and JUNGLE breakbeat tools in SLICE.
 Felucca's authors don't endorse or support it, so please don't send them reports about this fork.
 
 ## DREAM: switch it on and it plays
@@ -32,6 +33,49 @@ The four tracks are ordinary music: T1 the swells, T2 the growl, T3 the pulse, T
 Turn any sound's knobs while it dreams. Play the keys over it. Hold FX and mangle it with GLITCH or ROLL. **Edit a step**
 (REC, STEP, a phrase, a project load) and DREAM hands the music over to you: it stops writing and what is there stays.
 Save it as a project like any other.
+
+## TECHNO: a drum partner on your clock
+
+Kicks, hats, percussion and a bassline that follow whatever else is playing. Plug in MIDI clock (USB or the TRS jack,
+it finds whichever is sending), start your master and TECHNO starts with it, on its START, in time with every pulse.
+Start the DAW from bar 9 and TECHNO plays bar 9 (the Song Position Pointer). Stop the master and it stops. Pull the
+cable and it stops within half a second (no hanging notes). With nothing coming in it plays on the FM-1's own clock.
+
+**GLO > TECHNO** (tap GLO three times: SONG, DREAM, then TECHNO), then **OCT+**:
+
+| Control | What it does |
+|---|---|
+| **KNOB 1 STYLE** | HYPNO (rolling rumble, rims in threes), DARK (Berlin: big driven kick, open hats), SOUL (Detroit: sixteenth hats, 808 clap, offbeat bass), DUB (soft kick, shuffled hats, a chord stab into a dotted delay), ACID (a sliding 303-style line), ROBOT (electro: the 808, a broken kick) |
+| **KNOB 2 DRIVE** | the energy: hats from offbeats to sixteenths, more percussion, the kick's drive, a brighter bass |
+| **KNOB 3 GROOVE** | the swing, ghost notes, the hats' dynamics |
+| **KNOB 4 EVOLVE** | how much it changes. 0: a fixed four-bar loop. Higher: fills into each 16-bar phrase, new motifs, then the arrangement (GROOVE, LIFT, PEAK). At the top: a BREAK (the kick out for four bars), a BUILD and the DROP |
+| **the keys** | on this page the keys set the bassline's key (C..B) and make no sound |
+| **OCT+** | start, or a new groove. While playing it changes from the next two bars and never stops the clock |
+| **PLAY** | the internal clock: stop and go on. With the master's clock running but no START sent (it was already playing): PLAY joins on the next pulse |
+
+The phrases (16 bars) are counted from the master's START or song position, so the fills land at the end of the
+master's 16-bar phrases. The four tracks are ordinary music: T1 the kick, T2 the hats, T3 the percussion (DRUM), and T4
+the bass (ANALOG), 64 steps of 1/16 each. Mute any of them (MIXER), turn their knobs, play over it. **Edit a step** and
+TECHNO hands the music over to you, as DREAM does.
+
+**Clock:** TECHNO switches HOME > CLOCK > CLK from INT to the new **AUTO** (whichever port sends a clock leads; with
+none, the internal clock). USB and TRS can still be picked by hand. In AUTO, a port that has been silent for 2 s with
+the transport stopped is let go. When the master starts while TECHNO plays on its own clock, it stops and starts
+again with the master's START, in time. After a power-off in TECHNO it comes back ready, not playing.
+
+### Tested, and not yet tested (TECHNO)
+
+- **Tested on the host** (`tests/techno_test.c`): the same seed gives the same steps; the kick is on every beat of 64
+  halves in every four-on-the-floor style (missing only in the BREAK and the BUILD's half-time bar); DRIVE takes the
+  hats from 8 to 32 a half; EVOLVE 0 repeats exactly; the bass stays in key in all 6 styles and 3 keys; the playing half
+  is never rewritten. Clock: USB START at 128 BPM puts all 384 sixteenths within one audio block (0.7 ms) of their
+  pulses, and the tempo reads 128. SPP 136 + CONTINUE starts at sixteenth 136, on USB and on TRS. In AUTO, a TRS START
+  takes over from the internal clock in time, a USB clock doesn't steal it, the port is let go after a stop, and a USB
+  position + CONTINUE takes over. Pulling the cable stops it. OCT+ while synced doesn't stop it. Editing a step hands
+  over. A demo of each style renders without clipping. The TECHNO screens pass the layout lint in every palette.
+- **Not tested on an FM-1 yet:** the sound through the real DAC and the sync against real gear. To check: GLO three
+  times, OCT+ (it plays on its own clock), then start your DAW or drum machine sending clock to the FM-1. It should
+  stop and come in on the master's START. Start the DAW from bar 5: the FM-1 should play that bar's step.
 
 ## TITAN: the engine
 

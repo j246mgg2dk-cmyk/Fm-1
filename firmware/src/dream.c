@@ -362,9 +362,11 @@ static uint32_t dr_sig(void)
 
 /* start dreaming: the four sounds, the space, the first two halves, PLAY. Nothing of the project before stays (its
  * steps, automation and song chain); call from the main loop */
+static void techno_stop(void);                    /* (techno.c: one plays itself at a time) */
 static void dream_start(uint32_t seed)
 {
     uint32_t k, f;
+    techno_stop();
     if (chain.running || chain.armed)
         chain_stop();
     transport_req = 2;

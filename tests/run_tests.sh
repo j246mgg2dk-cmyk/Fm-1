@@ -53,6 +53,9 @@
 # CHORD (tests/chord_test.c): the chord keys (src/chord.c): diatonic triads / sevenths of several scales and roots,
 #                   the fixed shapes and voicings (at most 4 notes), names, MONO plays the root, a release ends
 #                   exactly what its key / MIDI note started, recording, the ARP, MIDI IN, kits ignore CHRD.
+# TECHNO (tests/techno_test.c, this fork): its patterns (the kick on every beat, DRIVE, EVOLVE 0 a loop, the bass in key),
+#                   the halves off the playhead, the clock (USB START: every sixteenth on its pulse; SPP + CONTINUE on USB
+#                   and TRS; AUTO taking a port and letting it go; cable loss; OCT+ while synced), the hand-over, demos.
 # FUN10 (tests/fun10_test.c, 1.2): LFO 2 (SYNC one cycle per note value at several tempi and on the external clock, OFF bit
 #                   for bit as before; TRIG NOTE / FREE; POL UNI 0..+1, the matrix's AMP), NUDGE (live recording keeps a
 #                   note's time, QUANTIZE ON plays as before, OFF plays the nudges late and early once a pass, never twice
@@ -456,6 +459,11 @@ if [ -f build/gen/felucca_tables.h ]; then
         $CC -O2 -w -Ibuild/gen -Ifirmware/src -o "$OUT/dream_test" tests/dream_test.c -lm
         run "TITAN and DREAM: presets, the same seed the same music, halves rewritten off the playhead, acts, demos" \
             "$OUT/dream_test" build/dream_demo 60
+        # TECHNO (this fork): the patterns, the clock it follows (USB / TRS / AUTO, START, SPP), the hand-over, demos
+        $CC -O2 -w -Ibuild/gen -Ifirmware/src -o "$OUT/techno_test" tests/techno_test.c -lm
+        mkdir -p build/techno_demo
+        run "TECHNO: kick on every beat, DRIVE / EVOLVE, the bass in key, steps on the pulses, SPP, AUTO, cable loss, demos" \
+            "$OUT/techno_test" build/techno_demo 30
     else
         echo "== SLICE: build/ was made with FELUCCA_SLICE=0 (no BREAK); run ./build.sh without it first"
         fail=1
@@ -509,6 +517,8 @@ else
         $SCC -o "$A/$t" tests/$t.c -lm
         run "ASan/UBSan: $t" "$A/$t"
     done
+    $SCC -o "$A/techno_test" tests/techno_test.c -lm      # (this fork) TECHNO and the clock, short demos
+    run "ASan/UBSan: techno_test" "$A/techno_test" "$A/techno_demo" 3
     $SCC -o "$A/fuzz_ed" tests/fuzz_ed.c -lm
     run "ASan/UBSan fuzz: editor SysEx and raw USB-MIDI packets (20000, seed 7)" "$A/fuzz_ed" 20000 7
     $SCC -o "$A/fuzz_proj" tests/fuzz_proj.c -lm

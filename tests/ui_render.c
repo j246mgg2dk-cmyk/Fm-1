@@ -773,7 +773,8 @@ enum { S_HOME, S_HOME_IDLE, S_MESSAGE, S_MESSAGE_KEY, S_MESSAGE_NOFILE, S_PRESET
        S_DETAIL_COND, S_DETAIL_FILL, S_AUTO_COND, S_GLO_FILL, S_SEQ_EUCLID, S_SEQ_EUCLID_DRUM, S_SEQ_EUCLID_64,
        S_MENU_SELECT, S_PROJECT_ERASE, S_CONFIRM_ERASE_PROJ, S_TOOLS_CLEAN, S_CONFIRM_CLEAN,
        S_MENU_MIDI_TRACK, S_MENU_MIDI_TCH_UNUSED, S_MENU_MIDI_AUTO, S_HOME_TRACKS_MIDI, S_MIXER_MIDI, S_EDIT_PHASE_FOLD,
-       S_DREAM_OFF, S_DREAM, S_DREAM_PAUSED, S_DREAM_HOT, S_EDIT_TITAN, S_EDIT_TITAN_2, S_COUNT };   /* (this fork: DREAM, TITAN) */
+       S_DREAM_OFF, S_DREAM, S_DREAM_PAUSED, S_DREAM_HOT, S_EDIT_TITAN, S_EDIT_TITAN_2,
+       S_TECHNO_OFF, S_TECHNO, S_TECHNO_WAIT, S_TECHNO_PAUSED, S_TECHNO_HOT, S_COUNT };   /* (this fork: DREAM, TITAN) */
 static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "message", "message_key", "message_nofile", "presets", "presets_nofav", "user",
     "phrases", "project", "tools", "song_empty", "song", "step", "auto_steps", "auto_add_chance", "automation", "drum",
     "drum_hand", "drum_cym", "mixer", "mixer_from_home", "mixer_pan", "env", "env_dest", "lfo", "mod", "fx", "slicer", "dly", "scl", "chord", "chord_wide", "chord_off", "chord_kit", "arp",
@@ -805,7 +806,8 @@ static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "message", "mes
     "layer_seq_euclid_64",
     "menu_select", "project_erase", "confirm_erase_project", "tools_clean", "confirm_clean",
     "menu_midi_track", "menu_midi_channels_unused", "menu_midi_auto_select", "home_tracks_midi", "mixer_midi", "edit_phase_fold",
-    "dream_off", "dream", "dream_paused", "dream_hot", "edit_titan", "edit_titan_2"};
+    "dream_off", "dream", "dream_paused", "dream_hot", "edit_titan", "edit_titan_2",
+    "techno_off", "techno", "techno_wait", "techno_paused", "techno_hot"};
 
 /* the STEP page's piano roll (ui_graph.c graph_roll) on track 1, stopped unless said: an empty pattern; ACID in
  * A minor; POLY chords (Am7 F C G, tied); a line with ties, slides and accents in C major; LEN 32 on its second
@@ -1235,6 +1237,17 @@ static void setup(int s)
         break;
     case S_DREAM_PAUSED: dream_start(7); dream.on = 1; song.playing = 0; go_page(GR_DREAM); ui.msg_t = 0; break;
     case S_EDIT_TITAN: eng(ENGI_TITAN); go_title("EDIT 1"); break;
+    /* this fork: GLO > TECHNO (resting, playing its bar, waiting for the master's START, paused, a knob just turned) */
+    case S_TECHNO_OFF: techno.on = 0; song.playing = 0; go_page(GR_TECHNO); break;
+    case S_TECHNO: case S_TECHNO_HOT:
+        song.g[G_CLOCK] = 0; techno.on = 0; techno_start(1982); events_block(32); go_page(GR_TECHNO); ui.msg_t = 0;
+        for (int b = 0; b < 400; b++) events_block(32);
+        if (s == S_TECHNO_HOT) { techno_set(0, TS_ACID); ui.hot_col = 0; ui.hot_t = 30; }
+        break;
+    case S_TECHNO_WAIT: song.g[G_CLOCK] = 1; techno.on = 0; song.playing = 0; techno_start(7); go_page(GR_TECHNO);
+        ui.msg_t = 0; break;
+    case S_TECHNO_PAUSED: song.g[G_CLOCK] = 0; techno.on = 0; techno_start(7); song.playing = 0; transport_req = 0;
+        go_page(GR_TECHNO); ui.msg_t = 0; break;
     case S_EDIT_TITAN_2: eng(ENGI_TITAN); apply_preset(5); go_title("EDIT 2"); ui.hot_col = 3; ui.hot_t = 30; break;
     case S_ALG1: case S_ALG2: case S_ALG3: case S_ALG4: case S_ALG5: case S_ALG6: case S_ALG7: case S_ALG8:
         eng(1); TSEL->p[P_E0] = (int16_t)(s - S_ALG1);      /* the 8 DIGITAL charts; FB on the odd ones, IDX high .. 0 */

@@ -49,7 +49,7 @@ static const char *const N_GLMODE[] = {"RATE", "TIME"};
 static const char *const N_PRIO[] = {"LAST", "LOW", "HIGH"};
 static const char *const N_ALLOC[] = {"ROT", "REUSE"};
 static const char *const N_ORDER[] = {"NOTE", "PLAY"};
-static const char *const N_CLOCK[] = {"INT", "USB", "TRS"};
+static const char *const N_CLOCK[] = {"INT", "USB", "TRS", "AUTO"};   /* AUTO (this fork): whichever sends */
 static const char *const N_MIDI_INPUT[] = {"USB", "TRS"};
 /* MIDI IN (seq.c midi_base): 1..4 -> parts, 5..16 ignored / all -> selected / (1.2, append-only) 5..8, 9..12, 13..16 -> parts
  * / (1.5.5, #202) TRACK: each track its own channel (song.mch, MENU > MIDI > T1..T4 CHANNEL) */
@@ -442,7 +442,7 @@ enum { FAM_HOME, FAM_ENV, FAM_LFO, FAM_FX, FAM_SCL, FAM_EDIT, FAM_GLO, FAM_SAVE,
 enum { SC_TRACK, SC_GLOBAL, SC_ENGINE, SC_STEP, SC_TRK };   /* SC_TRK: the TRACKS page (ui_input.c tracks_edit) */
 enum { GR_NONE, GR_ADSR, GR_LFO, GR_STEPS, GR_ARP, GR_SCALE, GR_FX, GR_ROLL, GR_BROWSE, GR_SLOTS, GR_USER, GR_TRK,
        GR_SLCR, GR_MOD, GR_PATS, GR_SONG, GR_TOOLS, GR_CHORD, GR_SLICES, GR_EVENTS,
-       GR_FMOP, GR_FMOP2, GR_FMENV, GR_INS, GR_DREAM };   /* (GR_DREAM: GLO > DREAM, this fork; GR_STEPS: SEQ TOOLS' knobs; GR_FMOP..: FM6's operator pages, ui_fm6op.c) */
+       GR_FMOP, GR_FMOP2, GR_FMENV, GR_INS, GR_DREAM, GR_TECHNO };   /* (GR_DREAM: GLO > DREAM, this fork; GR_STEPS: SEQ TOOLS' knobs; GR_FMOP..: FM6's operator pages, ui_fm6op.c) */
 
 typedef struct {
     const char *title;
@@ -510,6 +510,8 @@ static const page_t PAGES[] = {
     /* this fork: GLO tapped on SONG (dream.c): MOOD MOTION BLOOM DRIFT, OCT+ a new dream. Last, so the pages before
      * keep their numbers */
     {"DREAM", FAM_GLO, SC_GLOBAL, GR_DREAM, {0xFF, 0xFF, 0xFF, 0xFF}},
+    /* this fork: GLO tapped on DREAM (techno.c): STYLE DRIVE GROOVE EVOLVE, the keys the key, OCT+ a new groove */
+    {"TECHNO", FAM_GLO, SC_GLOBAL, GR_TECHNO, {0xFF, 0xFF, 0xFF, 0xFF}},
 };
 #define NPAGES (sizeof(PAGES) / sizeof(PAGES[0]))
 static uint8_t mod_ui_slot;      /* the MOD page: the matrix slot (0..3) KNOB 2..4 edit */

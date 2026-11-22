@@ -487,11 +487,11 @@ static void arp_step(track_t *t, uint32_t n, uint32_t gate_n)
     t->arp_pos += n;
     if (t->arp_pos < period + (uint32_t)((t->arp_idx & 1u) ? sw : -sw) && t->arp_pos != 0xFFFFFFF + n)
         return;
-    if (song.g[G_CLOCK] && t->arp_pos != 0xFFFFFFFu + n) {
+    if (clock_ext() && t->arp_pos != 0xFFFFFFFu + n) {
         arp_external_due(t, period, sw);
         return;
     }
-    if (song.g[G_CLOCK]) midi_arp_grid[trk_index(t)].remainder = 0;
+    if (clock_ext()) midi_arp_grid[trk_index(t)].remainder = 0;
     t->arp_pos = 0;
     arp_fire(t, period);
 }
@@ -823,7 +823,8 @@ static void keyboard_block(void)
     }
     lay = (fm1_in.buttons & kb_mask) || kb_lock;  /* (#83: kb_lock, a layer locked open with no button held) */
     fx = (fm1_in.buttons & perf_mask) || (kb_lock & 2u);
-    mute = song.grid == 2u ? ~0u : song.grid == 3u ? SONG_KEYS : 0u;   /* the keys that never sound here */
+    mute = song.grid == 2u || song.grid == 4u ? ~0u : song.grid == 3u ? SONG_KEYS : 0u;   /* the keys that never sound
+                                                                                * here (4: TECHNO's key) */
     for (k = 0; k < 27u; k++) {
         if (!((ch >> k) & 1u))
             continue;
@@ -867,9 +868,11 @@ static void keyboard_block(void)
 }
 
 /* -------------------------------------------------------- sequencer --- */
+static uint32_t seq_top16;            /* (this fork) the sixteenth the transport started from: 0, or a Song Position */
 static void seq_start(void)
 {
     uint32_t i;
+    seq_top16 = 0;
     midi_grid_reset();
     motion_begin();
     chain_start();
@@ -910,7 +913,7 @@ static void seq_stop(void)
     cin_left = 0;                                  /* (a count-in: cancelled, nothing recorded) */
     cin_flush = 0;
     memset(cin_n, 0, sizeof cin_n);
-    if (song.g[G_CLOCK])                           /* external clock: the arp stops with the transport, */
+    if (clock_ext())                               /* external clock: the arp stops with the transport, */
         for (i = 0; i < NPART; i++)                /* its sounding note too (HOLD keeps the latched chord) */
             if (trk[i].arp_note)
                 arp_off(&trk[i]);
@@ -1230,7 +1233,7 @@ static __attribute__((noinline)) void seq_enter(track_t *t, uint32_t top, uint32
 static void seq_tick(track_t *t, uint32_t n)
 {
     uint32_t period, len, top;
-    if (song.g[G_CLOCK])
+    if (clock_ext())
         n = midi_grid_advance(&midi_seq_grid[trk_index(t)], n, (uint32_t)t->p[P_SDIV]);
     if (t->seq_n && !t->seq_hold) {
         if (t->seq_off <= n)
@@ -1338,7 +1341,7 @@ static __attribute__((noinline)) void cin_record(void)
 /* the metronome's beat: adv samples on while the transport runs (click.c sounds it in this block) */
 static void click_tick(uint32_t adv)
 {
-    if (song.g[G_CLOCK]) adv = midi_grid_advance(&midi_click_grid, adv, 2u);
+    if (clock_ext()) adv = midi_grid_advance(&midi_click_grid, adv, 2u);
     uint32_t p = div_samples(2), beat = 0;
     if (clk_pos == CLK_START) {
         clk_pos = 0;
@@ -1372,13 +1375,13 @@ static int32_t click_beat_now(void)
 static void events_block(uint32_t n)
 {
     uint32_t i, pr, seq_n = n;
-    uint32_t clock_mode = (uint32_t)song.g[G_CLOCK];
-    if (midi_clock.mode != clock_mode) {
-        seq_stop();
-        memset(&midi_clock, 0, sizeof midi_clock);
-        midi_clock.mode = (uint8_t)clock_mode;
-        midi_beat_samples = 0;
-    }
+    uint32_t clock_mode;
+    if (song.g[G_CLOCK] != CLK_AUTO)
+        clk_auto_src = 0;
+    else if (clk_auto_src && fm1_ms - clk_auto_ms > CLK_AUTO_LET_GO_MS && !song.playing)
+        clk_auto_src = 0;                           /* AUTO: its source fell silent (stopped): the internal clock again */
+    clock_mode = clock_ext();
+    midi_clock_mode(clock_mode);
     if (cin_left && !clock_mode)
         cin_block(n);
     if (transport_req == 1u) {
@@ -1451,10 +1454,21 @@ static void events_block(uint32_t n)
         uint32_t d1 = (pkt >> 16) & 0x7Fu, d2 = (pkt >> 24) & 0x7Fu;
         uint32_t source = midi_in_source[at] ? midi_in_source[at] : 1u, ms = midi_in_ms[at];
         mi_r++;
-        if (status >= 0xF8u) {
+        if (status >= 0xF8u || status == 0xF2u) {
+            if (song.g[G_CLOCK] == CLK_AUTO && status != 0xFCu) {   /* AUTO: a clock (start, position) leads */
+                if (!clk_auto_src || (clk_auto_src != source && fm1_ms - clk_auto_ms > CLK_AUTO_LET_GO_MS)) {
+                    clk_auto_src = (uint8_t)source;
+                    clock_mode = source;
+                    midi_clock_mode(clock_mode);  /* (a song playing on the internal clock stops: the master leads) */
+                }
+                if (clk_auto_src == source)
+                    clk_auto_ms = fm1_ms;
+            }
             if (clock_mode == source) {
                 if (status == 0xF8u)
                     midi_clock_pulse(ms);
+                else if (status == 0xF2u)
+                    midi_clock_spp(d1 | d2 << 7);
                 else
                     midi_clock_transport(status, ms);
             }

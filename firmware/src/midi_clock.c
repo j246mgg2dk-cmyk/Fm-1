@@ -11,9 +11,69 @@ static struct {
     uint8_t mode, have_pulse, tempo_valid, tempo_n;
 } midi_clock;
 
+/* (this fork) the Song Position Pointer: received stopped, the next Continue plays from that sixteenth (a DAW started
+ * from bar 9 sends position 128 and Continue: bar 9's step plays, not the step this stopped on) */
+#define CLK_AUTO_LET_GO_MS 2000u                   /* AUTO: a source silent this long (and stopped) is let go */
+static uint16_t midi_spp;
+static uint8_t midi_spp_set;
+static void midi_clock_spp(uint32_t sixteenths)
+{
+    if (song.playing)
+        return;                                    /* (positions while running: none of the masters this follows) */
+    midi_spp = (uint16_t)(sixteenths & 0x3FFFu);
+    midi_spp_set = 1;
+}
+
+/* every track at sixteenth `at` of the song (1/16 tracks: step at % LEN; any DIV: its step there and how far into it),
+ * the click and the ARP's beat with them. After seq_start; 32-bit (at < 2^14, a sixteenth < 2^15 samples) */
+static __attribute__((noinline)) void midi_clock_locate(uint32_t at)
+{
+    uint32_t i, six = beat_samples() / 4u, pos = at * six;
+    seq_top16 = at;
+    for (i = 0; i < NTRK; i++) {
+        track_t *t = &trk[i];
+        uint32_t period = div_samples((uint32_t)t->p[P_SDIV]), len = t->p[P_SLEN] > 0 ? (uint32_t)t->p[P_SLEN] : 1u;
+        uint32_t k, r;
+        period = period ? period : 1u;
+        k = (pos / period) % len;
+        r = pos % period;
+        if (!r) {
+            t->seq_idx = (uint16_t)((k + len - 1u) % len);   /* step k fires with the first pulse */
+            t->seq_pos = 0x7FFFFFFF;
+        } else {
+            t->seq_idx = (uint16_t)k;                        /* inside step k: the next one on its time */
+            t->seq_pos = r;
+        }
+    }
+    beat_n = (at / 4u) & 3u;
+    if (at % 16u) {                                /* the click: the sixteenth before, so the first pulse clicks this */
+        clk_step = (at - 1u) & 15u;
+        clk_pos = six;
+    }
+}
+
+/* the clock that leads changed (CLK, AUTO taking a source or letting it go): the transport stops, the clock over */
+static void midi_clock_mode(uint32_t mode)
+{
+    if (midi_clock.mode == mode)
+        return;
+    seq_stop();
+    memset(&midi_clock, 0, sizeof midi_clock);
+    midi_clock.mode = (uint8_t)mode;
+    midi_beat_samples = 0;
+    midi_spp_set = 0;
+}
+
 static __attribute__((noinline)) void midi_clock_transport(uint32_t status, uint32_t ms)
 {
+    if (status == 0xFBu && midi_spp_set && !song.playing) {   /* (this fork) Song Position, then Continue: from there */
+        midi_clock_transport(0xFAu, ms);
+        if (midi_spp)
+            midi_clock_locate(midi_spp);
+        return;
+    }
     if (status == 0xFAu) {                         /* Start: step zero */
+        midi_spp_set = 0;
         midi_clock.pos = midi_clock.rendered = 0;
         midi_clock.have_pulse = midi_clock.tempo_valid = 0;
         midi_clock.interval_ms = 0;

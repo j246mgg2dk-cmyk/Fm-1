@@ -81,7 +81,7 @@ static int mom_turn(uint32_t k, int32_t s)
         d = &TP[MIX_ID[k & 3u]];
     } else {
         if (act_cols() || lock_held() || !(pg->scope == SC_TRACK || pg->scope == SC_ENGINE || pg->scope == SC_GLOBAL) ||
-            pg->graph == GR_EVENTS || pg->graph == GR_SONG || pg->graph == GR_DREAM || pg->graph == GR_BROWSE ||
+            pg->graph == GR_EVENTS || pg->graph == GR_SONG || pg->graph == GR_DREAM || pg->graph == GR_TECHNO || pg->graph == GR_BROWSE ||
             pg->graph == GR_USER ||
             pg->graph == GR_PATS || (pg->graph == GR_SLICES && k < 2u) || (pg->graph == GR_MOD && k == 0u))
             return 0;
@@ -954,6 +954,11 @@ static void edit_param(uint32_t slot, int32_t steps)
         dream_set(slot, dream_get(slot) + st);
         return;
     }
+    if (pg->graph == GR_TECHNO) {                         /* TECHNO: STYLE (a detent a style), DRIVE, GROOVE, EVOLVE */
+        int32_t st = slot ? accel(EN_K1 + slot, steps, 127) : (steps > 0 ? 1 : -1);
+        techno_set(slot, techno_get(slot) + st);
+        return;
+    }
     if (pg->graph == GR_SONG) {                       /* KNOB 1 SECTION, 2 TRACK, 3 PAT (A..D, -), 4 REPS */
         chain_row_t *r;
         if (slot == 0u) {
@@ -1072,6 +1077,13 @@ static void act_do(void)
     if (cur_page()->graph == GR_DREAM) {                  /* a new dream (the controls as they are), playing */
         dream_start(fm1_ms * 2654435761u ^ dream.seed * 40503u ^ song.tick);
         ui_message("DREAMING");
+        ui.force = 1;
+        return;
+    }
+    if (cur_page()->graph == GR_TECHNO) {                 /* a new groove (the controls as they are) */
+        uint32_t was = techno.on && song.playing;
+        techno_start(fm1_ms * 2654435761u ^ techno.seed * 40503u ^ song.tick);
+        ui_message(was ? "NEW GROOVE" : clock_ext() && !song.playing ? "WAITING: START" : "TECHNO");
         ui.force = 1;
         return;
     }
@@ -1746,6 +1758,16 @@ static void ui_input(void)
     lock_keys();                                        /* (a grid key on a hit let go: the hit goes) */
     if (song.grid == 3u) {
         song_keys(notes);
+    } else if (song.grid == 4u) {                       /* TECHNO: a key picks the bassline's key (silent) */
+        uint32_t k;
+        for (k = 0; k < 27u; k++)
+            if ((notes >> k) & 1u) {
+                static const char *const NN[12] = {"KEY C", "KEY C#", "KEY D", "KEY D#", "KEY E", "KEY F", "KEY F#",
+                                                   "KEY G", "KEY G#", "KEY A", "KEY A#", "KEY B"};
+                techno_key((5u + k) % 12u);     /* (key 0 is F) */
+                ui_message(NN[(5u + k) % 12u]);
+                break;
+            }
     } else if (song.grid) {
         grid_keys(notes);
     } else if (song.seq_mode && cur_page()->graph == GR_ROLL) {   /* STEP */
@@ -1807,7 +1829,8 @@ static void ui_input(void)
         }
         if (ui.home || pg->scope == SC_STEP || pg->scope == SC_TRK || page_desc(pg, k, &hv) ||
             ((pg->graph == GR_USER || pg->graph == GR_MOD || pg->graph == GR_PATS) && k == 0u)
-            || pg->graph == GR_SONG || pg->graph == GR_DREAM || (pg->graph == GR_SLICES && k < 2u) || fop_page(pg->graph)) {   /* (not an empty
+            || pg->graph == GR_SONG || pg->graph == GR_DREAM || pg->graph == GR_TECHNO || (pg->graph == GR_SLICES && k < 2u) ||
+            fop_page(pg->graph)) {   /* (not an empty
                                                                                                           * column) */
             ui.hot_col = (uint8_t)k;
             ui.hot_t = 40;

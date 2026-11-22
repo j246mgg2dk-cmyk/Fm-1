@@ -216,10 +216,21 @@ static inline void master_out(int32_t *l, int32_t *r)
 /* length of one division (N_DIV order) in samples at the song tempo */
 static const uint8_t DIV_DEN[6] = {1, 2, 4, 8, 3, 6};    /* original IDs stay fixed; slow rates append */
 static uint32_t midi_beat_samples;                    /* zero until an external clock has a measured tempo */
+/* the clock that leads (this fork): G_CLOCK INT 0, USB 1, TRS 2, AUTO 3. AUTO follows whichever source sends a clock
+ * (seq.c events_block: clk_auto_src, let go 2 s after its last), else the internal clock. 0: internal, else the
+ * source (1 USB, 2 TRS) */
+#define CLK_AUTO 3u
+static uint8_t clk_auto_src;                          /* AUTO: the source it follows, 0 none */
+static uint32_t clk_auto_ms;                          /* .. fm1_ms of its last clock, start or continue */
+static uint32_t clock_ext(void)
+{
+    uint32_t c = (uint32_t)song.g[G_CLOCK];
+    return c == CLK_AUTO ? clk_auto_src : c;
+}
 static uint32_t beat_samples(void)
 {
     uint32_t bpm = song.g[G_BPM] >= 40 ? (uint32_t)song.g[G_BPM] : 120u;   /* (BPM 0 for a moment, #282: no divide by 0) */
-    return song.g[G_CLOCK] && midi_beat_samples ? midi_beat_samples : (uint32_t)FS * 60u / bpm;
+    return clock_ext() && midi_beat_samples ? midi_beat_samples : (uint32_t)FS * 60u / bpm;
 }
 static uint32_t div_samples(uint32_t div)
 {

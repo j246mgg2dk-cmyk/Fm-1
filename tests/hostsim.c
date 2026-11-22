@@ -41,6 +41,7 @@ static void fm1_delay_ms(uint32_t ms) { (void)ms; }
 #include "../firmware/src/song_chain.c"
 #include "../firmware/src/seq.c"
 #include "../firmware/src/dream.c"              /* DREAM (this fork) */
+#include "../firmware/src/techno.c"             /* TECHNO (this fork) */
 #define inst (trk[0])                   /* the single-part renders below: part 1 */
 
 static void wav_hdr(FILE *f, uint32_t frames)

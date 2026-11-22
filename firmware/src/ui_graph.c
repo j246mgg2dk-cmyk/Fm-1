@@ -1195,6 +1195,9 @@ static uint32_t graph_signature(void)
     if (pg->graph == GR_NONE || pg->graph == GR_ARP) h ^= ui.frame / 2u;
     if (pg->graph == GR_DREAM)                       /* its scope (dreaming), or its note: which */
         h ^= dream.on && song.playing ? ui.frame / 2u : (dream.on + 1u) * 0x9E3779B9u;
+    if (pg->graph == GR_TECHNO)                      /* its bar (the playhead's step), or its note: which */
+        h ^= techno.on && song.playing ? trk[0].seq_idx * 0x45D9F3Bu + techno.written * 7u :
+                                         (techno.on + 1u) * 0x9E3779B9u + clock_ext() * 77u;
     for (i = 0; i < P_COUNT; i++)
         h = (h ^ (uint32_t)t->p[i]) * 16777619u;
     h ^= (uint32_t)TSEL->preset * 7u + (uint32_t)song.g[G_SLOT] * 13u + TSEL->user * 257u + up_gen * 7919u + ui.uslot * 104729u +
@@ -1914,6 +1917,24 @@ static void draw_home_tracks(void)
     for (c = 0; c < NTRK; c++)
         home_track_row(c);
 }
+/* TECHNO (this fork): the bar playing as four lanes of 16 steps (T1 KICK, T2 HATS, T3 PERC, T4 BASS), a bar as tall
+ * as the step's velocity where it plays (an accent full), a faint line where it rests; the selected track's lane in
+ * its colour, the playhead's step the accent's */
+static void graph_techno(uint16_t c)
+{
+    uint32_t idx = trk[0].seq_idx % NSTEP, bar = idx / 16u, k, i;
+    int32_t cw = PANEL_W / 16, x0 = PANEL_X0 + (PANEL_W - cw * 16) / 2, lh = ((int32_t)cv_h - 12) / 4, y0 = 6;
+    for (k = 0; k < NTRK; k++)
+        for (i = 0; i < 16u; i++) {
+            const step_t *s = &trk[k].step[(bar * 16u + i) % NSTEP];
+            int on = s->time == ST_NOTE && (s->n || s->hit);
+            int32_t full = lh - 6, v = on ? (s->acc || (s->flags & SF_ACCENT) ? 127 : s->vel) : 0;
+            int32_t hgt = on ? 3 + v * (full - 3) / 127 : 1, x = x0 + (int32_t)i * cw, y = y0 + (int32_t)k * lh;
+            uint16_t col = i == idx % 16u ? T_ACCENT : on ? (k == song.sel ? c : T_TEXT) : T_RAISE;
+            cv_rect(x + 1, y + full - hgt, cw - 2, hgt, col);
+        }
+}
+
 /* oscilloscope of the output, triggered on a rising zero crossing: a RAISE centre line, the trace 2 px (in silence
  * a flat line on it; MENU > SCREEN OFF keeps it from staying on the panel for hours) */
 static void graph_scope(uint16_t c)
@@ -2327,6 +2348,17 @@ static void draw_graph(void)
                 panel_note("DREAM PAUSED", "[PLAY] DREAM ON", "[OCT+] A NEW ONE");
             else
                 panel_note("THE FM-1 PLAYS ITSELF", "[OCT+] DREAM", 0);
+            break;
+        case GR_TECHNO:                              /* TECHNO (this fork): the bar playing; stopped, the clock's state */
+            cv_oy = 0;
+            if (techno.on && song.playing)
+                graph_techno(c);
+            else if (techno.on && clock_ext())
+                panel_note("WAITING FOR START", "START YOUR MASTER", "[PLAY] JOIN NOW");
+            else if (techno.on)
+                panel_note("TECHNO PAUSED", "[PLAY] GO ON", "[OCT+] A NEW GROOVE");
+            else
+                panel_note("A TECHNO PARTNER", "[OCT+] TECHNO", 0);
             break;
         case GR_PATS:
             cv_oy = 0;
