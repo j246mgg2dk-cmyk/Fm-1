@@ -2702,7 +2702,7 @@ static int test_page_cycles(void)
         uint32_t f = PAGES[i].fam;
         ok &= f != FAM_SEQ || PAGES[i].graph == GR_ROLL || PAGES[i].graph == GR_EVENTS;
         ok &= f != FAM_GLO || PAGES[i].graph == GR_SONG || PAGES[i].graph == GR_DREAM ||
-              PAGES[i].graph == GR_TECHNO;   /* (1.2: SONG; this fork: DREAM, TECHNO) */
+              PAGES[i].graph == GR_TECHNO || PAGES[i].graph == GR_TDRUM;   /* (1.2: SONG; this fork: DREAM, TECHNO, DRUMS) */
         ok &= f != FAM_TRK || PAGES[i].graph == GR_TRK || str_eq(PAGES[i].title, "CLOCK");   /* HOME's: MIXER CLOCK */
         ok &= PAGES[i].graph != GR_TRK || f == FAM_TRK;
         ui_power_on(); ui.home = 0; ui.page = (uint8_t)i; page_entered();
@@ -2745,12 +2745,14 @@ static int test_page_cycles(void)
     open_family(FAM_GLO); open_family(FAM_GLO);          /* (this fork) DREAM, GLO's second page */
     ok &= str_eq(cur_page()->title, "DREAM");
     open_family(FAM_GLO); ok &= str_eq(cur_page()->title, "TECHNO");   /* (this fork) TECHNO, the third */
+    open_family(FAM_GLO); ok &= str_eq(cur_page()->title, "DRUMS");    /* (this fork) its DRUMS, the fourth */
     open_family(FAM_GLO); ok &= str_eq(cur_page()->title, "SONG");   /* .. and round */
     go_home(); open_family(FAM_GLO); ok &= str_eq(cur_page()->title, "SONG");
     for (i = 0; i < 256u; i++) {                         /* any remembered index (the old GLOBAL 25, SYSTEM 27, ..) */
         go_home(); ui.fam_last[FAM_GLO] = (uint8_t)i; open_family(FAM_GLO);
         ok &= str_eq(cur_page()->title, i < NPAGES && PAGES[i].graph == GR_DREAM ? "DREAM" :
-                                        i < NPAGES && PAGES[i].graph == GR_TECHNO ? "TECHNO" : "SONG") &&
+                                        i < NPAGES && PAGES[i].graph == GR_TECHNO ? "TECHNO" :
+                                        i < NPAGES && PAGES[i].graph == GR_TDRUM ? "DRUMS" : "SONG") &&
               ui.fam_last[FAM_GLO] == ui.page;
         go_home(); ui.fam_last[FAM_TRK] = (uint8_t)i; press(B_HOME);
         ok &= cur_page()->graph == GR_TRK && !ui.home;
@@ -2900,9 +2902,10 @@ static int test_product_ux(void)
     press(B_GLO); frames(320); ok = cur_page()->fam == FAM_GLO && str_eq(cur_page()->title, "SONG");
     press(B_GLO); frames(320); ok &= str_eq(cur_page()->title, "DREAM") && cur_page()->fam == FAM_GLO && !ui.home;
     press(B_GLO); frames(320); ok &= str_eq(cur_page()->title, "TECHNO") && cur_page()->fam == FAM_GLO && !ui.home;
+    press(B_GLO); frames(320); ok &= str_eq(cur_page()->title, "DRUMS") && cur_page()->fam == FAM_GLO && !ui.home;
     press(B_GLO); frames(320); ok &= str_eq(cur_page()->title, "SONG");
     go_title("CLOCK"); press(B_GLO); frames(320); ok &= str_eq(cur_page()->title, "SONG");
-    bad += check("1.2: GLO opens SONG directly, again DREAM, again TECHNO (this fork), again SONG (no GLOBAL, no SYSTEM, no "
+    bad += check("1.2: GLO opens SONG directly, again DREAM, again TECHNO, again DRUMS (this fork), again SONG (no GLOBAL, no SYSTEM, no "
                  "MIXER)", ok);
     go_home(); btn_down(B_SEQ); frames(500);
     ok = ui.layer == LAYER_SEQ && ui.home;

@@ -392,7 +392,7 @@ static uint32_t large_kind(void)
         return home_tracks() ? LK_LABEL : LK_TALL;      /* a list page; the rows' names in M: draw_home_tracks) */
     g = cur_page()->graph;
     return g == GR_BROWSE || g == GR_SLOTS || g == GR_USER || g == GR_PATS || g == GR_SONG || g == GR_ROLL ||
-           g == GR_SLICES || g == GR_EVENTS || g == GR_DREAM || g == GR_TECHNO ? LK_LABEL : LK_TALL;
+           g == GR_SLICES || g == GR_EVENTS || g == GR_DREAM || TECHNO_PG(g) ? LK_LABEL : LK_TALL;
 }
 /* the geometry of the page shown: the cards' height, the panel's top and height */
 static uint32_t card_h(void) { return large_kind() == LK_TALL ? LG_CARD_H : CARD_H; }
@@ -601,8 +601,8 @@ static int detail_on(void)
 /* GLO > SONG (1.2): the white keys A B C D (A3 B3 C4 D4, white places 2..5: seq.c song_key) set the selected cell's slot;
  * they do not sound there, the other keys play as anywhere (seq.c keyboard_block: song.grid 3) */
 static int song_keys_on(void) { return !ui.home && !ui.menu && !ui.confirm && !ui.layer && cur_page()->graph == GR_SONG; }
-/* (this fork) GLO > TECHNO: the keys pick the bassline's key and never sound (seq.c keyboard_block: song.grid 4) */
-static int techno_keys_on(void) { return !ui.home && !ui.menu && !ui.confirm && !ui.layer && cur_page()->graph == GR_TECHNO; }
+/* (this fork) GLO > TECHNO, DRUMS: the keys pick the bassline's key and never sound (seq.c keyboard_block: song.grid 4) */
+static int techno_keys_on(void) { return !ui.home && !ui.menu && !ui.confirm && !ui.layer && TECHNO_PG(cur_page()->graph); }
 
 /* black key place p (seq.c key_place) held, 0 = not */
 static int black_held(uint32_t p)
@@ -1774,7 +1774,7 @@ static uint32_t act_cols(void)                   /* the columns that are actions
         return 0;
     if (pg->graph == GR_EVENTS) return 16u;     /* AUTOMATION: no knob is an action; OCT+ by the row (ev_oct) */
     if (pg->graph == GR_DREAM) return 16u;      /* DREAM: no knob is an action; OCT+ dreams (again) */
-    if (pg->graph == GR_TECHNO) return 16u;     /* TECHNO: the same; OCT+ a new groove */
+    if (TECHNO_PG(pg->graph)) return 16u;       /* TECHNO, DRUMS: the same; OCT+ a new groove */
     if (pg->graph == GR_TOOLS) return 15u;
     if (pg->graph == GR_SONG)
         return 1u;                               /* PLAY / STOP (also the PLAY button) */
@@ -1799,7 +1799,7 @@ static uint32_t act_col(void)
     if (!ui.home && cur_page()->graph == GR_SONG) return 1u;
     if (!ui.home && cur_page()->graph == GR_EVENTS) return 5u;
     if (!ui.home && cur_page()->graph == GR_DREAM) return 5u;
-    if (!ui.home && cur_page()->graph == GR_TECHNO) return 5u;
+    if (!ui.home && TECHNO_PG(cur_page()->graph)) return 5u;
     return !ui.home && cur_page()->graph == GR_PATS ? 2u : ui.act;
 }
 
@@ -1809,7 +1809,7 @@ static const char *act_name(uint32_t c)          /* column c's action (the foote
     uint32_t id = cur_page()->id[c & 3u];
     if (cur_page()->graph == GR_EVENTS) return ev_act_name();
     if (cur_page()->graph == GR_DREAM) return dream.on ? "NEW" : "DREAM";
-    if (cur_page()->graph == GR_TECHNO) return techno.on ? "NEW" : "TECHNO";
+    if (TECHNO_PG(cur_page()->graph)) return techno.on ? "NEW" : "TECHNO";
     if (cur_page()->graph == GR_TOOLS) {
         static const char *const actions[] = {"CLEAR", "INIT", "DELETE", "CLEAR"};
         return (c & 3u) == 1u && ui.tl_clean ? "CLEAN" : actions[c & 3u];   /* (1.5.5: KNOB 2 on: CLEAN INIT) */
@@ -1836,7 +1836,7 @@ static int act_ready(void)
         return 0;
     if (cur_page()->graph == GR_EVENTS) return ev_act_ready();
     if (cur_page()->graph == GR_DREAM) return 1;
-    if (cur_page()->graph == GR_TECHNO) return 1;
+    if (TECHNO_PG(cur_page()->graph)) return 1;
     if (cur_page()->graph == GR_TOOLS)                  /* one case per column: CLEAR PAT, INIT, DELETE ROW, CLEAR SONG */
         return !chain_busy() && (c == 0u ? !seq_is_empty(TSEL) || motion_count(TSEL) : c == 1u ? 1 :
                                  c == 2u ? ui.song_row < chain_config.count : chain_config.count != 0u);

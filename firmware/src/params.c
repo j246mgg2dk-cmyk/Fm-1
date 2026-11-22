@@ -442,7 +442,7 @@ enum { FAM_HOME, FAM_ENV, FAM_LFO, FAM_FX, FAM_SCL, FAM_EDIT, FAM_GLO, FAM_SAVE,
 enum { SC_TRACK, SC_GLOBAL, SC_ENGINE, SC_STEP, SC_TRK };   /* SC_TRK: the TRACKS page (ui_input.c tracks_edit) */
 enum { GR_NONE, GR_ADSR, GR_LFO, GR_STEPS, GR_ARP, GR_SCALE, GR_FX, GR_ROLL, GR_BROWSE, GR_SLOTS, GR_USER, GR_TRK,
        GR_SLCR, GR_MOD, GR_PATS, GR_SONG, GR_TOOLS, GR_CHORD, GR_SLICES, GR_EVENTS,
-       GR_FMOP, GR_FMOP2, GR_FMENV, GR_INS, GR_DREAM, GR_TECHNO };   /* (GR_DREAM: GLO > DREAM, this fork; GR_STEPS: SEQ TOOLS' knobs; GR_FMOP..: FM6's operator pages, ui_fm6op.c) */
+       GR_FMOP, GR_FMOP2, GR_FMENV, GR_INS, GR_DREAM, GR_TECHNO, GR_TDRUM };   /* (GR_DREAM: GLO > DREAM, this fork; GR_STEPS: SEQ TOOLS' knobs; GR_FMOP..: FM6's operator pages, ui_fm6op.c) */
 
 typedef struct {
     const char *title;
@@ -512,7 +512,10 @@ static const page_t PAGES[] = {
     {"DREAM", FAM_GLO, SC_GLOBAL, GR_DREAM, {0xFF, 0xFF, 0xFF, 0xFF}},
     /* this fork: GLO tapped on DREAM (techno.c): STYLE DRIVE GROOVE EVOLVE, the keys the key, OCT+ a new groove */
     {"TECHNO", FAM_GLO, SC_GLOBAL, GR_TECHNO, {0xFF, 0xFF, 0xFF, 0xFF}},
+    /* this fork: GLO tapped on TECHNO: its drums, KIT KICK HATS CRUSH (techno.c); the keys, OCT+ as TECHNO's */
+    {"DRUMS", FAM_GLO, SC_GLOBAL, GR_TDRUM, {0xFF, 0xFF, 0xFF, 0xFF}},
 };
+#define TECHNO_PG(g) ((g) == GR_TECHNO || (g) == GR_TDRUM)   /* (this fork) TECHNO's two pages */
 #define NPAGES (sizeof(PAGES) / sizeof(PAGES[0]))
 static uint8_t mod_ui_slot;      /* the MOD page: the matrix slot (0..3) KNOB 2..4 edit */
 

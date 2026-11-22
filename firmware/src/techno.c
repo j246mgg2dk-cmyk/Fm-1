@@ -13,18 +13,25 @@
  * then with EVOLVE a BREAK (the kick out for four bars, a BUILD, the DROP) or a new motif. EVOLVE at 0: a loop that
  * never changes. The fills (a roll into the next phrase) come with EVOLVE too.
  * The controls (GLO > TECHNO; the keys pick the bassline's key, C .. B, silently):
- *   STYLE   HYPNO DARK (Berlin) SOUL (Detroit) DUB ACID ROBOT (electro): the kits, the sounds, the bass, the tempo
- *           on the internal clock
+ *   STYLE   HYPNO DARK (Berlin) SOUL (Detroit) DUB ACID ROBOT (electro) HARD (hard techno) INDUS (industrial): the
+ *           kits, the sounds, the bass, the tempo on the internal clock
  *   DRIVE   the energy: hats from offbeats to sixteenths, more percussion, the kick's drive, the bass brighter
  *   GROOVE  the swing, the ghost notes, the hats' dynamics
  *   EVOLVE  how much it changes: 0 a fixed loop, then fills, new motifs, the arrangement, at the top the BREAK
+ * GLO again, DRUMS: the drums by hand, at once (the steps are not touched):
+ *   KIT     AUTO (the style's kits) or one kit for kick, hats and percussion: CRISP HARD 8BIT RUST (drum_voice.c, made
+ *           for this) STD 80 10 66 55 77 DEEP TIGHT PERC
+ *   KICK    64 the kit's kick; down longer, rounder, lower; up shorter, harder, more sweep and drive
+ *   HATS    64 the kit's hats; down darker and tighter; up brighter, longer, more sizzle
+ *   CRUSH   0 off; up the INSERT's CRUSH on the three drum tracks, 12 bits down to 4, the rate down to 5.5 kHz
+ *           (8BIT and CRUSH: the old game consoles' drums)
  * OCT+: a new groove (the controls as they are). Playing: from the next half, without stopping (the clock goes on).
  * Edit a step and TECHNO hands the music over, as DREAM does. Deterministic: the same seed, the same music. */
 #define TC_HALF 32u
-#define TC_NSTYLE 6u
+#define TC_NSTYLE 8u
 #define CLK_AUTO_MODE 3u                         /* G_CLOCK's AUTO (fx.c) */
-static const char *const N_TC_STYLE[TC_NSTYLE] = {"HYPNO", "DARK", "SOUL", "DUB", "ACID", "ROBOT"};
-enum { TS_HYPNO, TS_DARK, TS_SOUL, TS_DUB, TS_ACID, TS_ROBOT };
+static const char *const N_TC_STYLE[TC_NSTYLE] = {"HYPNO", "DARK", "SOUL", "DUB", "ACID", "ROBOT", "HARD", "INDUS"};
+enum { TS_HYPNO, TS_DARK, TS_SOUL, TS_DUB, TS_ACID, TS_ROBOT, TS_HARD, TS_INDUS };
 enum { TB_RUMBLE, TB_OFFBEAT, TB_ACID, TB_DUB, TB_ROBOT };      /* the bass's kinds */
 enum { AP_INIT = 0, AP_SUB = 7, AP_SQR = 2, AP_ACID = 4, AP_PLUCK = 8 };   /* ANALOG's presets (engines/src/eng_analog.c) */
 typedef struct {
@@ -39,18 +46,22 @@ typedef struct {
 } tc_style_t;
 #define TL(l) (1u << (l))
 static const tc_style_t TC_STYLE[TC_NSTYLE] = {
-    /* HYPNO: a round punch, rolling rumble, rims in threes, congas */
-    {128, 6, DK_STD, 0, 62, 70, 20, DK_STD, DK_PERC, AP_SUB, TB_RUMBLE, 0, 3, 5, TL(DV_RIM) | TL(DV_TOM), 1},
+    /* HYPNO: a snapped punch, rolling rumble, rims in threes, congas */
+    {128, 6, DK_CRISP, 0, 62, 70, 20, DK_CRISP, DK_PERC, AP_SUB, TB_RUMBLE, 0, 3, 5, TL(DV_RIM) | TL(DV_TOM), 1},
     /* DARK (Berlin): the big driven kick, open hats on the offbeats, rumble, a clap at the peak */
-    {133, 0, DK_STD, 0, 58, 80, 48, DK_STD, DK_STD, AP_SUB, TB_RUMBLE, 0, 1, 3, TL(DV_RIM) | TL(DV_TOM), 0},
+    {133, 0, DK_CRISP, 0, 58, 80, 48, DK_CRISP, DK_CRISP, AP_SUB, TB_RUMBLE, 0, 1, 3, TL(DV_RIM) | TL(DV_TOM), 0},
     /* SOUL (Detroit): sixteenth hats, the 808 clap, an offbeat bass in dorian, a cowbell */
-    {126, 12, DK_STD, 0, 64, 60, 12, DK_STD, DK_80, AP_SQR, TB_OFFBEAT, 1, 2, 1, TL(DV_RIM) | TL(DV_BELL), 0},
+    {126, 12, DK_CRISP, 0, 64, 60, 12, DK_CRISP, DK_80, AP_SQR, TB_OFFBEAT, 1, 2, 1, TL(DV_RIM) | TL(DV_BELL), 0},
     /* DUB: soft and round, shuffled hats, the chord stab into the dotted delay */
     {120, 18, DK_STD, 1, 56, 60, 0, DK_STD, DK_DEEP, AP_PLUCK, TB_DUB, 0, 4, 5, TL(DV_RIM) | TL(DV_TOM), 0},
     /* ACID: a tight kick, open hats, the 303 line sliding */
-    {130, 10, DK_STD, 0, 64, 64, 30, DK_STD, DK_80, AP_ACID, TB_ACID, 2, 1, 2, TL(DV_RIM), 0},
+    {130, 10, DK_CRISP, 0, 64, 64, 30, DK_CRISP, DK_80, AP_ACID, TB_ACID, 2, 1, 2, TL(DV_RIM), 0},
     /* ROBOT (electro): the 808, a broken kick, the snare on two and four */
     {128, 0, DK_80, 0, 64, 70, 0, DK_80, DK_80, AP_SQR, TB_ROBOT, 0, 2, 0, TL(DV_TOM) | TL(DV_RIM), 0},
+    /* HARD: fast, the held, driven HARD kick, its ghosts, loud open hats, the ride, a rumble that distorts */
+    {148, 0, DK_HARD, 0, 64, 64, 40, DK_HARD, DK_HARD, AP_SUB, TB_RUMBLE, 2, 1, 2, TL(DV_RIM) | TL(DV_TOM), 0},
+    /* INDUS (industrial): the RUST kit, metal in threes, the long rumble in phrygian, a big clap */
+    {136, 0, DK_RUST, 0, 60, 72, 40, DK_RUST, DK_RUST, AP_SUB, TB_RUMBLE, 2, 3, 2, TL(DV_TOM) | TL(DV_BELL) | TL(DV_RIM), 1},
 };
 static const uint8_t TC_SCALE[3][5] = {
     {0, 3, 5, 7, 10},                            /* minor pentatonic */
@@ -87,7 +98,14 @@ static struct {
     uint8_t bline[16], bflag[16];                /* ACID / ROBOT: the notes (the scale's degree + 1, + 8 an octave up;
                                                   * 0 a rest), their flags */
     uint8_t chord;                               /* DUB: the stab's rhythm */
-} techno = {.style = TS_DARK, .drive = 72, .groove = 40, .evolve = 48, .key = 9, .written = 1};
+    uint8_t dkit, dkick, dhats, dcrush;          /* DRUMS: KIT (0 AUTO, TC_KIT), KICK, HATS (64: as the kit), CRUSH */
+} techno = {.style = TS_DARK, .drive = 72, .groove = 40, .evolve = 48, .key = 9, .written = 1, .dkick = 64, .dhats = 64};
+/* DRUMS > KIT: AUTO, then the kits as DRUM stores them */
+#define TC_NKIT 14u
+static const char *const N_TC_KIT[TC_NKIT] = {"AUTO", "CRISP", "HARD", "8BIT", "RUST", "STD", "80", "10", "66", "55",
+                                              "77", "DEEP", "TIGHT", "PERC"};
+static const uint8_t TC_KIT[TC_NKIT] = {0, DK_CRISP, DK_HARD, DK_8BIT, DK_RUST, DK_STD, DK_80, DK_10, DK_66, DK_55,
+                                        DK_77, DK_DEEP, DK_TIGHT, DK_PERC};
 
 static uint32_t tc_rand(void)                     /* xorshift32 */
 {
@@ -100,6 +118,11 @@ static uint32_t tc_rand(void)                     /* xorshift32 */
 static uint32_t tc_pick(uint32_t n) { return n ? (tc_rand() >> 8) % n : 0u; }
 static int tc_chance(uint32_t pct) { return tc_pick(100u) < pct; }
 static const tc_style_t *tc_sty(void) { return &TC_STYLE[techno.style % TC_NSTYLE]; }
+/* the kits playing: DRUMS > KIT's, or the style's (AUTO) */
+static uint32_t tc_kk(void) { return techno.dkit ? TC_KIT[techno.dkit % TC_NKIT] : tc_sty()->kkit; }
+static uint32_t tc_hk(void) { return techno.dkit ? TC_KIT[techno.dkit % TC_NKIT] : tc_sty()->hkit; }
+static uint32_t tc_pk(void) { return techno.dkit ? TC_KIT[techno.dkit % TC_NKIT] : tc_sty()->pkit; }
+static int tc_heavy(void) { return techno.style == TS_DARK || techno.style == TS_HARD || techno.style == TS_INDUS; }
 
 /* ------------------------------------------------------------ the set --- */
 /* a half's place: its phrase (8 halves, 16 bars), the set (4 phrases) */
@@ -160,7 +183,8 @@ static void tc_motifs(uint32_t all)
             techno.plane[i] = (uint8_t)lanes[nl > 1u && tc_chance(35) ? 1u : 0u];
     }
     if (all || tc_chance(e / 3u)) {               /* the kick's ghost, ROBOT's pattern */
-        techno.ghost = techno.drive > 90u && S->bkind == TB_RUMBLE && tc_chance(60) ? (uint8_t)(2u + tc_pick(2u)) : 0u;
+        techno.ghost = (techno.drive > 90u || (techno.style == TS_HARD && techno.drive > 60u)) && S->bkind == TB_RUMBLE &&
+                       tc_chance(60) ? (uint8_t)(2u + tc_pick(2u)) : 0u;   /* (HARD: from DRIVE 60) */
         techno.kpat = (uint8_t)tc_pick(NELEM(TC_KICK_EL));
     }
     if (all || tc_chance(e / 2u)) {               /* the bass */
@@ -222,7 +246,7 @@ static void tc_write(uint32_t which, uint32_t h)
     track_t *kick = &trk[0], *hat = &trk[1], *per = &trk[2], *bas = &trk[3];
     uint32_t phrase = h / 8u, last_half = h % 8u == 7u, fill = ev >= 30u && last_half;
     uint32_t minifill = ev >= 70u && (h & 1u) && !last_half;
-    uint32_t ride = (S->hkit == DK_STD || (drum_kit_plays(S->hkit) >= DK_80 && (DK_SWAP[drum_kit_plays(S->hkit) - DK_80] & 4u)));
+    uint32_t hk = tc_hk(), ride = (hk == DK_STD || (drum_kit_plays(hk) >= DK_80 && (DK_SWAP[drum_kit_plays(hk) - DK_80] & 4u)));
     uint32_t root = tc_root();
     if (techno.phrase_made != phrase + 1u || techno.fresh) {   /* a new phrase: the motifs (all of them on OCT+) */
         if (techno.fresh || techno.phrase_made == 0u || ev >= 20u)
@@ -246,7 +270,7 @@ static void tc_write(uint32_t which, uint32_t h)
                 kv = 54;
             }
             if (fill && bar2 && pos >= 12u && ev >= 60u && techno.style != TS_ROBOT)
-                kh = (techno.style == TS_DARK && e >= 3) ? TL(DV_KICK) : 0u;   /* DARK rolls the kick in, others drop */
+                kh = (tc_heavy() && e >= 3) ? TL(DV_KICK) : 0u;   /* DARK HARD INDUS roll the kick in, others drop */
         }
         tc_put(kick, at, kh, pos == 0u && kh && kv > 100u ? TL(DV_KICK) : 0u, 0, 0, kv, 100, 0);
         /* T2 HATS: the offbeat (open from S->open), the sixteenths and their ghosts with energy, the ride at the top */
@@ -264,7 +288,7 @@ static void tc_write(uint32_t which, uint32_t h)
                 hch = 100u - groove * 35u / 127u;   /* the ghosts breathe */
             }
             if (hl >= 4 && ride && (q == 0u || (q == 2u && techno.style != TS_DUB))) {
-                if (S->hkit == DK_STD) { hn = 51; nn = 1; }        /* GM ride: STD's cymbal */
+                if (hk == DK_STD) { hn = 51; nn = 1; }             /* GM ride: STD's cymbal */
                 else hh |= TL(DV_BELL);                            /* a kit that plays a cymbal on BELL */
                 if (!hv) hv = tc_vel(70, pos);
             }
@@ -379,17 +403,46 @@ static void tc_drum(track_t *t, uint32_t kit)
     dr_sound(t, ENGI_DRUM, 0);
     t->p[P_E0] = (int16_t)kit;                    /* KIT (the rest: DRUM KIT's) */
 }
+/* the three drum sounds: the kits (DRUMS > KIT, or the style's), the kick's tune and decay (DRUMS: tc_drums) */
+static void tc_kits(void)
+{
+    tc_drum(&trk[0], tc_kk());
+    trk[0].p[P_E6] = tc_sty()->kround;
+    tc_drum(&trk[1], tc_hk());
+    tc_drum(&trk[2], tc_pk());
+}
+/* DRUMS > KICK HATS CRUSH on the kits' sounds (after tc_kits, tc_mix: they set what this moves from). KICK and HATS
+ * at 64 leave the sounds as the kit and the style make them */
+static void tc_drums(void)
+{
+    const tc_style_t *S = tc_sty();
+    track_t *k = &trk[0], *h = &trk[1];
+    int32_t dk = (int32_t)techno.dkick - 64, dh = (int32_t)techno.dhats - 64, c = techno.dcrush, i;
+    int32_t ktone = tc_kk() == DK_STD ? ENG_DRUM.presets[0].e[2] : 64, htone = tc_hk() == DK_STD ? ENG_DRUM.presets[0].e[2] : 64;
+    k->p[P_E1] = (int16_t)clamp(S->ktune + (dk < 0 ? dk / 6 : 0), 0, 127);      /* TUNE: down a little, longer */
+    k->p[P_E2] = (int16_t)clamp(ktone + dk / 2, 0, 127);                         /* TONE: the sweep */
+    k->p[P_E3] = (int16_t)clamp(S->kdecy - dk * 3 / 4, 8, 127);                  /* DECY */
+    k->p[P_E4] = (int16_t)clamp(64 + dk / 2, 0, 127);                            /* SNAP: the kit's drive */
+    k->p[P_E7] = (int16_t)clamp(S->kdrv + techno.drive / 4 + (dk > 0 ? dk : dk / 2), 0, 120);   /* DRV */
+    h->p[P_E2] = (int16_t)clamp(htone + dh * 3 / 4, 0, 127);                     /* TONE */
+    h->p[P_E3] = (int16_t)clamp((techno.style == TS_DUB ? 72 : 60) + dh / 2, 0, 127);   /* DECY: a little short (DUB:
+                                                                                  * longer) */
+    h->p[P_E4] = (int16_t)clamp(64 + dh / 2, 0, 127);                            /* SNAP: the sizzle */
+    for (i = 0; i < 3; i++) {                     /* CRUSH: the INSERT, bits 12 .. 4 (the kick two more), the rate */
+        track_t *t = &trk[i];
+        int32_t bits = 12 - c * 8 / 127 + (i == 0 ? 2 : 0), rate = 15 - c * 6 / 127;
+        t->p[P_ITYPE] = c ? IT_CRUSH : IT_OFF;
+        t->p[P_IA] = (int16_t)(c ? (bits - 1) * 8 + 4 : TP[P_IA].def);
+        t->p[P_IB] = (int16_t)(c ? rate * 8 + 4 : TP[P_IB].def);
+        t->p[P_IC] = (int16_t)(c ? 120 : TP[P_IC].def);
+        t->p[P_IMIX] = 127;
+    }
+}
 /* the four sounds by STYLE (an engine switch fades: at a half's start) */
 static void tc_sounds(void)
 {
     const tc_style_t *S = tc_sty();
-    tc_drum(&trk[0], S->kkit);
-    trk[0].p[P_E6] = S->kround;
-    trk[0].p[P_E1] = S->ktune;
-    trk[0].p[P_E3] = S->kdecy;
-    tc_drum(&trk[1], S->hkit);
-    trk[1].p[P_E3] = techno.style == TS_DUB ? 72 : 60;   /* the hats a little shorter (DUB: longer) */
-    tc_drum(&trk[2], S->pkit);
+    tc_kits();
     dr_sound(&trk[3], 0 /* ANALOG */, S->bpre);
     trk[3].p[P_VOICE] = S->bkind == TB_DUB ? V_POLY : V_LEGATO;
     trk[3].p[P_GLIDE] = S->bkind == TB_ACID ? 24 : 0;
@@ -411,20 +464,20 @@ static void tc_mix(void)
     k->p[P_LEVEL] = 118;
     k->p[P_REV] = 2;
     k->p[P_DLY] = 0;
-    k->p[P_E7] = (int16_t)clamp(S->kdrv + techno.drive / 4, 0, 110);      /* DRV */
     h->p[P_LEVEL] = 98;
     h->p[P_REV] = 12;
     h->p[P_DLY] = techno.style == TS_DUB ? 26 : 0;
     h->p[P_PAN] = 6;
     p->p[P_LEVEL] = 94;
     p->p[P_REV] = 30;
-    p->p[P_DLY] = techno.style == TS_DUB || techno.style == TS_HYPNO ? 40 : 14;
+    p->p[P_DLY] = techno.style == TS_DUB || techno.style == TS_HYPNO || techno.style == TS_INDUS ? 40 : 14;
     p->p[P_PAN] = -10;
     b->p[P_SGATE] = S->bkind == TB_RUMBLE ? 46 : S->bkind == TB_ACID ? 96 : S->bkind == TB_DUB ? 30 : 70;
     b->p[P_LEVEL] = S->bkind == TB_RUMBLE ? 104 : S->bkind == TB_DUB ? 102 : 94;
-    b->p[P_REV] = S->bkind == TB_RUMBLE ? 72 : S->bkind == TB_DUB ? 56 : 8;
+    b->p[P_REV] = techno.style == TS_INDUS ? 84 : S->bkind == TB_RUMBLE ? 72 : S->bkind == TB_DUB ? 56 : 8;
     b->p[P_DLY] = S->bkind == TB_DUB ? 92 : S->bkind == TB_ACID ? 24 : 0;
-    b->p[P_DIST] = S->bkind == TB_ACID ? (int16_t)(20 + techno.drive / 3) : S->bkind == TB_RUMBLE ? (int16_t)(techno.drive / 4) : 0;
+    b->p[P_DIST] = S->bkind == TB_ACID ? (int16_t)(20 + techno.drive / 3) : S->bkind == TB_RUMBLE ?
+                   (int16_t)(techno.drive / 4 + (techno.style == TS_HARD || techno.style == TS_INDUS ? 24 : 0)) : 0;
     song.g[G_SWING] = (int16_t)clamp(S->swing + techno.groove * 28 / 127, 0, 60);
     song.g[G_RTYPE] = techno.style == TS_DUB ? 2 : 0;    /* DUB a HALL, the rest a ROOM */
     song.g[G_RSIZE] = techno.style == TS_DUB ? 110 : 84;
@@ -433,6 +486,7 @@ static void tc_mix(void)
     song.g[G_DFDBK] = techno.style == TS_DUB ? 92 : 64;
     song.g[G_DMIX] = 90;
     song.g[G_CDEPTH] = 0;
+    tc_drums();
 }
 /* the tempo on the internal clock: the style's, unless it was set by hand (another than the last style's) */
 static void tc_tempo(uint32_t was_style, int force)
@@ -533,6 +587,37 @@ static const param_desc_t TC_DESC[4] = {          /* GLO > TECHNO's four knobs (
 static int32_t techno_get(uint32_t c)
 {
     return c == 0 ? techno.style : c == 1 ? techno.drive : c == 2 ? techno.groove : techno.evolve;
+}
+/* GLO > DRUMS: KIT KICK HATS CRUSH, heard at once (playing or not; the tracks only while TECHNO has them) */
+static const param_desc_t TD_DESC[4] = {
+    {"KIT", F_ENUM, 0, TC_NKIT - 1, 0, N_TC_KIT, 0},
+    {"KICK", F_PCT, 0, 127, 64, 0, 0},
+    {"HATS", F_PCT, 0, 127, 64, 0, 0},
+    {"CRUSH", F_PCT, 0, 127, 0, 0, 0},
+};
+static int32_t techno_dget(uint32_t c)
+{
+    return c == 0 ? techno.dkit : c == 1 ? techno.dkick : c == 2 ? techno.dhats : techno.dcrush;
+}
+static void techno_dset(uint32_t c, int32_t v)
+{
+    uint32_t was = techno.dkit, f;
+    switch (c) {
+    case 0: techno.dkit = (uint8_t)clamp(v, 0, TC_NKIT - 1); break;
+    case 1: techno.dkick = (uint8_t)clamp(v, 0, 127); break;
+    case 2: techno.dhats = (uint8_t)clamp(v, 0, 127); break;
+    default: techno.dcrush = (uint8_t)clamp(v, 0, 127); break;
+    }
+    if (!techno.on)
+        return;                                   /* (the next start takes them) */
+    f = motion_guard();
+    if (techno.dkit != was) {
+        tc_kits();                                /* a kit: the three drum sounds again, the mix (and the rest) on them */
+        tc_mix();
+    } else {
+        tc_drums();
+    }
+    motion_unguard(f);
 }
 
 /* main loop, every pass: the playhead's half counted (from the transport's start, or the song position it was

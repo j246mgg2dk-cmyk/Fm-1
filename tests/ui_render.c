@@ -774,7 +774,7 @@ enum { S_HOME, S_HOME_IDLE, S_MESSAGE, S_MESSAGE_KEY, S_MESSAGE_NOFILE, S_PRESET
        S_MENU_SELECT, S_PROJECT_ERASE, S_CONFIRM_ERASE_PROJ, S_TOOLS_CLEAN, S_CONFIRM_CLEAN,
        S_MENU_MIDI_TRACK, S_MENU_MIDI_TCH_UNUSED, S_MENU_MIDI_AUTO, S_HOME_TRACKS_MIDI, S_MIXER_MIDI, S_EDIT_PHASE_FOLD,
        S_DREAM_OFF, S_DREAM, S_DREAM_PAUSED, S_DREAM_HOT, S_EDIT_TITAN, S_EDIT_TITAN_2,
-       S_TECHNO_OFF, S_TECHNO, S_TECHNO_WAIT, S_TECHNO_PAUSED, S_TECHNO_HOT, S_COUNT };   /* (this fork: DREAM, TITAN) */
+       S_TECHNO_OFF, S_TECHNO, S_TECHNO_WAIT, S_TECHNO_PAUSED, S_TECHNO_HOT, S_TECHNO_DRUMS, S_COUNT };   /* (this fork: DREAM, TITAN) */
 static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "message", "message_key", "message_nofile", "presets", "presets_nofav", "user",
     "phrases", "project", "tools", "song_empty", "song", "step", "auto_steps", "auto_add_chance", "automation", "drum",
     "drum_hand", "drum_cym", "mixer", "mixer_from_home", "mixer_pan", "env", "env_dest", "lfo", "mod", "fx", "slicer", "dly", "scl", "chord", "chord_wide", "chord_off", "chord_kit", "arp",
@@ -807,7 +807,7 @@ static const char *const S_NAME[S_COUNT] = {"home", "home_idle", "message", "mes
     "menu_select", "project_erase", "confirm_erase_project", "tools_clean", "confirm_clean",
     "menu_midi_track", "menu_midi_channels_unused", "menu_midi_auto_select", "home_tracks_midi", "mixer_midi", "edit_phase_fold",
     "dream_off", "dream", "dream_paused", "dream_hot", "edit_titan", "edit_titan_2",
-    "techno_off", "techno", "techno_wait", "techno_paused", "techno_hot"};
+    "techno_off", "techno", "techno_wait", "techno_paused", "techno_hot", "techno_drums"};
 
 /* the STEP page's piano roll (ui_graph.c graph_roll) on track 1, stopped unless said: an empty pattern; ACID in
  * A minor; POLY chords (Am7 F C G, tied); a line with ties, slides and accents in C major; LEN 32 on its second
@@ -1246,6 +1246,11 @@ static void setup(int s)
         break;
     case S_TECHNO_WAIT: song.g[G_CLOCK] = 1; techno.on = 0; song.playing = 0; techno_start(7); go_page(GR_TECHNO);
         ui.msg_t = 0; break;
+    case S_TECHNO_DRUMS:                                  /* GLO > DRUMS: KIT HARD, CRUSH just turned */
+        song.g[G_CLOCK] = 0; techno.on = 0; techno_start(1982); events_block(32); go_page(GR_TDRUM); ui.msg_t = 0;
+        for (int b = 0; b < 400; b++) events_block(32);
+        techno_dset(0, 2); techno_dset(3, 70); ui.hot_col = 3; ui.hot_t = 30;
+        break;
     case S_TECHNO_PAUSED: song.g[G_CLOCK] = 0; techno.on = 0; techno_start(7); song.playing = 0; transport_req = 0;
         go_page(GR_TECHNO); ui.msg_t = 0; break;
     case S_EDIT_TITAN_2: eng(ENGI_TITAN); apply_preset(5); go_title("EDIT 2"); ui.hot_col = 3; ui.hot_t = 30; break;

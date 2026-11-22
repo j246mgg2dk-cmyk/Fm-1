@@ -41,17 +41,29 @@ it finds whichever is sending), start your master and TECHNO starts with it, on 
 Start the DAW from bar 9 and TECHNO plays bar 9 (the Song Position Pointer). Stop the master and it stops. Pull the
 cable and it stops within half a second (no hanging notes). With nothing coming in it plays on the FM-1's own clock.
 
-**GLO > TECHNO** (tap GLO three times: SONG, DREAM, then TECHNO), then **OCT+**:
+**GLO > TECHNO** (tap GLO three times: SONG, DREAM, then TECHNO; a fourth time: its DRUMS), then **OCT+**:
 
 | Control | What it does |
 |---|---|
-| **KNOB 1 STYLE** | HYPNO (rolling rumble, rims in threes), DARK (Berlin: big driven kick, open hats), SOUL (Detroit: sixteenth hats, 808 clap, offbeat bass), DUB (soft kick, shuffled hats, a chord stab into a dotted delay), ACID (a sliding 303-style line), ROBOT (electro: the 808, a broken kick) |
+| **KNOB 1 STYLE** | HYPNO (rolling rumble, rims in threes), DARK (Berlin: big driven kick, open hats), SOUL (Detroit: sixteenth hats, 808 clap, offbeat bass), DUB (soft kick, shuffled hats, a chord stab into a dotted delay), ACID (a sliding 303-style line), ROBOT (electro: the 808, a broken kick), HARD (hard techno, 148 BPM: a held, distorted kick with ghost kicks, loud open hats, the ride, a distorted rumble), INDUS (industrial, 136 BPM: the RUST kit, metal percussion in threes, a long phrygian rumble) |
 | **KNOB 2 DRIVE** | the energy: hats from offbeats to sixteenths, more percussion, the kick's drive, a brighter bass |
 | **KNOB 3 GROOVE** | the swing, ghost notes, the hats' dynamics |
 | **KNOB 4 EVOLVE** | how much it changes. 0: a fixed four-bar loop. Higher: fills into each 16-bar phrase, new motifs, then the arrangement (GROOVE, LIFT, PEAK). At the top: a BREAK (the kick out for four bars), a BUILD and the DROP |
 | **the keys** | on this page the keys set the bassline's key (C..B) and make no sound |
 | **OCT+** | start, or a new groove. While playing it changes from the next two bars and never stops the clock |
 | **PLAY** | the internal clock: stop and go on. With the master's clock running but no START sent (it was already playing): PLAY joins on the next pulse |
+
+**GLO once more: DRUMS**, the drums by hand. Heard at once, playing or not, and the steps are not touched:
+
+| Control | What it does |
+|---|---|
+| **KNOB 1 KIT** | AUTO (the style's kits) or one kit for kick, hats and percussion: **CRISP** (tight and bright like the modern analog drum machines: a snapped, clicking kick, hats with nothing below 4 kHz), **HARD** (a held, driven, clicking kick, loud noisy hats, a big clap, a short ride), **8BIT** (an old game console: a square kick, noise bursts, blips), **RUST** (industrial: a long driven kick, trashy snare and claps, metal hats and hits), then the DRUM engine's own STD 80 10 66 55 77 DEEP TIGHT PERC |
+| **KNOB 2 KICK** | 64 is the kit's kick. Left: longer, rounder, lower. Right: shorter, harder, more pitch sweep and drive |
+| **KNOB 3 HATS** | 64 is the kit's hats. Left: darker and tighter. Right: brighter, longer, more sizzle |
+| **KNOB 4 CRUSH** | 0 off. Up: a bit crusher on the three drum tracks (their INSERT's CRUSH), 12 bits down to 4 and the sample rate down to 5.5 kHz. **KIT 8BIT with CRUSH at 60..100** is the crushed, old-console sound |
+
+The new kits are also on the DRUM engine for any track (KIT CRISP HARD 8BIT RUST, and the presets CRISP KIT, HARD
+KIT, 8BIT KIT, RUST KIT). HYPNO, DARK, SOUL and ACID now play the CRISP kick and hats.
 
 The phrases (16 bars) are counted from the master's START or song position, so the fills land at the end of the
 master's 16-bar phrases. The four tracks are ordinary music: T1 the kick, T2 the hats, T3 the percussion (DRUM), and T4

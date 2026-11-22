@@ -56,7 +56,8 @@ static const struct { const char *title, *hint; } HELP_PAGE[] = {
     {"MIXER", "[K4]MUTE[ALGO]TRACK[HOME]CLOCK"},
     {"CLOCK", "[SELECT]TEMPO[GLO]HOLD: TAP"},
     {"DREAM", "[K1]MOOD[OCT+]DREAM[GLO]TECHNO"},   /* (this fork: dream.c) */
-    {"TECHNO", "[KEYS]KEY[OCT+]NEW[GLO]SONG"},     /* (this fork: techno.c) */
+    {"TECHNO", "[KEYS]KEY[OCT+]NEW[GLO]DRUMS"},    /* (this fork: techno.c) */
+    {"DRUMS", "[K1]KIT[K4]CRUSH[GLO]SONG"},         /* (this fork: TECHNO's drums) */
 };
 #define H_HOME "[PRESETS]SOUND[HOME]HOLD: MENU"
 #define H_LEVELS "[K1-4]T1-T4 LEVEL[HOME]MIXER"

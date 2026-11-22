@@ -150,6 +150,7 @@ static void tc_setup(uint32_t style, uint32_t drive, uint32_t groove, uint32_t e
     techno.groove = (uint8_t)groove;
     techno.evolve = (uint8_t)evolve;
     techno.key = 9;
+    techno.dkit = 0, techno.dkick = 64, techno.dhats = 64, techno.dcrush = 0;
 }
 
 static FILE *wav_open(const char *dir, const char *name, double secs)
@@ -203,7 +204,7 @@ static void music_tests(void)
                 bad += !has_hit(0, (h & 1u) * 32u + i, DV_KICK);
         }
     }
-    check("the kick on every beat of every half (5 styles x 64 halves, EVOLVE 48)", bad == 0, "%u missing", bad);
+    check("the kick on every beat of every half (7 styles x 64 halves, EVOLVE 48)", bad == 0, "%u missing", bad);
     /* EVOLVE 110: the BREAK takes the kick out for four bars of 64, and nothing else does (but a fill's last beat) */
     {
         uint32_t breaks = 0, gone = 0;
@@ -288,7 +289,7 @@ static void music_tests(void)
                 }
             }
         }
-        check("the bass in its key (6 styles x 3 keys x 32 halves)", notes > 1000u && out == 0, "%u notes, %u out", notes, out);
+        check("the bass in its key (8 styles x 3 keys x 32 halves)", notes > 1000u && out == 0, "%u notes, %u out", notes, out);
     }
 }
 
@@ -444,17 +445,98 @@ static void handover_tests(void)
     check("  .. and the other way", techno.on && !dream.on, 0);
 }
 
+/* ------------------------------------------------------------- DRUMS --- */
+static void drums_tests(void)
+{
+    uint32_t sig, k, ok;
+    int16_t before[NTRK][P_COUNT];
+    /* the styles' own kits (AUTO): HARD and INDUS on theirs, the four on CRISP */
+    tc_setup(TS_HARD, 72, 40, 48);
+    techno_start(8);
+    ok = trk[0].p[P_E0] == DK_HARD && trk[1].p[P_E0] == DK_HARD && trk[2].p[P_E0] == DK_HARD;
+    tc_setup(TS_INDUS, 72, 40, 48);
+    techno_start(8);
+    ok &= trk[0].p[P_E0] == DK_RUST && trk[1].p[P_E0] == DK_RUST && trk[2].p[P_E0] == DK_RUST;
+    tc_setup(TS_DARK, 72, 40, 48);
+    techno_start(8);
+    ok &= trk[0].p[P_E0] == DK_CRISP && trk[1].p[P_E0] == DK_CRISP;
+    check("KIT AUTO: the style's kits (HARD HARD, INDUS RUST, DARK CRISP)", ok, 0);
+    /* KIT: the three drum tracks at once, playing; the steps untouched, TECHNO still on */
+    now_s = 0;
+    run_s(0.2, 0, 0);
+    sig = dr_sig();
+    techno_dset(0, 3);                            /* 8BIT */
+    ok = trk[0].p[P_E0] == DK_8BIT && trk[1].p[P_E0] == DK_8BIT && trk[2].p[P_E0] == DK_8BIT && trk[3].eng_req == 0u;
+    ok &= trk[0].p[P_LEVEL] == 118 && trk[1].p[P_LEVEL] == 98;   /* (the mix on the new sounds) */
+    run_s(0.3, 0, 0);
+    ok &= techno.on && song.playing && dr_sig() == sig;
+    check("KIT 8BIT: kick, hats and perc on it at once, the mix kept, the steps untouched, playing on", ok, 0);
+    /* KICK and HATS: 64 as the kit; each way moves its track only */
+    techno_dset(0, 0);
+    {
+        int16_t d0 = trk[0].p[P_E3], v0 = trk[0].p[P_E7], h0 = trk[1].p[P_E2], h3 = trk[1].p[P_E3], p2 = trk[2].p[P_E2];
+        techno_dset(1, 127);
+        ok = trk[0].p[P_E3] < d0 && trk[0].p[P_E7] > v0 && trk[0].p[P_E2] > 64 && trk[1].p[P_E2] == h0;
+        techno_dset(1, 0);
+        ok &= trk[0].p[P_E3] > d0 && trk[0].p[P_E7] < v0 && trk[0].p[P_E2] < 64;
+        techno_dset(1, 64);
+        ok &= trk[0].p[P_E3] == d0 && trk[0].p[P_E7] == v0;
+        techno_dset(2, 127);
+        ok &= trk[1].p[P_E2] > h0 && trk[1].p[P_E3] > h3 && trk[2].p[P_E2] == p2;
+        techno_dset(2, 0);
+        ok &= trk[1].p[P_E2] < h0 && trk[1].p[P_E3] < h3;
+        techno_dset(2, 64);
+        ok &= trk[1].p[P_E2] == h0 && trk[1].p[P_E3] == h3;
+        check("KICK: up shorter, harder, more sweep; down longer, softer; HATS: up brighter and longer, down darker "
+              "and tighter; 64 as the kit", ok, 0);
+    }
+    /* CRUSH: the INSERT on T1..T3 (not the bass), the bits down as it goes up; 0 off; kept over a new kit */
+    techno_dset(3, 1);
+    ok = trk[0].p[P_ITYPE] == IT_CRUSH && trk[1].p[P_ITYPE] == IT_CRUSH && trk[2].p[P_ITYPE] == IT_CRUSH &&
+         trk[3].p[P_ITYPE] == IT_OFF;
+    k = (uint32_t)trk[1].p[P_IA];
+    techno_dset(3, 127);
+    ok &= (uint32_t)trk[1].p[P_IA] < k && ins_bits_sh(trk[1].p[P_IA]) == 12u && trk[0].p[P_IA] > trk[1].p[P_IA];
+    techno_dset(0, 1);
+    ok &= trk[0].p[P_E0] == DK_CRISP && trk[1].p[P_ITYPE] == IT_CRUSH;
+    techno_dset(3, 0);
+    for (k = 0; k < 3u; k++)
+        ok &= trk[k].p[P_ITYPE] == IT_OFF;
+    check("CRUSH: the INSERT's CRUSH on the drums (4 bits at the top, the kick 6), kept over a kit, 0 off", ok, 0);
+    /* not playing TECHNO: the knobs remember, the tracks are the user's */
+    tc_setup(TS_DARK, 72, 40, 48);
+    host_preset(&trk[0], ENGI_DRUM, 0);
+    for (k = 0; k < NTRK; k++)
+        memcpy(before[k], trk[k].p, sizeof before[k]);
+    techno_dset(0, 2); techno_dset(1, 100); techno_dset(2, 20); techno_dset(3, 50);
+    for (k = 0, ok = 1; k < NTRK; k++)
+        ok &= !memcmp(before[k], trk[k].p, sizeof before[k]);
+    techno_start(4);
+    ok &= trk[0].p[P_E0] == DK_HARD && trk[1].p[P_E0] == DK_HARD && trk[0].p[P_ITYPE] == IT_CRUSH && techno_dget(1) == 100;
+    check("TECHNO off: DRUMS remembers and leaves the tracks alone; the start takes it", ok, 0);
+}
+
 /* -------------------------------------------------------------- demos --- */
 static void demos(const char *dir, double secs)
 {
-    static const char *const NAME[TC_NSTYLE] = {"techno_hypno.wav", "techno_dark.wav", "techno_soul.wav",
-                                                "techno_dub.wav", "techno_acid.wav", "techno_robot.wav"};
+    static const char *const NAME[TC_NSTYLE + 3] = {"techno_hypno.wav", "techno_dark.wav", "techno_soul.wav",
+                                                    "techno_dub.wav", "techno_acid.wav", "techno_robot.wav",
+                                                    "techno_hard.wav", "techno_indus.wav",
+                                                    /* DRUMS: ACID on 8BIT crushed, DARK with a long low kick and dark
+                                                     * hats on 80, HARD with the hardest kick and the brightest hats */
+                                                    "techno_acid_8bit_crush.wav", "techno_dark_80_deep.wav",
+                                                    "techno_hard_max.wav"};
+    static const uint8_t DS[3][5] = {{TS_ACID, 3, 64, 64, 96}, {TS_DARK, 6, 10, 20, 0}, {TS_HARD, 0, 127, 127, 0}};
     uint32_t st;
-    for (st = 0; st < TC_NSTYLE; st++) {
+    for (st = 0; st < TC_NSTYLE + 3u; st++) {
         lvl_t L = {0};
         FILE *w;
         char what[96];
-        tc_setup(st, 84, 50, 72);
+        tc_setup(st < TC_NSTYLE ? st : DS[st - TC_NSTYLE][0], 84, 50, 72);
+        if (st >= TC_NSTYLE) {
+            const uint8_t *d = DS[st - TC_NSTYLE];
+            techno.dkit = d[1], techno.dkick = d[2], techno.dhats = d[3], techno.dcrush = d[4];
+        }
         now_s = 0;
         techno_start(2026 + st);
         run_s(0.01, 0, 0);
@@ -476,6 +558,7 @@ int main(int argc, char **argv)
     play_tests();
     clock_tests();
     handover_tests();
+    drums_tests();
     demos(dir, secs);
     printf(fails ? "techno test FAILED (%d)\n" : "techno test passed\n", fails);
     return fails != 0;

@@ -1195,7 +1195,7 @@ static uint32_t graph_signature(void)
     if (pg->graph == GR_NONE || pg->graph == GR_ARP) h ^= ui.frame / 2u;
     if (pg->graph == GR_DREAM)                       /* its scope (dreaming), or its note: which */
         h ^= dream.on && song.playing ? ui.frame / 2u : (dream.on + 1u) * 0x9E3779B9u;
-    if (pg->graph == GR_TECHNO)                      /* its bar (the playhead's step), or its note: which */
+    if (TECHNO_PG(pg->graph))                        /* its bar (the playhead's step), or its note: which */
         h ^= techno.on && song.playing ? trk[0].seq_idx * 0x45D9F3Bu + techno.written * 7u :
                                          (techno.on + 1u) * 0x9E3779B9u + clock_ext() * 77u;
     for (i = 0; i < P_COUNT; i++)
@@ -2350,6 +2350,7 @@ static void draw_graph(void)
                 panel_note("THE FM-1 PLAYS ITSELF", "[OCT+] DREAM", 0);
             break;
         case GR_TECHNO:                              /* TECHNO (this fork): the bar playing; stopped, the clock's state */
+        case GR_TDRUM:                               /* (DRUMS: the same) */
             cv_oy = 0;
             if (techno.on && song.playing)
                 graph_techno(c);

@@ -81,7 +81,7 @@ static int mom_turn(uint32_t k, int32_t s)
         d = &TP[MIX_ID[k & 3u]];
     } else {
         if (act_cols() || lock_held() || !(pg->scope == SC_TRACK || pg->scope == SC_ENGINE || pg->scope == SC_GLOBAL) ||
-            pg->graph == GR_EVENTS || pg->graph == GR_SONG || pg->graph == GR_DREAM || pg->graph == GR_TECHNO || pg->graph == GR_BROWSE ||
+            pg->graph == GR_EVENTS || pg->graph == GR_SONG || pg->graph == GR_DREAM || TECHNO_PG(pg->graph) || pg->graph == GR_BROWSE ||
             pg->graph == GR_USER ||
             pg->graph == GR_PATS || (pg->graph == GR_SLICES && k < 2u) || (pg->graph == GR_MOD && k == 0u))
             return 0;
@@ -959,6 +959,11 @@ static void edit_param(uint32_t slot, int32_t steps)
         techno_set(slot, techno_get(slot) + st);
         return;
     }
+    if (pg->graph == GR_TDRUM) {                          /* DRUMS: KIT (a detent a kit), KICK, HATS, CRUSH */
+        int32_t st = slot ? accel(EN_K1 + slot, steps, 127) : (steps > 0 ? 1 : -1);
+        techno_dset(slot, techno_dget(slot) + st);
+        return;
+    }
     if (pg->graph == GR_SONG) {                       /* KNOB 1 SECTION, 2 TRACK, 3 PAT (A..D, -), 4 REPS */
         chain_row_t *r;
         if (slot == 0u) {
@@ -1080,7 +1085,7 @@ static void act_do(void)
         ui.force = 1;
         return;
     }
-    if (cur_page()->graph == GR_TECHNO) {                 /* a new groove (the controls as they are) */
+    if (TECHNO_PG(cur_page()->graph)) {                   /* a new groove (the controls as they are) */
         uint32_t was = techno.on && song.playing;
         techno_start(fm1_ms * 2654435761u ^ techno.seed * 40503u ^ song.tick);
         ui_message(was ? "NEW GROOVE" : clock_ext() && !song.playing ? "WAITING: START" : "TECHNO");
@@ -1829,7 +1834,7 @@ static void ui_input(void)
         }
         if (ui.home || pg->scope == SC_STEP || pg->scope == SC_TRK || page_desc(pg, k, &hv) ||
             ((pg->graph == GR_USER || pg->graph == GR_MOD || pg->graph == GR_PATS) && k == 0u)
-            || pg->graph == GR_SONG || pg->graph == GR_DREAM || pg->graph == GR_TECHNO || (pg->graph == GR_SLICES && k < 2u) ||
+            || pg->graph == GR_SONG || pg->graph == GR_DREAM || TECHNO_PG(pg->graph) || (pg->graph == GR_SLICES && k < 2u) ||
             fop_page(pg->graph)) {   /* (not an empty
                                                                                                           * column) */
             ui.hot_col = (uint8_t)k;

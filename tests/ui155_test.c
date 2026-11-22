@@ -190,12 +190,14 @@ static int select_page(void)
     }
     go_title("SONG"); frame();
     turn(EN_SELECT, 1);
-    ok &= title_is("DREAM");                            /* (GLO: SONG and, this fork, DREAM and TECHNO) */
+    ok &= title_is("DREAM");                            /* (GLO: SONG and, this fork, DREAM TECHNO DRUMS) */
     turn(EN_SELECT, 1);
     ok &= title_is("TECHNO");
     turn(EN_SELECT, 1);
+    ok &= title_is("DRUMS");
+    turn(EN_SELECT, 1);
     ok &= title_is("SONG");
-    bad += check("  PAGE: EDIT's round is the engine's pages; GLO's three go round (SONG, DREAM, TECHNO)", ok);
+    bad += check("  PAGE: EDIT's round is the engine's pages; GLO's four go round (SONG, DREAM, TECHNO, DRUMS)", ok);
 
     go_title("ENV"); frame();
     b0 = song.g[G_BPM];

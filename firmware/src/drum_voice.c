@@ -76,7 +76,8 @@ enum {
 };
 /* a lane of a model kit as a type: the kit (1..DV_NKIT) in the high 4 bits, the lane in the low 3 (Felucca's own
  * types: 0 above). Its run (the DVT_* it plays through) is the kit's (DV_KIT) */
-#define DV_NKIT 8                                        /* (1.5.6, #216: DEEP TIGHT PERC after 77) */
+#define DV_NKIT 12                                       /* (1.5.6, #216: DEEP TIGHT PERC after 77; this fork:
+                                                          * CRISP HARD 8BIT RUST) */
 #define DV_KITOF(t) ((uint32_t)(t) >> 4)
 #define DV_KTYPE(kit, lane) ((uint8_t)(((kit) << 4) | (lane)))
 
@@ -187,7 +188,7 @@ typedef struct {
     int16_t v[13];
 } dv_kit_t;
 /* the accent per kit: + (x / 16384) per accent step (75: +4 dB at full, as Felucca's own) */
-static const uint8_t DV_KIT_ACC[DV_NKIT] = {120, 45, 100, 40, 40, 80, 60, 70};
+static const uint8_t DV_KIT_ACC[DV_NKIT] = {120, 45, 100, 40, 40, 80, 60, 70, 90, 100, 80, 90};
 static const dv_kit_t DV_KIT[DV_NKIT][DV_NLANE] = {
     {   /* 80 */
         /* deep sine, a small drop, long decay */
@@ -329,6 +330,74 @@ static const dv_kit_t DV_KIT[DV_NKIT][DV_NLANE] = {
         {DVT_CLAVE, 32, 1568, 149, 2131, {84, 28000, 10000, 6348, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
         /* 66's bell: sines 830 / 613 Hz */
         {DVT_RIM, 40, 1280, 60, 3629, {-84, 30000, 7500, 4096, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    },
+    {   /* CRISP (this fork): tight and bright, as the modern analog drum machines: a snapped, clicked kick */
+        /* 53 Hz from 2 octaves up in 10 ms, a 1.5 ms snap above, a click at 2.3 kHz, a little drive */
+        {DVT_PUNCH, 60, 520, 240, 2762, {576, 140, 480, 2500, 0, 1650, 14000, 9000, 0, 0, 0, 0, 0}},
+        /* shells 190 / 368 Hz, noise 4.7 kHz, bright */
+        {DVT_SNARE, 40, 870, 140, 7198, {241, 0, 100, 40, 20000, 6000, 1780, 6827, 30, 12000, 32767, 12000, 1828}},
+        /* band 1.2 kHz, 3 teeth 10 ms, tail 100 ms */
+        {DVT_CLAP, 48, 1400, 340, 11950, {0, 4096, 1678, 3000, 2000, 30000, 35, 441, 3, 0, 0, 0, 0}},
+        /* a high cluster 6.6 .. 12 kHz + noise, band 10 kHz, high-passed at 7.5 kHz */
+        {DVT_HATC, 45, 1860, 85, 3884, {1940, 6000, 1880, 2042, 3000, 20000, 9000, 3, 3, 0, 0, 0, 0}},
+        {DVT_HATO, 63, 1860, 350, 2351, {1940, 6000, 1880, 2042, 3000, 20000, 9000, 3, 3, 0, 0, 0, 0}},
+        /* 80's mid tom */
+        {DVT_TOM, 53, 785, 182, 4055, {8, 100, 1302, 1200, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+        /* 80's rim */
+        {DVT_RIM, 32, 1113, 12, 4599, {360, 12000, 30000, 32000, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+        /* a ride: 10's cymbal */
+        {DVT_CYM, 53, 1014, 3773, 10841, {1766, 3413, 1729, 3413, 16384, 20000, 60, 19661, 0, 2, 0, 0, 0}},
+    },
+    {   /* HARD (this fork): hard techno: a driven, held, clicking kick, loud noisy hats, a big clap, a short ride */
+        /* 50 Hz held 20 ms, from 30 semitones up in 16 ms, both harmonics, a hard click, driven x4 */
+        {DVT_PUNCH, 60, 504, 160, 2506, {480, 160, 256, 6000, 3000, 1500, 12000, 16000, 0, 28, 0, 0, 0}},
+        /* 66's snare, shorter */
+        {DVT_SNARE, 40, 979, 70, 9558, {107, 0, 100, 120, 6000, 1200, 1907, 8192, 30, 16000, 32767, 32767, 1828}},
+        /* 77's claps, a longer tail */
+        {DVT_CLAP, 48, 1393, 420, 8124, {0, 6302, 1585, 1500, 8000, 30000, 52, 322, 6, 0, 0, 0, 0}},
+        /* pulses 3.7 .. 13.5 kHz under noise, band 8.5 kHz, high-passed at 6 kHz, a lot of sizzle */
+        {DVT_HATC, 45, 1690, 110, 2446, {1900, 7000, 1820, 2000, 5000, 10000, 16000, 3, 5, 0, 0, 0, 0}},
+        {DVT_HATO, 63, 1690, 450, 1570, {1900, 7000, 1820, 2000, 5000, 10000, 16000, 3, 5, 0, 0, 0, 0}},
+        /* 55's low tom */
+        {DVT_TOM, 53, 824, 179, 4091, {21, 600, 1523, 9000, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+        /* 55's rim */
+        {DVT_RIM, 32, 1139, 10, 5884, {435, 22000, 22000, 24576, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+        /* a short ride: 77's cymbal */
+        {DVT_CYM, 53, 1690, 1100, 7582, {1969, 5120, 1748, 5120, 24000, 16000, 34, 24576, 6554, 5, 0, 0, 0}},
+    },
+    {   /* 8BIT (this fork): the drums of an old game console: a square kick, noise bursts, blips (with CRUSH) */
+        /* 58 Hz from 3 octaves up in 20 ms, driven into a square */
+        {DVT_PUNCH, 60, 540, 140, 2654, {600, 200, 0, 0, 0, 0, 0, 24000, 0, 0, 0, 0, 0}},
+        /* a noise burst over a low shell */
+        {DVT_SNARE, 40, 900, 90, 12847, {0, 0, 100, 40, 0, 3000, 1750, 12000, 30, 20000, 32767, 16000, 1828}},
+        /* 66's clap: the snare noise struck 3 times */
+        {DVT_CLAP, 48, 1777, 210, 7506, {0, 6827, 1870, 0, 6000, 30000, 50, 400, 3, 0, 0, 0, 0}},
+        /* white noise only, band 10.8 kHz, short */
+        {DVT_HATC, 45, 1907, 40, 13804, {1950, 8192, 1900, 2042, 0, 0, 20000, 3, 6, 0, 0, 0, 0}},
+        {DVT_HATO, 63, 1907, 200, 7611, {1950, 8192, 1900, 2042, 0, 0, 20000, 3, 6, 0, 0, 0, 0}},
+        /* a laser tom: 80's, bent a long way */
+        {DVT_TOM, 53, 880, 182, 4053, {200, 100, 1302, 1200, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+        /* 66's rim: 1.5 kHz */
+        {DVT_RIM, 32, 1441, 13, 8636, {304, 26000, 1000, 4096, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+        /* a blip: 80's bell squares */
+        {DVT_BELL, 50, 1161, 252, 2696, {109, 129, 3413, 30000, 45, 0, 0, 0, 0, 0, 0, 0, 0}},
+    },
+    {   /* RUST (this fork): industrial: a long driven rumble kick, trashy snare and claps, metal hats and hits */
+        /* 47 Hz, held, driven x3, both harmonics, a dull click */
+        {DVT_PUNCH, 60, 488, 320, 2187, {420, 250, 200, 4000, 2000, 1300, 6000, 12000, 0, 20, 0, 0, 0}},
+        /* 77's snare, longer: noise 1.2 .. 8 kHz */
+        {DVT_SNARE, 40, 919, 320, 8501, {0, 0, 100, 12, 0, 12000, 1585, 10240, 25, 32767, 20000, 0, 1828}},
+        /* 10's claps, a 0.5 s tail */
+        {DVT_CLAP, 30, 1678, 1600, 3134, {0, 9102, 1715, 8000, 17000, 30000, 100, 1235, 3, 0, 0, 0, 0}},
+        /* 77's pulses, ringing, band 5.5 kHz, high-passed at 4.5 kHz */
+        {DVT_HATC, 45, 1690, 100, 3527, {1800, 3000, 1760, 2042, 2000, 26000, 6000, 3, 5, 0, 0, 0, 0}},
+        {DVT_HATO, 63, 1690, 500, 2069, {1800, 3000, 1760, 2042, 2000, 26000, 6000, 3, 5, 0, 0, 0, 0}},
+        /* 77's tom, clipped */
+        {DVT_TOM, 53, 797, 377, 1635, {20, 180, 1523, 2500, 6000, 12000, 0, 0, 0, 0, 0, 0, 0}},
+        /* 80's rim, lower */
+        {DVT_RIM, 32, 1060, 12, 4597, {360, 12000, 30000, 32000, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+        /* a metal hit: 55's wide cluster */
+        {DVT_CYM, 50, 1240, 114, 13202, {1701, 4096, 1550, 4096, 22000, 20000, 30, 19661, 8192, 4, 0, 0, 0}},
     },
 };
 

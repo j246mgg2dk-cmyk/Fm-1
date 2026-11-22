@@ -177,8 +177,8 @@ and the reply says so) and its knob steps over it. Of a repeated name, the origi
 the name, else the last one with it; an editor should list only the originals and show an alias by its name when
 it ever sees one. Today: SAMPLE SET and GRAIN SRC 1 and 4 (once TRANH, PERC) = 0 PIANO; DRUM KIT (engine 10, E1)
 1, 2, 3 (once HAND, CYM, H+CYM; 1.0.5) = 6 (66), 5 (10), 8 (77): its names are STD 66 10 77 80 10 66 55 77 (1.5.6,
-#216: then 9 DEEP, 10 TIGHT, 11 PERC, appended; firmware before clamps them to 8, 77), the device's knob steps STD 80 10
-66 55 77 DEEP TIGHT PERC. An editor of before 1.0.5 (first of a name = original) offers 66 10 77
+#216: then 9 DEEP, 10 TIGHT, 11 PERC, appended; firmware before clamps them to 8, 77; this fork: 12 CRISP, 13 HARD,
+14 8BIT, 15 RUST), the device's knob steps STD 80 10 66 55 77 DEEP TIGHT PERC CRISP HARD 8BIT RUST. An editor of before 1.0.5 (first of a name = original) offers 66 10 77
 at 1..3 and hides 6 5 8: what it sets still plays the right kit, and the device answers with 6 5 8.
 
 ## Commands
